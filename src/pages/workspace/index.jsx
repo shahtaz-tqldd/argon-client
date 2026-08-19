@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Activity,
   ArrowUpRight,
   Bot,
   Building2,
@@ -20,14 +19,17 @@ import {
 import InviteMemberDialog from "@/components/dialog/invite-member-dialog";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
+import AppLogo from "@/components/ui/logo";
 import { Text, Title } from "@/components/ui/typography";
+import { useChatbotListQuery } from "@/features/chatbot/chatbotApiSlice";
 import {
   useGetWorkspaceQuery,
   useInviteWorkspaceMemberMutation,
 } from "@/features/workspace/workspaceApiSlice";
 import useAuth from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import AppLogo from "@/components/ui/logo";
+import CreateChatbotDialog from "@/pages/chatbots/components/create-chatbot";
+import { SectionTitle } from "@/components/ui/section";
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
@@ -101,7 +103,7 @@ const WorkspaceLogo = ({ logo, name }) => (
 );
 
 const ChatbotCard = ({ chatbot }) => (
-  <article className="group rounded-2xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+  <article className="group rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md">
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
@@ -134,8 +136,9 @@ const ChatbotCard = ({ chatbot }) => (
 
     <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Activity className="size-3.5" />
-        {chatbot.status === "active" ? "Ready to respond" : "Setup in progress"}
+        <Users className="size-3.5" />
+        {chatbot.member_count ?? 0} member
+        {(chatbot.member_count ?? 0) === 1 ? "" : "s"}
       </div>
       <button
         type="button"
@@ -226,6 +229,7 @@ const PendingInvitationRow = ({ invitation }) => (
 
 const WorkspacePage = () => {
   const { user } = useAuth();
+  const [createChatbotDialogOpen, setCreateChatbotDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [sentInvitations, setSentInvitations] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -239,9 +243,15 @@ const WorkspacePage = () => {
   } = useGetWorkspaceQuery();
   const [inviteWorkspaceMember, { isLoading: isInviting }] =
     useInviteWorkspaceMemberMutation();
+  const {
+    data: chatbotResponse,
+    isLoading: isChatbotsLoading,
+    isError: isChatbotsError,
+    refetch: refetchChatbots,
+  } = useChatbotListQuery();
 
   const workspace = workspaceResponse?.data;
-  const chatbots = asArray(workspace?.chatbots);
+  const chatbots = asArray(chatbotResponse?.data);
   const apiMembers = asArray(workspace?.members || workspace?.memberships);
   const apiInvitations = asArray(
     workspace?.pending_invitations || workspace?.invitations,
@@ -309,7 +319,11 @@ const WorkspacePage = () => {
   };
 
   const handleCreateChatbot = () => {
-    toast.info("The chatbot creation API is not available yet.");
+    setCreateChatbotDialogOpen(true);
+  };
+
+  const refreshAfterChatbotCreated = async () => {
+    await Promise.all([refetch(), refetchChatbots()]);
   };
 
   if (isLoading) {
@@ -353,7 +367,7 @@ const WorkspacePage = () => {
   return (
     <section className="space-y-10 max-w-6xl mx-auto">
       <AppLogo />
-      <header className="flex flex-col gap-5 pr-14 lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-4">
           <WorkspaceLogo logo={workspace.logo} name={workspace.name} />
           <div className="min-w-0">
@@ -364,26 +378,24 @@ const WorkspacePage = () => {
             </div>
             <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
               <span>{workspace.industry || "General workspace"}</span>
-              <span aria-hidden="true">·</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
-                Active
-              </span>
             </p>
           </div>
         </div>
+
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          <span className="size-1.5 rounded-full bg-emerald-500" />
+          Active Workspace
+        </span>
       </header>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
         <Card className="p-0">
           <div className="border-b border-border p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-foreground">Chatbots</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Build, publish, and manage assistants for your customers.
-                </p>
-              </div>
+              <SectionTitle
+                title="Chatbots"
+                details="Build, publish, and manage assistants for your customers."
+              />
               <Button type="button" onClick={handleCreateChatbot}>
                 <Plus /> Create chatbot
               </Button>
@@ -391,7 +403,32 @@ const WorkspacePage = () => {
           </div>
 
           <div className="p-5 sm:p-6">
-            {filteredChatbots.length ? (
+            {isChatbotsLoading ? (
+              <div className="grid animate-pulse gap-4 md:grid-cols-2">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <div key={index} className="h-44 rounded-2xl bg-muted" />
+                ))}
+              </div>
+            ) : isChatbotsError ? (
+              <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/25 px-6 text-center">
+                <Bot className="size-7 text-muted-foreground" />
+                <h3 className="mt-3 font-semibold text-foreground">
+                  Chatbots unavailable
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  We couldn’t load your chatbot list.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={refetchChatbots}
+                >
+                  <RefreshCw /> Try again
+                </Button>
+              </div>
+            ) : filteredChatbots.length ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {filteredChatbots.map((chatbot) => (
                   <ChatbotCard
@@ -552,6 +589,14 @@ const WorkspacePage = () => {
         onInvite={sendInvitation}
         isLoading={isInviting}
         workspaceName={workspace.name}
+      />
+
+      <CreateChatbotDialog
+        open={createChatbotDialogOpen}
+        onOpenChange={setCreateChatbotDialogOpen}
+        workspaceSlug={workspace.slug}
+        workspaceName={workspace.name}
+        onCreated={refreshAfterChatbotCreated}
       />
     </section>
   );

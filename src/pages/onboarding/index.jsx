@@ -23,6 +23,7 @@ import {
 } from "@/features/workspace/workspaceApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import AuthContainer from "@/pages/auth/components/container";
+import { SectionTitle } from "@/components/ui/section";
 
 const MAX_LOGO_SIZE = 5 * 1024 * 1024;
 const SUPPORTED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -207,18 +208,12 @@ const OnboardingPage = () => {
       >
         <form onSubmit={handleSubmit(saveWorkspace)} className="space-y-5">
           <section className="overflow-hidden rounded-3xl border border-border bg-background">
-            <div className="flex items-start gap-4 border-b border-border bg-muted/35 px-5 py-5 sm:px-6">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Building2 className="size-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-foreground">
-                  Personalize your workspace
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  These details help members identify the right workspace.
-                </p>
-              </div>
+            <div className="border-b border-border bg-muted/35 px-5 py-5 sm:px-6">
+              <SectionTitle
+                icon={Building2}
+                title="Personalize your workspace"
+                details="These details help members identify the right workspace."
+              />
             </div>
 
             <div className="gap-7 p-5 sm:p-6 flex">
@@ -324,21 +319,11 @@ const OnboardingPage = () => {
 
           <section className="rounded-3xl border border-border bg-background p-5 sm:p-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Users className="size-5" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-foreground">
-                    Invite your teammates
-                  </h2>
-                  <p className="mt-1 max-w-lg text-sm text-muted-foreground">
-                    Send a secure email invitation now, or add members later
-                    from workspace settings.
-                  </p>
-                </div>
-              </div>
-
+              <SectionTitle
+                icon={Users}
+                title="Invite your teammates"
+                details="Send a secure email invitation now, or add members later from workspace settings."
+              />
               <Button
                 type="button"
                 variant="outline"

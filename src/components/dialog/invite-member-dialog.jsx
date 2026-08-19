@@ -23,6 +23,11 @@ const InviteMemberDialog = ({
   onInvite,
   isLoading = false,
   workspaceName = "your workspace",
+  title = "Invite a workspace member",
+  description,
+  infoText = "Invitations are single-use and expire automatically for better account security.",
+  submitLabel = "Send invitation",
+  loadingLabel = "Sending…",
 }) => {
   const [submissionError, setSubmissionError] = useState("");
   const {
@@ -62,9 +67,10 @@ const InviteMemberDialog = ({
             <div className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <MailPlus className="size-5" />
             </div>
-            <DialogTitle>Invite a workspace member</DialogTitle>
+            <DialogTitle>{title}</DialogTitle>
             <DialogDescription className="leading-6">
-              We’ll email them a secure invitation to join {workspaceName}.
+              {description ||
+                `We’ll email them a secure invitation to join ${workspaceName}.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -103,10 +109,7 @@ const InviteMemberDialog = ({
 
             <div className="flex items-start gap-3 rounded-2xl bg-primary/5 p-4 text-sm text-muted-foreground">
               <Users className="mt-0.5 size-4 shrink-0 text-primary" />
-              <p>
-                Invitations are single-use and expire automatically for better
-                account security.
-              </p>
+              <p>{infoText}</p>
             </div>
           </div>
 
@@ -117,7 +120,7 @@ const InviteMemberDialog = ({
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isLoading}>
-              <Send /> {isLoading ? "Sending…" : "Send invitation"}
+              <Send /> {isLoading ? loadingLabel : submitLabel}
             </Button>
           </DialogFooter>
         </form>
