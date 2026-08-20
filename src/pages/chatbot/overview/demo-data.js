@@ -37,20 +37,6 @@ export const plan = {
       display: "1,420 / 2,000",
       tone: "primary",
     },
-    {
-      label: "Knowledge chunks",
-      current: 1850,
-      limit: 2500,
-      display: "1,850 / 2,500",
-      tone: "violet",
-    },
-    {
-      label: "Storage",
-      current: 32,
-      limit: 50,
-      display: "32 MB / 50 MB",
-      tone: "cyan",
-    },
   ],
 };
 
@@ -112,16 +98,6 @@ export const conversations = [
     time: "16m",
     channel: "Instagram",
     status: "AI handling",
-    unread: 0,
-  },
-  {
-    id: "conv-1034",
-    name: "Noah Williams",
-    initials: "NW",
-    lastMessage: "I’ve attached the invoice number.",
-    time: "24m",
-    channel: "Facebook",
-    status: "Assigned to you",
     unread: 0,
   },
 ];

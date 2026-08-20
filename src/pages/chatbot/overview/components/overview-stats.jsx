@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 
 import Card from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const MiniBarChart = ({ values }) => {
   const maxValue = Math.max(...values);
@@ -18,14 +19,17 @@ const MiniBarChart = ({ values }) => {
   );
 };
 
-const OverviewStats = ({ stats }) => (
-  <section aria-label="Chatbot overview statistics" className="grid gap-5 md:grid-cols-2">
+const OverviewStats = ({ stats, className }) => (
+  <Card
+    aria-label="Chatbot overview statistics"
+    className={cn("grid gap-12 md:grid-cols-2 relative", className)}
+  >
+    <div className="absolute right-0 top-0 h-24 w-24 rounded-bl-[4rem] bg-primary/[0.035]" />
     {stats.map((stat) => {
       const Icon = stat.icon;
 
       return (
-        <Card key={stat.label} className="relative p-5 sm:p-6">
-          <div className="absolute right-0 top-0 h-24 w-24 rounded-bl-[4rem] bg-primary/[0.035]" />
+        <div key={stat.label}>
           <div className="relative flex items-end justify-between gap-5">
             <div>
               <div className="flex items-center gap-3">
@@ -48,10 +52,10 @@ const OverviewStats = ({ stats }) => (
             </div>
             <MiniBarChart values={stat.chart} />
           </div>
-        </Card>
+        </div>
       );
     })}
-  </section>
+  </Card>
 );
 
 export default OverviewStats;
