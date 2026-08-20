@@ -22,25 +22,10 @@ import {
   useUpdateWorkspaceMutation,
 } from "@/features/workspace/workspaceApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
-import AuthContainer from "@/pages/auth/components/container";
 import { SectionTitle } from "@/components/ui/section";
-
-const MAX_LOGO_SIZE = 5 * 1024 * 1024;
-const SUPPORTED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-const getInitials = (name) =>
-  String(name || "Workspace")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "W";
-
-const formatFileSize = (bytes) => {
-  if (!bytes) return "";
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-};
+import { getInitials } from "@/lib/utils";
+import { formatFileSize } from "@/lib/file-handle";
+import { MAX_LOGO_SIZE, SUPPORTED_LOGO_TYPES } from "@/constants/constraints";
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
@@ -167,23 +152,21 @@ const OnboardingPage = () => {
 
   if (isWorkspaceLoading) {
     return (
-      <AuthContainer
+      <ArgonCardContainer
         title="Set up your workspace"
         description="Add the details your team will see across Argon."
-        containerClassName="max-w-4xl"
-        panelClassName="rounded-3xl border bg-card p-5 shadow-xl sm:p-8"
       >
         <div className="animate-pulse space-y-5">
           <div className="h-64 rounded-3xl bg-muted" />
           <div className="h-36 rounded-3xl bg-muted" />
         </div>
-      </AuthContainer>
+      </ArgonCardContainer>
     );
   }
 
   if (isWorkspaceError || !workspace) {
     return (
-      <AuthContainer
+      <ArgonCardContainer
         title="We couldn’t load your workspace"
         description="Try again, or continue and finish setting it up later."
       >
@@ -195,17 +178,13 @@ const OnboardingPage = () => {
             Skip for now
           </Button>
         </div>
-      </AuthContainer>
+      </ArgonCardContainer>
     );
   }
 
   return (
     <>
-      <AuthContainer
-        title="Set up your workspace"
-        containerClassName="max-w-3xl"
-        panelClassName="rounded-3xl border bg-card p-5 shadow-xl sm:p-8"
-      >
+      <ArgonCardContainer title="Set up your workspace">
         <form onSubmit={handleSubmit(saveWorkspace)} className="space-y-5">
           <section className="overflow-hidden rounded-3xl border border-border bg-background">
             <div className="border-b border-border bg-muted/35 px-5 py-5 sm:px-6">
@@ -368,7 +347,7 @@ const OnboardingPage = () => {
             </Button>
           </div>
         </form>
-      </AuthContainer>
+      </ArgonCardContainer>
 
       <InviteMemberDialog
         open={inviteDialogOpen}
@@ -378,6 +357,23 @@ const OnboardingPage = () => {
         workspaceName={workspace.name}
       />
     </>
+  );
+};
+
+const ArgonCardContainer = ({ title, description, children }) => {
+  return (
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="p-5 sm:p-8 border border-border rounded-2xl md:rounded-3xl bg-card shadow-sm md:shadow-xl md:text-card-foreground">
+        <div className="mb-10">
+          <img src="/logo.webp" alt="Argon Chatbot" className="size-12" />
+          <h2 className="mt-2 text-xl font-semibold text-foreground md:text-2xl">
+            {title}
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        </div>
+        {children}
+      </div>
+    </div>
   );
 };
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useWatch } from "react-hook-form";
 
 import { ImagePlus, Trash2 } from "lucide-react";
-import { useFilePreviews } from "@/lib/file-preview";
+import { useFilePreviews } from "@/lib/file-handle";
 import { Text, Title } from "../ui/typography";
 import Card from "../ui/card";
 

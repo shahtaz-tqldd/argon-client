@@ -28,8 +28,9 @@ import {
 } from "@/features/workspace/workspaceApiSlice";
 import useAuth from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import CreateChatbotDialog from "@/pages/chatbots/components/create-chatbot";
+import CreateChatbotDialog from "@/pages/chatbot/components/create-chatbot";
 import { SectionTitle } from "@/components/ui/section";
+import { Link } from "react-router-dom";
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
@@ -103,51 +104,53 @@ const WorkspaceLogo = ({ logo, name }) => (
 );
 
 const ChatbotCard = ({ chatbot }) => (
-  <article className="group rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md">
-    <div className="flex items-start justify-between gap-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
-          {chatbot.logo ? (
-            <img
-              src={chatbot.logo}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <Bot className="size-5" />
-          )}
+  <Link to={`/chatbot/${chatbot?.slug}`}>
+    <article className="group rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
+            {chatbot.logo ? (
+              <img
+                src={chatbot.logo}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Bot className="size-5" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <h3 className="truncate font-semibold text-foreground">
+              {chatbot.name}
+            </h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Updated {formatDate(chatbot.updated_at)}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h3 className="truncate font-semibold text-foreground">
-            {chatbot.name}
-          </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Updated {formatDate(chatbot.updated_at)}
-          </p>
+        <ChatbotStatus status={chatbot.status} />
+      </div>
+
+      <p className="mt-4 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">
+        {chatbot.description ||
+          "Configure this chatbot’s knowledge, behavior, and customer channels."}
+      </p>
+
+      <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Users className="size-3.5" />
+          {chatbot.member_count ?? 0} member
+          {(chatbot.member_count ?? 0) === 1 ? "" : "s"}
         </div>
+        <button
+          type="button"
+          className="flex items-center gap-1 text-xs font-semibold text-primary opacity-70 transition group-hover:opacity-100"
+        >
+          Open <ArrowUpRight className="size-3.5" />
+        </button>
       </div>
-      <ChatbotStatus status={chatbot.status} />
-    </div>
-
-    <p className="mt-4 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">
-      {chatbot.description ||
-        "Configure this chatbot’s knowledge, behavior, and customer channels."}
-    </p>
-
-    <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Users className="size-3.5" />
-        {chatbot.member_count ?? 0} member
-        {(chatbot.member_count ?? 0) === 1 ? "" : "s"}
-      </div>
-      <button
-        type="button"
-        className="flex items-center gap-1 text-xs font-semibold text-primary opacity-70 transition group-hover:opacity-100"
-      >
-        Open <ArrowUpRight className="size-3.5" />
-      </button>
-    </div>
-  </article>
+    </article>
+  </Link>
 );
 
 const MemberAvatar = ({ member, isOnline }) => {

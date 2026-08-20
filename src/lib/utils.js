@@ -6,5 +6,17 @@ export function cn(...inputs) {
 }
 
 export function toComparableOptionValue(value) {
-  return String(value).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
 }
+
+export const getInitials = (name) =>
+  String(name || "Workspace")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "W";

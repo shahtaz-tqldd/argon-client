@@ -9,9 +9,14 @@ const RegisterPage = lazy(() => import("@/pages/auth/register"));
 const ForgotPasswordPage = lazy(() => import("@/pages/auth/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/auth/reset-password"));
 const VerifyOTPPage = lazy(() => import("@/pages/auth/verify-otp"));
-const OnboardingPage = lazy(() => import("@/pages/onboarding"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
+
+// workspace
 const WorkspacePage = lazy(() => import("@/pages/workspace"));
+const OnboardingPage = lazy(() => import("@/pages/onboarding"));
+
+// chatbot
+const ChatbotOverview = lazy(() => import("@/pages/chatbot/overview"));
 
 // others
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -33,6 +38,14 @@ export const routes = createBrowserRouter([
       {
         path: "/",
         element: withSuspense(<WorkspacePage />),
+      },
+      {
+        path: "/onboarding",
+        element: withSuspense(<OnboardingPage />),
+      },
+      {
+        path: "/chatbot/:chatbotSlug",
+        element: withSuspense(<ChatbotOverview />),
       },
       {
         path: "/search",
@@ -59,14 +72,6 @@ export const routes = createBrowserRouter([
   {
     path: "/verify-otp",
     element: withSuspense(<VerifyOTPPage />),
-  },
-  {
-    path: "/onboarding",
-    element: withSuspense(
-      <PrivateRoute>
-        <OnboardingPage />
-      </PrivateRoute>,
-    ),
   },
   {
     path: "/forgot-password",
