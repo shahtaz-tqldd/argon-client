@@ -1,13 +1,10 @@
-import React from "react";
-import clsx from "clsx";
+import { cn, formatStatus } from "@/lib/utils";
 
-const StatusBadge = ({ status }) => {
+const Badge = ({ status }) => {
   const normalized = status.toLowerCase();
 
   const styles = {
     completed: "bg-primary text-white ring-primary/20",
-    accept: "bg-primary text-white ring-primary/20",
-    accepted: "bg-primary text-white ring-primary/20",
     approved: "bg-primary text-white ring-primary/20",
     published: "bg-primary text-white ring-primary/20",
     in_progress: "bg-primary/10 text-primary ring-primary/20",
@@ -27,30 +24,18 @@ const StatusBadge = ({ status }) => {
     reject: "bg-red-100 text-red-600 ring-red-500/20",
     rejected: "bg-red-100 text-red-600 ring-red-500/20",
     deleted: "bg-red-100 text-red-600 ring-red-500/20",
-
-    pending: "bg-yellow-100 text-yellow-700 ring-yellow-500/20",
-
-    inactive: "bg-gray-100 text-gray-700",
-    blocked: "bg-red-100 text-red-700",
-    "pending payment": "bg-yellow-100 text-yellow-700",
-
-    shipped: "bg-blue-100 text-blue-700",
-    delivered: "bg-emerald-100 text-emerald-700",
-    processing: "bg-purple-100 text-purple-700",
-
-    publish: "bg-emerald-100 text-emerald-700",
-    archived: "bg-gray-100 text-gray-700",
   };
 
   const appliedStyle =
     styles[normalized] ?? "bg-slate-100 text-slate-600 ring-slate-500/20";
+
   const displayStatus = status
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
   return (
     <span
-      className={clsx(
+      className={cn(
         "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ring-1 ring-inset",
         appliedStyle,
       )}
@@ -60,4 +45,25 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-export default StatusBadge;
+const StatusBadge = ({ children }) => {
+  const styles = {
+    active: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    draft: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    disabled: "bg-muted text-muted-foreground",
+  };
+  const normalizedStatus = String(children || "draft").toLowerCase();
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold",
+        styles[normalizedStatus] || styles.draft,
+      )}
+    >
+      <span className="size-1.5 rounded-full bg-current" />
+      {formatStatus(normalizedStatus)}
+    </span>
+  );
+};
+
+export { Badge, StatusBadge };

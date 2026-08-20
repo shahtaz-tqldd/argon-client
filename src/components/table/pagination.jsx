@@ -18,7 +18,7 @@ const Pagination = ({ page, setPage, total, pageSize }) => {
         type="button"
         variant="outline"
         size="sm"
-        className="rounded-2xl border-slate-200"
+        className="rounded-xl border-slate-200"
         onClick={() => setPage(page - 1)}
         disabled={page <= 1}
       >
@@ -30,7 +30,7 @@ const Pagination = ({ page, setPage, total, pageSize }) => {
           type="button"
           variant={item === page ? "default" : "outline"}
           size="icon-sm"
-          className="rounded-2xl border-slate-200"
+          className="rounded-xl border-slate-200"
           onClick={() => setPage(item)}
         >
           {item}
@@ -40,7 +40,7 @@ const Pagination = ({ page, setPage, total, pageSize }) => {
         type="button"
         variant="outline"
         size="sm"
-        className="rounded-2xl border-slate-200"
+        className="rounded-xl border-slate-200"
         onClick={() => setPage(page + 1)}
         disabled={page >= totalPages}
       >

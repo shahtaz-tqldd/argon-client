@@ -54,9 +54,9 @@ const PasswordUpdateDialog = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="rounded-3xl border-slate-200 p-0 sm:max-w-[520px]">
+      <DialogContent className="rounded-3xl border-border p-0 sm:max-w-[520px]">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogHeader className="border-b border-slate-100 px-6 py-5">
+          <DialogHeader className="border-b border-border px-6 py-5">
             <div className="mb-1 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <KeyRound className="h-5 w-5" />
             </div>
@@ -86,8 +86,8 @@ const PasswordUpdateDialog = ({ open, onOpenChange }) => {
               rules={{
                 required: "New password is required",
                 minLength: {
-                  value: 6,
-                  message: "Use at least 6 characters",
+                  value: 8,
+                  message: "Use at least 8 characters",
                 },
               }}
               render={({ field }) => (
@@ -118,7 +118,7 @@ const PasswordUpdateDialog = ({ open, onOpenChange }) => {
             />
           </div>
 
-          <DialogFooter className="border-t border-slate-100 bg-slate-50/70 px-6 py-4">
+          <DialogFooter className="border-t border-border bg-muted/40 px-6 py-4">
             <Button
               type="button"
               variant="outline"

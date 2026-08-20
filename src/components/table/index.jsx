@@ -13,7 +13,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Select, SelectItem, SelectContent, SelectTrigger } from "../ui/select";
+import {
+  Select,
+  SelectItem,
+  SelectContent,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import Pagination from "./pagination";
 import DeleteDialog from "../dialog/delete-dialog";
 import { useState } from "react";
@@ -57,6 +63,11 @@ const ReusableTable = ({
   className,
   selectedIds = [],
   onSelectedIdsChange,
+  title,
+  description,
+  headerActions,
+  emptyTitle = "No entry found",
+  emptyDescription = "There are no records to show right now.",
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -98,7 +109,20 @@ const ReusableTable = ({
 
   return (
     <section className={className}>
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
+        {(title || description || headerActions) && (
+          <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+            <div>
+              {title && (
+                <p className="font-semibold text-slate-800">{title}</p>
+              )}
+              {description && (
+                <p className="text-xs text-slate-500">{description}</p>
+              )}
+            </div>
+            {headerActions}
+          </div>
+        )}
         <Table>
           <TableHeader className="bg-slate-50/90">
             <TableRow className="border-slate-200 hover:bg-transparent">
@@ -120,8 +144,8 @@ const ReusableTable = ({
               {columns.map((column, i) => (
                 <TableHead
                   key={column.accessorKey}
-                  className={`h-14 px-5 text-xs font-semibold uppercase tracking-[0.04em] text-slate-500 ${
-                    i === columns.length - 1 ? "text-right" : ""
+                  className={`h-14 text-xs font-semibold uppercase tracking-wide text-slate-500 ${
+                    i === 0 ? selectable ? "px-3" : "pl-5 pr-3" : i === columns.length - 1 ? "pl-3 pr-5 text-right" : "px-3"
                   }`}
                 >
                   {column.header}
@@ -150,10 +174,10 @@ const ReusableTable = ({
                 >
                   <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 text-center">
                     <p className="text-sm font-semibold text-slate-700">
-                      No entry found
+                      {emptyTitle}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      There are no records to show right now.
+                      {emptyDescription}
                     </p>
                   </div>
                 </TableCell>
@@ -162,7 +186,7 @@ const ReusableTable = ({
               data.map((item, i) => (
                 <TableRow
                   key={item.id || i}
-                  className="border-slate-100 transition-colors hover:bg-primary/5"
+                  className="border-slate-100 transition-colors hover:bg-primary/[0.035]"
                 >
                   {selectable && (
                     <TableCell className="w-12 px-5 py-4">
@@ -178,8 +202,8 @@ const ReusableTable = ({
                   {columns.map((column, j) => (
                     <TableCell
                       key={j}
-                      className={`px-5 py-4 text-slate-700 ${
-                        j === columns.length - 1 ? "text-right" : ""
+                      className={`py-4 text-slate-700 ${
+                        j === 0 ? selectable ? "px-3" : "pl-5 pr-3" : j === columns.length - 1 ? "pl-3 pr-5 text-right" : "px-3"
                       }`}
                     >
                       {column.accessorKey === "action" ? (
@@ -189,7 +213,7 @@ const ReusableTable = ({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="end"
-                            className="rounded-2xl border-slate-200 p-1 shadow-lg"
+                            className="rounded-xl border-slate-200 p-1 shadow-lg"
                           >
                             {table_options
                               ?.filter((option) => !option.hidden?.(item))
@@ -202,7 +226,7 @@ const ReusableTable = ({
                                       ? openDeleteDialog(item.id)
                                       : option?.action?.(item.id, item)
                                   }
-                                  className={`rounded-xl px-3 py-2 ${
+                                  className={`rounded-lg px-3 py-2 ${
                                     option.type === "delete"
                                       ? "text-red-600 focus:text-red-600"
                                       : ""
@@ -224,7 +248,7 @@ const ReusableTable = ({
           </TableBody>
         </Table>
         {shouldShowPagination && (
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 bg-white px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-5 py-4">
             <div className="flx gap-3">
               <Select
                 value={String(pageSize)}
@@ -233,8 +257,8 @@ const ReusableTable = ({
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-10 rounded-2xl border-slate-200 bg-slate-50 px-4">
-                  {pageSize}
+                <SelectTrigger className="h-9 w-20 rounded-xl border-slate-200 bg-slate-50">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="10">10</SelectItem>

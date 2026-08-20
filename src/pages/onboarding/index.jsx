@@ -152,7 +152,7 @@ const OnboardingPage = () => {
 
   if (isWorkspaceLoading) {
     return (
-      <ArgonCardContainer
+      <CardContainer
         title="Set up your workspace"
         description="Add the details your team will see across Argon."
       >
@@ -160,13 +160,13 @@ const OnboardingPage = () => {
           <div className="h-64 rounded-3xl bg-muted" />
           <div className="h-36 rounded-3xl bg-muted" />
         </div>
-      </ArgonCardContainer>
+      </CardContainer>
     );
   }
 
   if (isWorkspaceError || !workspace) {
     return (
-      <ArgonCardContainer
+      <CardContainer
         title="We couldn’t load your workspace"
         description="Try again, or continue and finish setting it up later."
       >
@@ -178,13 +178,13 @@ const OnboardingPage = () => {
             Skip for now
           </Button>
         </div>
-      </ArgonCardContainer>
+      </CardContainer>
     );
   }
 
   return (
     <>
-      <ArgonCardContainer title="Set up your workspace">
+      <CardContainer title="Set up your workspace">
         <form onSubmit={handleSubmit(saveWorkspace)} className="space-y-5">
           <section className="overflow-hidden rounded-3xl border border-border bg-background">
             <div className="border-b border-border bg-muted/35 px-5 py-5 sm:px-6">
@@ -347,7 +347,7 @@ const OnboardingPage = () => {
             </Button>
           </div>
         </form>
-      </ArgonCardContainer>
+      </CardContainer>
 
       <InviteMemberDialog
         open={inviteDialogOpen}
@@ -360,7 +360,7 @@ const OnboardingPage = () => {
   );
 };
 
-const ArgonCardContainer = ({ title, description, children }) => {
+const CardContainer = ({ title, description, children }) => {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="p-5 sm:p-8 border border-border rounded-2xl md:rounded-3xl bg-card shadow-sm md:shadow-xl md:text-card-foreground">

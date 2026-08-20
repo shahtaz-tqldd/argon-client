@@ -17,6 +17,18 @@ const OnboardingPage = lazy(() => import("@/pages/onboarding"));
 
 // chatbot
 const ChatbotOverview = lazy(() => import("@/pages/chatbot/overview"));
+const ChatSessionPage = lazy(() => import("@/pages/chatbot/chat-session"));
+const AppointmentBookingPage = lazy(
+  () => import("@/pages/chatbot/appointment"),
+);
+const LeadCollectionPage = lazy(
+  () => import("@/pages/chatbot/lead-collection"),
+);
+const ConfigurationPage = lazy(() => import("@/pages/chatbot/configuration"));
+const TeamMemberPage = lazy(() => import("@/pages/chatbot/team-member"));
+const PlanAndBillingPage = lazy(
+  () => import("@/pages/chatbot/plan-and-billing"),
+);
 
 // others
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -48,11 +60,35 @@ export const routes = createBrowserRouter([
         element: withSuspense(<ChatbotOverview />),
       },
       {
+        path: "/chatbot/:chatbotSlug/chat-session",
+        element: withSuspense(<ChatSessionPage />),
+      },
+      {
+        path: "/chatbot/:chatbotSlug/leads",
+        element: withSuspense(<LeadCollectionPage />),
+      },
+      {
+        path: "/chatbot/:chatbotSlug/appointments",
+        element: withSuspense(<AppointmentBookingPage />),
+      },
+      {
+        path: "/chatbot/:chatbotSlug/team",
+        element: withSuspense(<TeamMemberPage />),
+      },
+      {
+        path: "/chatbot/:chatbotSlug/configuration",
+        element: withSuspense(<ConfigurationPage />),
+      },
+      {
+        path: "/chatbot/:chatbotSlug/plan-and-billing",
+        element: withSuspense(<PlanAndBillingPage />),
+      },
+      {
         path: "/search",
         element: withSuspense(<SearchPage />),
       },
       {
-        path: "/profile/:username",
+        path: "/profile",
         element: withSuspense(<ProfilePage />),
       },
       {

@@ -21,21 +21,9 @@ import {
   useInviteChatbotMemberMutation,
 } from "@/features/chatbot/chatbotApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
-
-const MAX_LOGO_SIZE = 5 * 1024 * 1024;
-const SUPPORTED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-const getInitials = (name) =>
-  String(name || "Chatbot")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "C";
-
-const formatFileSize = (bytes) =>
-  bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : "";
+import { MAX_LOGO_SIZE, SUPPORTED_LOGO_TYPES } from "@/constants/constraints";
+import { getInitials } from "@/lib/utils";
+import { formatFileSize } from "@/lib/file-handle";
 
 const getCreatedChatbot = (response) => {
   const data = response?.data?.data || response?.data || response;
@@ -269,7 +257,9 @@ const CreateChatbotDialog = ({
                     <p className="truncate">
                       {logoFile ? logoFile.name : "PNG, JPG, or WebP"}
                     </p>
-                    <p>{logoFile ? formatFileSize(logoFile.size) : "max 5 MB"}</p>
+                    <p>
+                      {logoFile ? formatFileSize(logoFile.size) : "max 5 MB"}
+                    </p>
                   </div>
                 </div>
 
@@ -387,10 +377,7 @@ const CreateChatbotDialog = ({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button
-                type="submit"
-                disabled={isSubmitting || !workspaceSlug}
-              >
+              <Button type="submit" disabled={isSubmitting || !workspaceSlug}>
                 <Plus /> {isSubmitting ? "Creating…" : "Create chatbot"}
               </Button>
             </DialogFooter>

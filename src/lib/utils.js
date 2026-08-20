@@ -20,3 +20,10 @@ export const getInitials = (name) =>
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("") || "W";
+
+export const formatStatus = (status) =>
+  String(status || "draft")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+export const toArray = (value) => (Array.isArray(value) ? value : []);
