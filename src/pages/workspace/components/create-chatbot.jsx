@@ -273,7 +273,7 @@ const CreateChatbotDialog = ({
               </section>
 
               <section
-                className="rounded-2xl border border-border bg-muted/20 p-4"
+                className=""
                 aria-labelledby="chatbot-plan-heading"
               >
                 <div className="flex items-start gap-3">
@@ -296,7 +296,7 @@ const CreateChatbotDialog = ({
                 <div
                   role="radiogroup"
                   aria-labelledby="chatbot-plan-heading"
-                  className="mt-4 grid gap-3 sm:grid-cols-2"
+                  className="mt-4 grid gap-3 sm:grid-cols-4"
                 >
                   {CHATBOT_PLANS.map((plan) => {
                     const isSelected = selectedPlan === plan.label;

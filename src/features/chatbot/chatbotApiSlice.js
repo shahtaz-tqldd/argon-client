@@ -5,16 +5,36 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
     chatbotList: builder.query({
       query: () => {
         return {
-          url: `/chatbots/`,
+          url: `/chatbots/list/`,
           method: "GET",
         };
       },
       providesTags: ["chatbots"],
     }),
 
+    chatbotDetails: builder.query({
+      query: ({ chatbotSlug }) => {
+        return {
+          url: `/chatbots/details/?chatbot=${chatbotSlug}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["chatbot-details"],
+    }),
+
+    chatbotShortDetails: builder.query({
+      query: ({ chatbotSlug }) => {
+        return {
+          url: `/chatbots/short-details/?chatbot=${chatbotSlug}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["chatbot-short-details"],
+    }),
+
     createChatbot: builder.mutation({
       query: ({ payload }) => ({
-        url: `/chatbots/`,
+        url: `/chatbots/create/`,
         method: "POST",
         body: payload,
       }),
@@ -23,27 +43,81 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
 
     updateChatbot: builder.mutation({
       query: ({ chatbotSlug, payload }) => ({
-        url: `/chatbots/${chatbotSlug}/`,
+        url: `/chatbots/update/?chatbot=${chatbotSlug}`,
         method: "PATCH",
         body: payload,
       }),
       invalidatesTags: ["chatbots"],
     }),
 
+    deleteChatbot: builder.mutation({
+      query: ({ chatbotSlug }) => ({
+        url: `/chatbots/delete/?chatbot=${chatbotSlug}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["chatbots"],
+    }),
+
+    // chatbot members
+    chatbotMemberList: builder.query({
+      query: ({ chatbotSlug }) => {
+        return {
+          url: `/chatbots/team/list/?chatbot=${chatbotSlug}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["chatbot-team"],
+    }),
+
+    chatbotMemberDetails: builder.query({
+      query: ({ chatbotSlug, memberEmail }) => {
+        return {
+          url: `/chatbots/team/details?chatbot=${chatbotSlug}&member_email=${memberEmail}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["chatbot-team-member-details"],
+    }),
+
     inviteChatbotMember: builder.mutation({
       query: ({ chatbotSlug, email }) => ({
-        url: `/chatbots/${chatbotSlug}/invitations/`,
+        url: `/chatbots/team/invite/?chatbot=${chatbotSlug}`,
         method: "POST",
         body: { email },
       }),
-      invalidatesTags: ["chatbot-invitations"],
+      invalidatesTags: ["chatbot-team"],
+    }),
+
+    acceptChatbotInvite: builder.mutation({
+      query: ({ chatbotSlug, payload }) => ({
+        url: `/chatbots/team/accept-invite/?chatbot=${chatbotSlug}`,
+        method: "POST",
+        body: payload,
+      }),
+    }),
+
+    removeChatbotMember: builder.mutation({
+      query: ({ chatbotSlug, memberEmail }) => ({
+        url: `/chatbots/team/remove-member?chatbot=${chatbotSlug}&member_email=${memberEmail}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["chatbot-team"],
     }),
   }),
 });
 
 export const {
   useChatbotListQuery,
+  useChatbotDetailsQuery,
+  useChatbotShortDetailsQuery,
   useCreateChatbotMutation,
   useUpdateChatbotMutation,
+  useDeleteChatbotMutation,
+
+  // chatbot members
+  useChatbotMemberListQuery,
+  useChatbotMemberDetailsQuery,
   useInviteChatbotMemberMutation,
+  useAcceptChatbotInviteMutation,
+  useRemoveChatbotMemberMutation,
 } = chatbotApiSlice;
