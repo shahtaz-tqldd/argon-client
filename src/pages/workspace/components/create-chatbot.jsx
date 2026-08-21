@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { Bot, Camera, Check, MailPlus, Plus, Users, X } from "lucide-react";
+import { Bot, Camera, Check, Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
-import InviteMemberDialog from "@/components/dialog/invite-member-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,14 +15,18 @@ import {
 } from "@/components/ui/dialog";
 import { FloatingInput } from "@/components/ui/input";
 import { FloatingTextarea } from "@/components/ui/textarea";
-import {
-  useCreateChatbotMutation,
-  useInviteChatbotMemberMutation,
-} from "@/features/chatbot/chatbotApiSlice";
+import { useCreateChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { MAX_LOGO_SIZE, SUPPORTED_LOGO_TYPES } from "@/constants/constraints";
-import { getInitials } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { formatFileSize } from "@/lib/file-handle";
+
+const CHATBOT_PLANS = [
+  { label: "Free", price: 0 },
+  { label: "Starter", price: 39, messages: 1000 },
+  { label: "Growth", price: 59, messages: 2000 },
+  { label: "Business", price: 99, messages: 3500 },
+];
 
 const getCreatedChatbot = (response) => {
   const data = response?.data?.data || response?.data || response;
@@ -40,13 +43,11 @@ const CreateChatbotDialog = ({
   const logoInputRef = useRef(null);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState("");
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [invitationEmails, setInvitationEmails] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState("Free");
   const [submissionError, setSubmissionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [createChatbot] = useCreateChatbotMutation();
-  const [inviteChatbotMember] = useInviteChatbotMemberMutation();
 
   const {
     control,
@@ -73,9 +74,8 @@ const CreateChatbotDialog = ({
     reset({ name: "", description: "" });
     setLogoFile(null);
     setLogoPreview("");
-    setInvitationEmails([]);
+    setSelectedPlan("Free");
     setSubmissionError("");
-    setInviteDialogOpen(false);
   };
 
   const handleOpenChange = (nextOpen) => {
@@ -108,18 +108,6 @@ const CreateChatbotDialog = ({
     setLogoPreview("");
   };
 
-  const queueInvitation = async (email) => {
-    setInvitationEmails((current) =>
-      current.includes(email) ? current : [...current, email],
-    );
-  };
-
-  const removeInvitation = (email) => {
-    setInvitationEmails((current) =>
-      current.filter((invitationEmail) => invitationEmail !== email),
-    );
-  };
-
   const closeAfterCreation = () => {
     resetDialog();
     onOpenChange(false);
@@ -133,26 +121,12 @@ const CreateChatbotDialog = ({
     payload.append("name", values.name.trim());
     payload.append("description", values.description.trim());
     payload.append("workspace_slug", workspaceSlug);
+    payload.append("plan", selectedPlan);
     if (logoFile) payload.append("logo", logoFile);
 
     try {
       const response = await createChatbot({ payload }).unwrap();
       const chatbot = getCreatedChatbot(response);
-      const chatbotSlug = chatbot?.slug;
-      let failedInvitationCount = 0;
-
-      if (invitationEmails.length && chatbotSlug) {
-        const invitationResults = await Promise.allSettled(
-          invitationEmails.map((email) =>
-            inviteChatbotMember({ chatbotSlug, email }).unwrap(),
-          ),
-        );
-        failedInvitationCount = invitationResults.filter(
-          (result) => result.status === "rejected",
-        ).length;
-      } else if (invitationEmails.length) {
-        failedInvitationCount = invitationEmails.length;
-      }
 
       try {
         await onCreated?.(chatbot);
@@ -161,19 +135,7 @@ const CreateChatbotDialog = ({
       }
 
       closeAfterCreation();
-      const sentInvitationCount =
-        invitationEmails.length - failedInvitationCount;
-      toast.success(
-        sentInvitationCount
-          ? `Chatbot created and ${sentInvitationCount} invitation${sentInvitationCount === 1 ? "" : "s"} sent`
-          : "Chatbot created successfully",
-      );
-
-      if (failedInvitationCount) {
-        toast.warning(
-          `${failedInvitationCount} invitation${failedInvitationCount === 1 ? "" : "s"} could not be sent`,
-        );
-      }
+      toast.success("Chatbot created successfully");
     } catch (error) {
       setSubmissionError(
         getApiErrorMessage(error, "Unable to create the chatbot."),
@@ -184,20 +146,19 @@ const CreateChatbotDialog = ({
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl p-0 sm:max-w-2xl">
-          <form onSubmit={handleSubmit(submitChatbot)}>
-            <DialogHeader className="border-b border-border bg-muted/40 px-6 py-6">
-              <div className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Bot className="size-5" />
-              </div>
-              <DialogTitle>Create a chatbot</DialogTitle>
-              <DialogDescription className="leading-6">
-                Add an identity for your assistant and invite teammates to help
-                manage it in {workspaceName}.
-              </DialogDescription>
-            </DialogHeader>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl p-0 sm:max-w-2xl">
+        <form onSubmit={handleSubmit(submitChatbot)}>
+          <DialogHeader className="border-b border-border bg-muted/40 px-6 py-6">
+            <div className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Bot className="size-5" />
+            </div>
+            <DialogTitle>Create a chatbot</DialogTitle>
+            <DialogDescription className="leading-6">
+              Add an identity for your assistant and choose a plan for it in{" "}
+              {workspaceName}.
+            </DialogDescription>
+          </DialogHeader>
 
             <div className="space-y-6 px-6 py-6">
               <section className="flex flex-col gap-5 sm:flex-row">
@@ -311,54 +272,79 @@ const CreateChatbotDialog = ({
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-border bg-muted/20 p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <Users className="size-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Invite chatbot members
-                      </h3>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        Invitations are sent after the chatbot is created.
-                      </p>
-                    </div>
+              <section
+                className="rounded-2xl border border-border bg-muted/20 p-4"
+                aria-labelledby="chatbot-plan-heading"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Sparkles className="size-4" />
                   </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setInviteDialogOpen(true)}
-                    disabled={isSubmitting}
-                  >
-                    <MailPlus /> Invite member
-                  </Button>
+                  <div>
+                    <h3
+                      id="chatbot-plan-heading"
+                      className="text-sm font-semibold text-foreground"
+                    >
+                      Choose a plan
+                    </h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Select the plan that best fits this chatbot.
+                    </p>
+                  </div>
                 </div>
 
-                {invitationEmails.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-                    {invitationEmails.map((email) => (
-                      <span
-                        key={email}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 py-1.5 pl-3 pr-1.5 text-xs font-medium text-primary"
+                <div
+                  role="radiogroup"
+                  aria-labelledby="chatbot-plan-heading"
+                  className="mt-4 grid gap-3 sm:grid-cols-2"
+                >
+                  {CHATBOT_PLANS.map((plan) => {
+                    const isSelected = selectedPlan === plan.label;
+
+                    return (
+                      <button
+                        key={plan.label}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        onClick={() => setSelectedPlan(plan.label)}
+                        disabled={isSubmitting}
+                        className={cn(
+                          "relative rounded-2xl border bg-background p-4 text-left transition hover:border-primary/50 disabled:pointer-events-none disabled:opacity-60",
+                          isSelected &&
+                            "border-primary bg-primary/[0.04] ring-2 ring-primary/10",
+                        )}
                       >
-                        <Check className="size-3.5" /> {email}
-                        <button
-                          type="button"
-                          onClick={() => removeInvitation(email)}
-                          disabled={isSubmitting}
-                          className="ml-0.5 rounded-full p-0.5 transition hover:bg-primary/10 disabled:pointer-events-none"
-                          aria-label={`Remove ${email} invitation`}
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-semibold text-foreground">
+                            {plan.label}
+                          </span>
+                          <span
+                            className={cn(
+                              "flex size-5 items-center justify-center rounded-full border",
+                              isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border text-transparent",
+                            )}
+                          >
+                            <Check className="size-3" />
+                          </span>
+                        </div>
+                        <p className="mt-3 text-lg font-bold text-foreground">
+                          ${plan.price}
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {" "}/ month
+                          </span>
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {plan.messages
+                            ? `${plan.messages.toLocaleString()} AI messages`
+                            : "Start at no cost"}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </section>
 
               {submissionError && (
@@ -371,30 +357,19 @@ const CreateChatbotDialog = ({
               )}
             </div>
 
-            <DialogFooter className="border-t border-border bg-muted/30 px-6 py-4">
-              <DialogClose asChild>
-                <Button type="button" variant="outline" disabled={isSubmitting}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={isSubmitting || !workspaceSlug}>
-                <Plus /> {isSubmitting ? "Creating…" : "Create chatbot"}
+          <DialogFooter className="border-t border-border bg-muted/30 px-6 py-4">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={isSubmitting}>
+                Cancel
               </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <InviteMemberDialog
-        open={inviteDialogOpen}
-        onOpenChange={setInviteDialogOpen}
-        onInvite={queueInvitation}
-        title="Invite a chatbot member"
-        description="Add their email now and we’ll send the invitation after the chatbot is created."
-        infoText="Chatbot invitations are single-use and expire automatically for better account security."
-        submitLabel="Add invitation"
-      />
-    </>
+            </DialogClose>
+            <Button type="submit" disabled={isSubmitting || !workspaceSlug}>
+              <Plus /> {isSubmitting ? "Creating…" : "Create chatbot"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
