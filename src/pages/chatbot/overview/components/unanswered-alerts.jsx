@@ -6,8 +6,8 @@ const UnansweredAlerts = ({ questions }) => {
   const unreadCount = questions.filter(({ unread }) => unread).length;
 
   return (
-    <Card className="p-0">
-      <div className="flex items-start justify-between gap-4 border-b border-border bg-amber-500/[0.04] p-5">
+    <Card className="flex h-[25rem] min-h-0 flex-col p-0">
+      <div className="shrink-0 flex items-start justify-between gap-4 border-b border-border bg-amber-500/[0.04] p-5">
         <div className="flex items-center gap-3">
           <span className="relative flex size-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
             <Bell className="size-5" />
@@ -25,7 +25,7 @@ const UnansweredAlerts = ({ questions }) => {
         </span>
       </div>
 
-      <ul className="divide-y divide-border">
+      <ul className="custom-scrollbar min-h-0 flex-1 divide-y divide-border overscroll-contain">
         {questions.map((question) => (
           <li key={question.id}>
             <button

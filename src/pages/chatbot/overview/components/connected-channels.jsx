@@ -1,7 +1,6 @@
 import { CheckCircle2, Instagram, MessageCircle, MessagesSquare, MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import Card from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const channelIcons = {
@@ -11,10 +10,10 @@ const channelIcons = {
 };
 
 const ConnectedChannels = ({ channels }) => (
-  <Card className="p-0">
-    <div className="flex items-center justify-between gap-3 border-b border-border p-5">
+  <section aria-labelledby="connected-channels-title" className="border-t border-border bg-card">
+    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/20 p-5">
       <div>
-        <h2 className="font-bold text-foreground">Connected channels</h2>
+        <h2 id="connected-channels-title" className="font-bold text-foreground">Connected channels</h2>
         <p className="mt-1 text-xs text-muted-foreground">Meet customers where they message</p>
       </div>
       <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
@@ -56,7 +55,7 @@ const ConnectedChannels = ({ channels }) => (
     <div className="border-t border-border p-4">
       <Button variant="outline" size="sm" className="w-full">Manage channels</Button>
     </div>
-  </Card>
+  </section>
 );
 
 export default ConnectedChannels;

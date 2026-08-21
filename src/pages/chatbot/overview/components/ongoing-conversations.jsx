@@ -3,6 +3,7 @@ import { ArrowUpRight, MessageCircle, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
 const statusStyles = {
   "AI handling": "bg-primary/10 text-primary",
@@ -11,7 +12,7 @@ const statusStyles = {
 };
 
 const ConversationRow = ({ conversation }) => (
-  <li className="group flex flex-col gap-4 px-5 py-4 transition hover:bg-muted/30 sm:flex-row sm:items-center sm:px-6">
+  <Link to={`/inbox?chat_session=${conversation?.session_id}`} className="group flex flex-col gap-4 px-5 py-4 transition hover:bg-muted/30 sm:flex-row sm:items-center sm:px-6">
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <div className="relative shrink-0">
         <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
@@ -27,9 +28,14 @@ const ConversationRow = ({ conversation }) => (
           </span>
         </div>
         <p className="mt-1 truncate text-xs text-muted-foreground">
+          {conversation.lastMessage}
+        </p>
+        <p className="mt-2 truncate text-xs text-muted-foreground">
           <span className="font-medium text-foreground/70">{conversation.channel}</span>
           <span className="mx-1.5">·</span>
-          {conversation.lastMessage}
+          <span className="w-7 text-right text-xs text-muted-foreground">
+            {conversation.time} ago
+          </span>
         </p>
       </div>
     </div>
@@ -41,18 +47,16 @@ const ConversationRow = ({ conversation }) => (
             {conversation.unread}
           </span>
         )}
-        <span className="w-7 text-right text-xs text-muted-foreground">{conversation.time}</span>
+
       </div>
-      <Button size="sm" variant="outline" aria-label={`Open conversation with ${conversation.name}`}>
-        Open <ArrowUpRight />
-      </Button>
+
     </div>
-  </li>
+  </Link>
 );
 
 const OngoingConversations = ({ conversations }) => (
-  <Card className="p-0">
-    <div className="flex items-center justify-between gap-4 border-b border-border p-5 sm:p-6">
+  <Card className="flex h-[25rem] min-h-0 flex-col p-0">
+    <div className="shrink-0 flex items-center justify-between gap-4 border-b border-border p-5 sm:p-6">
       <div className="flex items-center gap-3">
         <span className="relative flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <MessageCircle className="size-5" />
@@ -66,7 +70,7 @@ const OngoingConversations = ({ conversations }) => (
       <Button variant="ghost" size="sm">View all</Button>
     </div>
 
-    <ul className="divide-y divide-border">
+    <ul className="custom-scrollbar min-h-0 flex-1 divide-y divide-border overscroll-contain">
       {conversations.map((conversation) => (
         <ConversationRow key={conversation.id} conversation={conversation} />
       ))}

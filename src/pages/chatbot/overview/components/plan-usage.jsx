@@ -1,7 +1,6 @@
 import { Bot, Brain, Crown, HardDrive, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import Card from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const usageStyles = {
@@ -68,8 +67,8 @@ const UsageMeter = ({ item }) => {
 };
 
 const PlanUsage = ({ plan }) => (
-  <Card className="h-full p-0">
-    <div className="flex flex-col gap-4 border-b border-border bg-gradient-to-r from-primary/[0.08] to-transparent p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+  <section aria-labelledby="plan-usage-title" className="bg-primary/[0.025]">
+    <div className="flex flex-col gap-4 border-b border-primary/15 bg-gradient-to-r from-primary/[0.1] via-primary/[0.04] to-transparent p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div className="flex items-center gap-3">
         <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
           <Crown className="size-5" />
@@ -79,7 +78,7 @@ const PlanUsage = ({ plan }) => (
             Current plan
           </p>
           <div className="mt-0.5">
-            <h2 className="text-lg font-bold text-foreground">{plan.name}</h2>
+            <h2 id="plan-usage-title" className="text-lg font-bold text-foreground">{plan.name}</h2>
             <p className="text-xs text-muted-foreground">{plan.renewalDate}</p>
           </div>
         </div>
@@ -87,12 +86,12 @@ const PlanUsage = ({ plan }) => (
       <Button size="sm">Upgrade plan</Button>
     </div>
 
-    <div className="p-5 sm:p-6">
+    <div className="space-y-5 p-5 sm:p-6">
       {plan.usage.map((item) => (
         <UsageMeter key={item.label} item={item} />
       ))}
     </div>
-  </Card>
+  </section>
 );
 
 export default PlanUsage;

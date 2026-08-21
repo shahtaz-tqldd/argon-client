@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn, getInitials } from "@/lib/utils";
+import Container from "@/components/ui/container";
 
 const initialPeople = [
   {
@@ -377,10 +378,9 @@ const TeamMemberPage = () => {
   ];
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6 pb-8">
-      <header className="flex flex-col gap-5 pr-14 xl:flex-row xl:items-end xl:justify-between">
+    <Container>
+      <header className="mt-8 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <Link to="/" className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-primary"><ArrowLeft className="size-4" />Back to workspace</Link>
           <div className="flex items-center gap-4">
             <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20"><UsersRound className="size-7" /></div>
             <div>
@@ -391,37 +391,6 @@ const TeamMemberPage = () => {
         </div>
         <Button onClick={() => setInviteOpen(true)}><MailPlus />Invite member</Button>
       </header>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(260px,0.65fr)]">
-        <div className="rounded-3xl border bg-card p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold">Seats used</p>
-              <p className="mt-1 text-xs text-muted-foreground">Active members count toward your Growth plan limit.</p>
-            </div>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{members.length} of {seatLimit}</span>
-          </div>
-          <div className="mt-6 h-2.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${seatPercentage}%` }} />
-          </div>
-          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{seatLimit - members.length} seats available</span>
-            <button className="font-semibold text-primary hover:underline">Manage plan</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 overflow-hidden rounded-3xl border bg-card shadow-sm">
-          <div className="flex flex-col justify-center border-r p-5">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600"><Check className="size-4" /></span>
-            <p className="mt-3 text-2xl font-bold">{members.length}</p>
-            <p className="text-xs text-muted-foreground">Active members</p>
-          </div>
-          <div className="flex flex-col justify-center p-5">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600"><Clock3 className="size-4" /></span>
-            <p className="mt-3 text-2xl font-bold">{invitations.length}</p>
-            <p className="text-xs text-muted-foreground">Pending invites</p>
-          </div>
-        </div>
-      </div>
 
       <ReusableTable
         title="Members & invitations"
@@ -468,7 +437,7 @@ const TeamMemberPage = () => {
         infoText="New members join with Support permissions. An admin can adjust access after they accept."
       />
       <MemberDetailsDialog member={selectedMember} onOpenChange={(open) => !open && setSelectedMember(null)} />
-    </section>
+    </Container>
   );
 };
 

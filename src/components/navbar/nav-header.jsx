@@ -238,7 +238,7 @@ const NavHeader = ({ className }) => {
   };
 
   return (
-    <aside className={cn("fixed right-6 top-6 z-50", className)}>
+    <aside className={cn("fixed right-8 top-6 z-50", className)}>
       <div className="flex items-stretch overflow-hidden rounded-full border border-border/70 bg-background/50 shadow-md backdrop-blur-xl">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
