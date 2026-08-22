@@ -1,7 +1,7 @@
 import { cn, formatStatus } from "@/lib/utils";
 
-const Badge = ({ status }) => {
-  const normalized = status.toLowerCase();
+const Badge = ({ children }) => {
+  const normalized = children.toLowerCase();
 
   const styles = {
     completed: "bg-primary text-white ring-primary/20",
@@ -29,7 +29,7 @@ const Badge = ({ status }) => {
   const appliedStyle =
     styles[normalized] ?? "bg-slate-100 text-slate-600 ring-slate-500/20";
 
-  const displayStatus = status
+  const displayStatus = children
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 

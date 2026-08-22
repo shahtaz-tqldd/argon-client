@@ -10,6 +10,7 @@ const ForgotPasswordPage = lazy(() => import("@/pages/auth/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/auth/reset-password"));
 const VerifyOTPPage = lazy(() => import("@/pages/auth/verify-otp"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
+const ChatbotInvitation = lazy(() => import("@/pages/auth/chatbot-invitation"));
 
 // workspace
 const WorkspacePage = lazy(() => import("@/pages/workspace"));
@@ -116,5 +117,9 @@ export const routes = createBrowserRouter([
   {
     path: "/reset-password",
     element: withSuspense(<ResetPasswordPage />),
+  },
+  {
+    path: "/chatbot-invitation",
+    element: withSuspense(<ChatbotInvitation />),
   },
 ]);

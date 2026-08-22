@@ -110,3 +110,17 @@ export const formatDate = (value) => {
     year: "numeric",
   }).format(date);
 };
+
+export const formatDateTime = (value) => {
+  if (!value) return "Never";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Never";
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+};

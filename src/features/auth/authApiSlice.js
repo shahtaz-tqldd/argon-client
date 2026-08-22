@@ -1,8 +1,5 @@
 import { apiSlice } from "../api/apiSlice";
 
-const nextCreditHistoryPage = (lastPage, allPages, lastPageParam) =>
-  lastPage?.meta?.next ? lastPageParam + 1 : undefined;
-
 export const authApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation({
@@ -95,35 +92,10 @@ export const authApiSlice = apiSlice.injectEndpoints({
       providesTags: ["profile-states"],
     }),
 
-    creditHistory: builder.infiniteQuery({
-      query: ({ queryArg = {}, pageParam }) => {
-        const { page_size = 20 } = queryArg;
-
-        return {
-          url: `/accounts/credit-history/?page=${pageParam}&page_size=${page_size}`,
-          method: "GET",
-        };
-      },
-      infiniteQueryOptions: {
-        initialPageParam: 1,
-        getNextPageParam: nextCreditHistoryPage,
-      },
-    }),
-
-    creditRequest: builder.mutation({
-      query: ({ payload }) => {
-        return {
-          url: `/accounts/credit-requests/`,
-          method: "POST",
-          body: payload,
-        };
-      },
-    }),
-
     updateAccount: builder.mutation({
       query: (payload) => {
         return {
-          url: `/accounts/update/`,
+          url: `/accounts/profile/update/`,
           method: "PATCH",
           body: payload,
         };
@@ -183,11 +155,9 @@ export const {
   usePublicAccountQuery,
   useSelfDetailsQuery,
   useProfileStatesQuery,
-  useCreditHistoryInfiniteQuery,
   useUpdateAccountMutation,
   useChangePasswordMutation,
   useDeleteAccountMutation,
   useRequestResetPasswordMutation,
   useResetPasswordMutation,
-  useCreditRequestMutation,
 } = authApiSlice;

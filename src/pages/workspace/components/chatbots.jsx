@@ -105,7 +105,7 @@ const ChatbotCard = ({ chatbot }) => (
             </p>
           </div>
         </div>
-        <Badge status={chatbot.status || "draft"} />
+        <Badge>{chatbot.status || "draft"}</Badge>
       </div>
 
       <p className="mt-4 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">

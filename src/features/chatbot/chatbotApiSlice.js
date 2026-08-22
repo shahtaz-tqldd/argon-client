@@ -60,10 +60,15 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
 
     // chatbot members
     chatbotMemberList: builder.query({
-      query: ({ chatbotSlug }) => {
+      query: ({ chatbotSlug, page = 1, pageSize = 20 }) => {
         return {
-          url: `/chatbots/team/list/?chatbot=${chatbotSlug}`,
+          url: `/chatbots/team/list/`,
           method: "GET",
+          params: {
+            chatbot: chatbotSlug,
+            page,
+            page_size: pageSize,
+          },
         };
       },
       providesTags: ["chatbot-team"],
@@ -80,17 +85,17 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
     }),
 
     inviteChatbotMember: builder.mutation({
-      query: ({ chatbotSlug, email }) => ({
+      query: ({ chatbotSlug, payload }) => ({
         url: `/chatbots/team/invite/?chatbot=${chatbotSlug}`,
         method: "POST",
-        body: { email },
+        body: payload,
       }),
       invalidatesTags: ["chatbot-team"],
     }),
 
     acceptChatbotInvite: builder.mutation({
-      query: ({ chatbotSlug, payload }) => ({
-        url: `/chatbots/team/accept-invite/?chatbot=${chatbotSlug}`,
+      query: (payload) => ({
+        url: "/chatbots/team/accept-invite/",
         method: "POST",
         body: payload,
       }),

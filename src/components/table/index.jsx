@@ -24,6 +24,7 @@ import Pagination from "./pagination";
 import DeleteDialog from "../dialog/delete-dialog";
 import { useState } from "react";
 import { Checkbox } from "../ui/checkbox";
+import { SectionTitle } from "../ui/section";
 
 function TableSkeleton({ columns, rows = 5 }) {
   return Array.from({ length: rows }).map((_, rowIndex) => (
@@ -111,15 +112,8 @@ const ReusableTable = ({
     <section className={className}>
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
         {(title || description || headerActions) && (
-          <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
-            <div>
-              {title && (
-                <p className="font-semibold text-slate-800">{title}</p>
-              )}
-              {description && (
-                <p className="text-xs text-slate-500">{description}</p>
-              )}
-            </div>
+          <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-5">
+            <SectionTitle title={title} details={description} />
             {headerActions}
           </div>
         )}
@@ -145,7 +139,13 @@ const ReusableTable = ({
                 <TableHead
                   key={column.accessorKey}
                   className={`h-14 text-xs font-semibold uppercase tracking-wide text-slate-500 ${
-                    i === 0 ? selectable ? "px-3" : "pl-5 pr-3" : i === columns.length - 1 ? "pl-3 pr-5 text-right" : "px-3"
+                    i === 0
+                      ? selectable
+                        ? "px-3"
+                        : "pl-5 pr-3"
+                      : i === columns.length - 1
+                        ? "pl-3 pr-5 text-right"
+                        : "px-3"
                   }`}
                 >
                   {column.header}
@@ -203,7 +203,13 @@ const ReusableTable = ({
                     <TableCell
                       key={j}
                       className={`py-4 text-slate-700 ${
-                        j === 0 ? selectable ? "px-3" : "pl-5 pr-3" : j === columns.length - 1 ? "pl-3 pr-5 text-right" : "px-3"
+                        j === 0
+                          ? selectable
+                            ? "px-3"
+                            : "pl-5 pr-3"
+                          : j === columns.length - 1
+                            ? "pl-3 pr-5 text-right"
+                            : "px-3"
                       }`}
                     >
                       {column.accessorKey === "action" ? (

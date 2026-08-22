@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { userLoggedOut } from "@/features/auth/authSlice";
 import {
-  useChatbotListQuery,
+  useChatbotDetailsQuery,
   useUpdateChatbotMutation,
 } from "@/features/chatbot/chatbotApiSlice";
 import {
@@ -132,9 +132,12 @@ const NavHeader = ({ className }) => {
   const { chatbotSlug } = useParams();
   const { user } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
-  const { data: chatbotResponse } = useChatbotListQuery(undefined, {
-    skip: !chatbotSlug,
-  });
+
+  const { data: chatbotResponse } = useChatbotDetailsQuery(
+    { chatbotSlug },
+    { skip: !chatbotSlug },
+  );
+
   const [updateChatbot, { isLoading: isUpdatingChatbot }] =
     useUpdateChatbotMutation();
   const {
@@ -160,10 +163,8 @@ const NavHeader = ({ className }) => {
   const fullName = user?.name || "Shahtaz Ahmed";
   const email = user?.email || "shahtaz@argon.ai";
   const avatar = user?.avatar_url || "";
-  const chatbots = toArray(chatbotResponse?.data);
-  const activeChatbot = chatbots.find(
-    (chatbot) => chatbot.slug === chatbotSlug,
-  );
+
+  const activeChatbot = chatbotResponse?.data;
   const chatbotStateKey = chatbotSlug || "default";
   const serverChatbotEnabled = activeChatbot
     ? activeChatbot.status === "active"
@@ -238,128 +239,130 @@ const NavHeader = ({ className }) => {
   };
 
   return (
-    <aside className={cn("fixed right-8 top-6 z-50", className)}>
-      <div className="flex items-stretch overflow-hidden rounded-full border border-border/70 bg-background/50 shadow-md backdrop-blur-xl">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label={`Manage ${chatbotName}`}
-              className="group flex min-w-0 items-center gap-2.5 rounded-l-2xl px-3 py-2 text-left outline-none transition hover:bg-accent/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
-            >
-              <span className="flex size-9 shrink-0 center overflow-hidden rounded-full bg-primary/10 text-primary">
-                {chatbotLogo ? (
-                  <img
-                    src={getCloudinaryPreviewUrl(chatbotLogo, 120)}
-                    alt={`${chatbotName} logo`}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <Bot className="size-5" />
-                )}
-              </span>
-              <span className="min-w-0 pr-1">
-                <span className="block max-w-36 truncate text-xs font-semibold text-foreground">
-                  {chatbotName}
-                </span>
-                <span
-                  className={cn(
-                    "mt-0.5 flex items-center gap-1.5 text-[10px] font-medium",
-                    isChatbotEnabled
-                      ? "text-emerald-600"
-                      : "text-muted-foreground",
+    <aside className={cn("fixed right-8 top-7 z-50", className)}>
+      <div className="p-1 flex items-center overflow-hidden rounded-full border border-border/70 bg-background/50 shadow-sm backdrop-blur-xl">
+        {chatbotSlug ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={`Manage ${chatbotName}`}
+                className="group flex min-w-0 items-center gap-2.5 rounded-full p-2 text-left outline-none transition hover:bg-accent/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
+              >
+                <span className="flex size-9 shrink-0 center overflow-hidden rounded-full bg-primary/10 text-primary">
+                  {chatbotLogo ? (
+                    <img
+                      src={getCloudinaryPreviewUrl(chatbotLogo, 120)}
+                      alt={`${chatbotName} logo`}
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <Bot className="size-5" />
                   )}
-                >
+                </span>
+                <span className="min-w-0 pr-1">
+                  <span className="block max-w-36 truncate text-xs font-semibold text-foreground">
+                    {chatbotName}
+                  </span>
                   <span
                     className={cn(
-                      "size-1.5 rounded-full",
+                      "mt-0.5 flex items-center gap-1.5 text-[10px] font-medium",
                       isChatbotEnabled
-                        ? "bg-emerald-500"
-                        : "bg-muted-foreground/60",
+                        ? "text-emerald-600"
+                        : "text-muted-foreground",
                     )}
-                  />
+                  >
+                    <span
+                      className={cn(
+                        "size-1.5 rounded-full",
+                        isChatbotEnabled
+                          ? "bg-emerald-500"
+                          : "bg-muted-foreground/60",
+                      )}
+                    />
+                    {isChatbotEnabled ? "Active" : "Inactive"}
+                  </span>
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="end"
+              sideOffset={10}
+              className="w-[310px] rounded-2xl border-border/80 p-2 shadow-xl"
+            >
+              <div className="flex items-center gap-3 px-3 py-3">
+                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
+                  {chatbotLogo ? (
+                    <img
+                      src={getCloudinaryPreviewUrl(chatbotLogo, 120)}
+                      alt=""
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <Bot className="size-5" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">
+                    {chatbotName}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Chatbot controls
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[10px] font-semibold",
+                    isChatbotEnabled
+                      ? "bg-emerald-500/10 text-emerald-600"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
                   {isChatbotEnabled ? "Active" : "Inactive"}
                 </span>
-              </span>
-            </button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent
-            align="start"
-            sideOffset={10}
-            className="w-[310px] rounded-2xl border-border/80 p-2 shadow-xl"
-          >
-            <div className="flex items-center gap-3 px-3 py-3">
-              <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
-                {chatbotLogo ? (
-                  <img
-                    src={getCloudinaryPreviewUrl(chatbotLogo, 120)}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <Bot className="size-5" />
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{chatbotName}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Chatbot controls
-                </p>
               </div>
-              <span
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                  isChatbotEnabled
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : "bg-muted text-muted-foreground",
-                )}
-              >
-                {isChatbotEnabled ? "Active" : "Inactive"}
-              </span>
-            </div>
 
-            <DropdownMenuSeparator />
+              <DropdownMenuSeparator />
 
-            <div className="space-y-0.5 py-1">
-              <MenuToggle
-                checked={isChatbotEnabled}
-                disabled={isUpdatingChatbot}
-                icon={<Bot className="size-4" />}
-                label="Enable chatbot"
-                description={
-                  isChatbotEnabled
-                    ? "Available to receive messages"
-                    : "Hidden from your connected channels"
-                }
-                onChange={handleChatbotEnabledChange}
-              />
-              <MenuToggle
-                checked={isAiReplyEnabled}
-                icon={<Sparkles className="size-4" />}
-                label="AI replies"
-                description={
-                  isAiReplyEnabled
-                    ? "AI can respond automatically"
-                    : "Only teammates can send replies"
-                }
-                onChange={handlePreferenceChange(
-                  setIsAiReplyEnabled,
-                  AI_REPLY_STORAGE_KEY,
-                )}
-              />
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <span className="my-2 w-px bg-border/80" aria-hidden="true" />
+              <div className="space-y-0.5 py-1">
+                <MenuToggle
+                  checked={isChatbotEnabled}
+                  disabled={isUpdatingChatbot}
+                  icon={<Bot className="size-4" />}
+                  label="Enable chatbot"
+                  description={
+                    isChatbotEnabled
+                      ? "Available to receive messages"
+                      : "Hidden from your connected channels"
+                  }
+                  onChange={handleChatbotEnabledChange}
+                />
+                <MenuToggle
+                  checked={isAiReplyEnabled}
+                  icon={<Sparkles className="size-4" />}
+                  label="AI replies"
+                  description={
+                    isAiReplyEnabled
+                      ? "AI can respond automatically"
+                      : "Only teammates can send replies"
+                  }
+                  onChange={handlePreferenceChange(
+                    setIsAiReplyEnabled,
+                    AI_REPLY_STORAGE_KEY,
+                  )}
+                />
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
-              className="relative flex w-12 items-center justify-center text-muted-foreground outline-none transition hover:bg-accent/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
+              className="relative center size-14 rounded-full text-muted-foreground outline-none transition hover:bg-accent/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
             >
               <Bell className="size-5" />
               {unreadCount > 0 && (
@@ -486,14 +489,12 @@ const NavHeader = ({ className }) => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <span className="my-2 w-px bg-border/80" aria-hidden="true" />
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label="Open account menu"
-              className="rounded-r-2xl p-1.5 pr-2 outline-none transition hover:bg-accent/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
+              className="p-2 rounded-full outline-none transition hover:bg-accent/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
             >
               <Avatar
                 avatar={avatar}
