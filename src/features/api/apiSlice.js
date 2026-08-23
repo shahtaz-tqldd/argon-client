@@ -94,6 +94,7 @@ export const apiSlice = createApi({
     "auth",
     "profile",
     "chatbots",
+    "chatbot-details",
     "chatbot-invitations",
     "notifications",
     "workspace",

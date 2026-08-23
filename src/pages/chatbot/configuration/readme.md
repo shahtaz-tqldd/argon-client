@@ -7,8 +7,15 @@ Chatbot name
 Description
 Logo/avatar
 Status
-Instructions/personality
 Default language
+Timezone
+Workspace
+Features
+AI enabled
+AI instructions
+Tone
+Escalation rules
+Topics AI should not answer
 Welcome message
 Fallback response
 
@@ -35,27 +42,6 @@ Also:
 Add knowledge
 Chunk usage
 Storage usage
-
-
-- Behavior / AI
-
-Controls like:
-AI instructions
-Tone
-Response length
-When AI should escalate
-What AI should not answer
-Allow web search later if supported
-
-
-You can also provide something like:
-When the answer isn't found
-Say I don't know
-Ask for contact information
-Escalate to human
-Widget
-
-
 - Everything for the embedded chatbot/ Chatbot widget Appearance:
 Primary color
 Logo

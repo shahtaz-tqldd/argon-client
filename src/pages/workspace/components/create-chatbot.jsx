@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { Bot, Camera, Check, Plus, Sparkles, X } from "lucide-react";
+import { Bot, Check, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+import LogoUploader from "@/components/shared/logo-uploader";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,48 +17,17 @@ import { FloatingSelect, SelectItem } from "@/components/ui/select";
 import { FloatingTextarea } from "@/components/ui/textarea";
 import { useCreateChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
-import { MAX_LOGO_SIZE, SUPPORTED_LOGO_TYPES } from "@/constants/constraints";
-import { cn, getInitials } from "@/lib/utils";
-import { formatFileSize } from "@/lib/file-handle";
+import { cn } from "@/lib/utils";
 import { DialogHeaderTitle, SectionTitle } from "@/components/ui/section";
 import { CHATBOT_PLANS } from "@/constants/plans";
+import { useNavigate } from "react-router-dom";
+import { LANGUAGES } from "@/constants/language";
+import { DETECTED_TIMEZONE, TIMEZONES } from "@/lib/timezone";
 
 const getCreatedChatbot = (response) => {
   const data = response?.data?.data || response?.data || response;
   return data?.chatbot || data;
 };
-
-const LANGUAGES = [
-  { value: "en", label: "English (en)" },
-  { value: "bn", label: "Bangla (bn)" },
-  { value: "fr", label: "French (fr)" },
-  { value: "es", label: "Spanish (es)" },
-  { value: "de", label: "German (de)" },
-  { value: "ja", label: "Japanese (ja)" },
-];
-
-const getDetectedTimezone = () => {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  } catch {
-    return "UTC";
-  }
-};
-
-const DETECTED_TIMEZONE = getDetectedTimezone();
-
-const getSupportedTimezones = () => {
-  try {
-    const supportedTimezones = Intl.supportedValuesOf?.("timeZone") || [];
-    return Array.from(
-      new Set([DETECTED_TIMEZONE, "UTC", ...supportedTimezones]),
-    ).sort((first, second) => first.localeCompare(second));
-  } catch {
-    return Array.from(new Set([DETECTED_TIMEZONE, "UTC"]));
-  }
-};
-
-const TIMEZONES = getSupportedTimezones();
 
 const CreateChatbotDialog = ({
   open,
@@ -66,14 +36,13 @@ const CreateChatbotDialog = ({
   workspaceName = "your workspace",
   onCreated,
 }) => {
-  const logoInputRef = useRef(null);
   const [logoFile, setLogoFile] = useState(null);
-  const [logoPreview, setLogoPreview] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("Free");
   const [submissionError, setSubmissionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [createChatbot] = useCreateChatbotMutation();
+  const navigate = useNavigate();
 
   const {
     control,
@@ -91,13 +60,6 @@ const CreateChatbotDialog = ({
 
   const chatbotName = useWatch({ control, name: "name" });
 
-  useEffect(
-    () => () => {
-      if (logoPreview) URL.revokeObjectURL(logoPreview);
-    },
-    [logoPreview],
-  );
-
   const resetDialog = () => {
     reset({
       name: "",
@@ -106,7 +68,6 @@ const CreateChatbotDialog = ({
       description: "",
     });
     setLogoFile(null);
-    setLogoPreview("");
     setSelectedPlan("Free");
     setSubmissionError("");
   };
@@ -115,30 +76,6 @@ const CreateChatbotDialog = ({
     if (!nextOpen && isSubmitting) return;
     if (!nextOpen) resetDialog();
     onOpenChange(nextOpen);
-  };
-
-  const selectLogo = (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    if (!SUPPORTED_LOGO_TYPES.includes(file.type)) {
-      toast.error("Choose a PNG, JPG, or WebP image");
-      return;
-    }
-
-    if (file.size > MAX_LOGO_SIZE) {
-      toast.error("Chatbot logo must be smaller than 5 MB");
-      return;
-    }
-
-    setLogoFile(file);
-    setLogoPreview(URL.createObjectURL(file));
-  };
-
-  const clearSelectedLogo = () => {
-    setLogoFile(null);
-    setLogoPreview("");
   };
 
   const closeAfterCreation = () => {
@@ -171,6 +108,7 @@ const CreateChatbotDialog = ({
 
       closeAfterCreation();
       toast.success("Chatbot created successfully");
+      navigate(`/chatbot/${chatbot.slug}/configuration`);
     } catch (error) {
       setSubmissionError(
         getApiErrorMessage(error, "Unable to create the chatbot."),
@@ -194,65 +132,14 @@ const CreateChatbotDialog = ({
 
           <div className="space-y-6 px-6 py-6">
             <section className="flex flex-col gap-5 sm:flex-row">
-              <div className="w-full shrink-0 sm:w-32">
-                <div className="group relative mx-auto size-28 overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/20 via-primary/10 to-cyan-100 shadow-sm dark:to-cyan-950/40 sm:mx-0">
-                  {logoPreview ? (
-                    <img
-                      src={logoPreview}
-                      alt={`${chatbotName || "Chatbot"} logo preview`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : chatbotName?.trim() ? (
-                    <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-primary">
-                      {getInitials(chatbotName)}
-                    </div>
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-primary">
-                      <Bot className="size-8" />
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => logoInputRef.current?.click()}
-                    disabled={isSubmitting}
-                    className="absolute inset-0 flex items-center justify-center bg-black/25 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 disabled:pointer-events-none"
-                    aria-label="Upload chatbot logo"
-                  >
-                    <Camera className="size-6" />
-                  </button>
-
-                  {logoFile && (
-                    <Button
-                      type="button"
-                      size="icon-xs"
-                      variant="destructive"
-                      onClick={clearSelectedLogo}
-                      disabled={isSubmitting}
-                      aria-label="Discard selected logo"
-                      className="absolute right-2 top-2"
-                    >
-                      <X />
-                    </Button>
-                  )}
-                </div>
-
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={selectLogo}
-                  disabled={isSubmitting}
-                  className="sr-only"
-                />
-
-                <div className="mt-2 text-center text-[10px] text-muted-foreground sm:text-left">
-                  <p className="truncate">
-                    {logoFile ? logoFile.name : "PNG, JPG, or WebP"}
-                  </p>
-                  <p>{logoFile ? formatFileSize(logoFile.size) : "max 5 MB"}</p>
-                </div>
-              </div>
+              <LogoUploader
+                value={logoFile}
+                onChange={setLogoFile}
+                name={chatbotName}
+                fallbackIcon={Bot}
+                disabled={isSubmitting}
+                logoLabel="Chatbot logo"
+              />
 
               <div className="min-w-0 flex-1 space-y-5 pt-1">
                 <Controller

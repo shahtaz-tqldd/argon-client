@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Bell,
   Bot,
@@ -24,16 +24,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { userLoggedOut } from "@/features/auth/authSlice";
-import {
-  useChatbotDetailsQuery,
-  useUpdateChatbotMutation,
-} from "@/features/chatbot/chatbotApiSlice";
+import { useUpdateChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import {
   useMarkAllNotificationsReadMutation,
   useMarkNotificationReadMutation,
   useNotificationListQuery,
 } from "@/features/notification/notificationApiSlice";
 import useAuth from "@/hooks/useAuth";
+import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { duration } from "@/lib/date-time";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { getCloudinaryPreviewUrl } from "@/lib/image";
@@ -129,14 +127,9 @@ const Avatar = ({ avatar, fullName, isAvailable, borderClassName }) => (
 const NavHeader = ({ className }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { chatbotSlug } = useParams();
   const { user } = useAuth();
+  const { chatbotSlug, currentChatbot: activeChatbot } = useCurrentChatbot();
   const { resolvedTheme, setTheme } = useTheme();
-
-  const { data: chatbotResponse } = useChatbotDetailsQuery(
-    { chatbotSlug },
-    { skip: !chatbotSlug },
-  );
 
   const [updateChatbot, { isLoading: isUpdatingChatbot }] =
     useUpdateChatbotMutation();
@@ -164,7 +157,6 @@ const NavHeader = ({ className }) => {
   const email = user?.email || "shahtaz@argon.ai";
   const avatar = user?.avatar_url || "";
 
-  const activeChatbot = chatbotResponse?.data;
   const chatbotStateKey = chatbotSlug || "default";
   const serverChatbotEnabled = activeChatbot
     ? activeChatbot.status === "active"

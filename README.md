@@ -7,12 +7,20 @@ This is the admin interface for controlling argon admin
 - shadcn
 
 
-Sidebar Design for chatbot
+# Chatbot creating flow
+1. Create with basic details
+ - name
+ - description
+ - logo
+ - timezone
+ - language
+ - plan
 
-- Overview
-- Inbox
-- Appointment
-- Lead Collection
-- Configuration
-- Team Member
-- Plan
+2. Step 2: Redirect to configuration page
+ - General Info (Human Handoff, Knowledge base)
+ - Upload Knowledge
+ - Widget settings
+ - Connects channel
+ - Publish
+ - Test your bot
+

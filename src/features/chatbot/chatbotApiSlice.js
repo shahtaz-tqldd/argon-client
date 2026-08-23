@@ -19,7 +19,9 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
           method: "GET",
         };
       },
-      providesTags: ["chatbot-details"],
+      providesTags: (_result, _error, { chatbotSlug }) => [
+        { type: "chatbot-details", id: chatbotSlug },
+      ],
     }),
 
     chatbotShortDetails: builder.query({
@@ -47,7 +49,10 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
         method: "PATCH",
         body: payload,
       }),
-      invalidatesTags: ["chatbots"],
+      invalidatesTags: (_result, _error, { chatbotSlug }) => [
+        "chatbots",
+        { type: "chatbot-details", id: chatbotSlug },
+      ],
     }),
 
     deleteChatbot: builder.mutation({
