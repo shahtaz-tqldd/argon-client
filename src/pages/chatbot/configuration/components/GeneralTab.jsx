@@ -29,6 +29,7 @@ import {
   ToggleControl,
   ValueRow,
 } from "./shared";
+import { SectionTitle } from "@/components/ui/section";
 
 const DetailItem = ({ icon, label, value }) => {
   const DetailIcon = icon;
@@ -56,32 +57,55 @@ const FeatureCard = ({
   locked,
   disabled,
   onToggle,
+  upgradePath,
 }) => {
   const FeatureIcon = icon;
 
   return (
     <div
       className={cn(
-        "relative flex min-h-48 flex-col rounded-3xl border p-5 transition-colors",
-        locked ? "border-dashed bg-muted/20" : "bg-card",
+        "group flex min-h-20 items-center gap-3.5 px-5 py-3.5 transition-colors",
+        locked ? "bg-muted/[0.12]" : "hover:bg-muted/20",
       )}
+      aria-busy={disabled || undefined}
     >
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className={cn(
-            "flex size-11 items-center justify-center rounded-2xl",
-            locked
-              ? "bg-muted text-muted-foreground"
-              : "bg-primary/10 text-primary",
+      <span
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+          locked
+            ? "bg-muted text-muted-foreground"
+            : enabled
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground group-hover:text-foreground",
+        )}
+      >
+        <FeatureIcon className="size-[18px]" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {locked && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+              <Lock className="size-2.5" />
+              Pro
+            </span>
           )}
-        >
-          <FeatureIcon className="size-5" />
-        </span>
+        </div>
+        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+          {description}
+        </p>
+      </div>
+
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
         {locked ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
-            <Lock className="size-3" />
-            Locked
-          </span>
+          <Link
+            to={upgradePath}
+            className="inline-flex items-center gap-1 rounded-full border bg-background px-3 py-1.5 text-xs font-semibold text-primary shadow-xs transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            Upgrade
+            <ArrowUpRight className="size-3.5" />
+          </Link>
         ) : (
           <ToggleControl
             checked={enabled}
@@ -90,54 +114,56 @@ const FeatureCard = ({
             label={`${enabled ? "Disable" : "Enable"} ${title}`}
           />
         )}
+        {!locked && (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 text-[10px] font-semibold",
+              enabled ? "text-emerald-600" : "text-muted-foreground",
+            )}
+          >
+            <span className="size-1.5 rounded-full bg-current" />
+            {enabled ? "On" : "Off"}
+          </span>
+        )}
       </div>
-      <h3 className="mt-5 text-sm font-bold">{title}</h3>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">
-        {description}
-      </p>
-      {!locked && (
-        <p
-          className={cn(
-            "mt-auto flex items-center gap-1.5 pt-4 text-xs font-semibold",
-            enabled ? "text-emerald-600" : "text-muted-foreground",
-          )}
-        >
-          <span className="size-1.5 rounded-full bg-current" />
-          {enabled ? "Enabled" : "Disabled"}
-        </p>
-      )}
-      {locked && (
-        <p className="mt-auto flex items-center gap-1.5 pt-4 text-xs font-semibold text-primary">
-          Upgrade to enable this feature
-          <ArrowUpRight className="size-3.5" />
-        </p>
-      )}
     </div>
   );
 };
 
 const GeneralTabSkeleton = () => (
   <div className="space-y-6" aria-label="Loading chatbot details">
-    <Card className="animate-pulse p-0">
-      <div className="h-20 border-b bg-muted/30" />
-      <div className="flex gap-5 p-6">
-        <div className="size-24 rounded-3xl bg-muted" />
-        <div className="flex-1 space-y-3 py-2">
-          <div className="h-5 w-44 rounded bg-muted" />
-          <div className="h-3 w-3/4 rounded bg-muted" />
-          <div className="h-3 w-1/2 rounded bg-muted" />
+    <div className="grid gap-5 lg:grid-cols-2">
+      <Card className="animate-pulse p-0">
+        <div className="h-20 border-b bg-muted/30" />
+        <div className="flex gap-5 p-6">
+          <div className="size-24 rounded-3xl bg-muted" />
+          <div className="flex-1 space-y-3 py-2">
+            <div className="h-5 w-44 rounded bg-muted" />
+            <div className="h-3 w-3/4 rounded bg-muted" />
+            <div className="h-3 w-1/2 rounded bg-muted" />
+          </div>
         </div>
-      </div>
-      <div className="grid gap-4 border-t p-6 md:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="h-20 rounded-2xl bg-muted" />
-        ))}
-      </div>
-    </Card>
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="h-48 animate-pulse rounded-3xl bg-muted" />
-      ))}
+        <div className="grid gap-4 border-t p-6 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-20 rounded-2xl bg-muted" />
+          ))}
+        </div>
+      </Card>
+      <Card className="animate-pulse p-0">
+        <div className="h-20 border-b bg-muted/30" />
+        <div className="divide-y">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex h-20 items-center gap-4 px-5">
+              <div className="size-10 shrink-0 rounded-xl bg-muted" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-1/3 rounded bg-muted" />
+                <div className="h-2.5 w-3/4 rounded bg-muted" />
+              </div>
+              <div className="h-6 w-11 rounded-full bg-muted" />
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   </div>
 );
@@ -224,102 +250,102 @@ const GeneralTab = ({
 
   return (
     <div className="space-y-7">
-      <Card className="p-0">
-        <div className="flex flex-col gap-4 border-b bg-muted/15 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-bold">Chatbot details</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              The core information used across your chatbot and workspace.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                "inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold",
-                isActive
-                  ? "bg-emerald-500/10 text-emerald-600"
-                  : "bg-amber-500/10 text-amber-600",
-              )}
-            >
-              <span className="size-2 rounded-full bg-current" />
-              {status}
-            </span>
-            <Button
-              onClick={() => edit("details")}
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Edit chatbot details"
-            >
-              <Pencil />
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-5 px-6 py-7 sm:flex-row sm:items-center">
-          <span className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-primary/10 text-2xl font-bold text-primary ring-1 ring-primary/10">
-            {chatbot.logo ? (
-              <img
-                src={getCloudinaryPreviewUrl(chatbot.logo, 240)}
-                alt={`${chatbot.name} logo`}
-                className="size-full object-cover"
-              />
-            ) : (
-              getInitials(chatbot.name)
-            )}
-          </span>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold">{chatbot.name}</h1>
-              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
-                {formatStatus(chatbot.current_user_role || "member")}
-              </span>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card className="p-0">
+          <div className="flex flex-col gap-4 border-b bg-muted/15 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-bold">Chatbot details</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                The core information used across your chatbot and workspace.
+              </p>
             </div>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              {chatbot.description || "No description has been added yet."}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-4 border-t px-6 py-6 md:grid-cols-3">
-          <DetailItem icon={Languages} label="Language" value={language} />
-          <DetailItem
-            icon={Globe2}
-            label="Timezone"
-            value={chatbot.timezone || "Not set"}
-          />
-          <DetailItem
-            icon={Building2}
-            label="Workspace"
-            value={chatbot.workspace?.name || "Not set"}
-          />
-        </div>
-      </Card>
-
-      <section>
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
             <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary" />
-              <h2 className="text-base font-bold">Features</h2>
+              <span
+                className={cn(
+                  "inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold",
+                  isActive
+                    ? "bg-emerald-500/10 text-emerald-600"
+                    : "bg-amber-500/10 text-amber-600",
+                )}
+              >
+                <span className="size-2 rounded-full bg-current" />
+                {status}
+              </span>
+              <Button
+                onClick={() => edit("details")}
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Edit chatbot details"
+              >
+                <Pencil />
+              </Button>
             </div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Manage included capabilities and discover features available on
-              upgraded plans.
-            </p>
           </div>
-          <Button asChild size="sm">
-            <Link to={`/chatbot/${chatbot.slug}/plan-and-billing`}>
-              <Sparkles />
-              Upgrade plan
-            </Link>
-          </Button>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {features.map((feature) => (
-            <FeatureCard key={feature.key} {...feature} />
-          ))}
-        </div>
-      </section>
+
+          <div className="flex flex-col gap-5 px-6 py-7 sm:flex-row sm:items-center">
+            <span className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-primary/10 text-2xl font-bold text-primary ring-1 ring-primary/10">
+              {chatbot.logo ? (
+                <img
+                  src={getCloudinaryPreviewUrl(chatbot.logo, 240)}
+                  alt={`${chatbot.name} logo`}
+                  className="size-full object-cover"
+                />
+              ) : (
+                getInitials(chatbot.name)
+              )}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-bold">{chatbot.name}</h1>
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
+                  {formatStatus(chatbot.current_user_role || "member")}
+                </span>
+              </div>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+                {chatbot.description || "No description has been added yet."}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 border-t px-6 py-6 md:grid-cols-3">
+            <DetailItem icon={Languages} label="Language" value={language} />
+            <DetailItem
+              icon={Globe2}
+              label="Timezone"
+              value={chatbot.timezone || "Not set"}
+            />
+            <DetailItem
+              icon={Building2}
+              label="Workspace"
+              value={chatbot.workspace?.name || "Not set"}
+            />
+          </div>
+        </Card>
+
+        <Card className="p-0">
+          <div className="flex items-center justify-between gap-4 border-b bg-muted/15 px-6 py-5">
+            <div className="flex min-w-0 items-start gap-3">
+              <SectionTitle
+                title="Features"
+                details="Manage your chatbot’s capabilities and available upgrades."
+              />
+            </div>
+            <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary sm:inline-flex">
+              <span className="size-1.5 rounded-full bg-current" />
+              {features.filter((feature) => feature.enabled).length} active
+            </span>
+          </div>
+          <div className="divide-y">
+            {features.map((feature) => (
+              <FeatureCard
+                key={feature.key}
+                {...feature}
+                upgradePath={`/chatbot/${chatbot.slug}/plan-and-billing`}
+              />
+            ))}
+          </div>
+        </Card>
+      </div>
 
       <section>
         <div className="mb-4 flex items-center gap-2">
