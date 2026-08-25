@@ -49,11 +49,24 @@ const initialConfig = {
   whatsapp: { account: "+1 (415) 555-0182", status: "Connected" },
 };
 
-const DEFAULT_AI_TONE = "Friendly";
-const DEFAULT_ESCALATION_RULE =
-  "The visitor asks for a refund, reports a payment issue, requests account deletion, or asks twice for a human.";
-const DEFAULT_NEVER_ANSWER =
-  "Legal advice, medical advice, internal security details, passwords, or payment card information.";
+const AI_BEHAVIOR_FIELDS = {
+  "welcome-message": { field: "welcome_message" },
+  "fallback-response": { field: "fallback_message" },
+  "ai-instructions": { field: "instructions" },
+  "escalation-rule": {
+    field: "escalation_rule",
+  },
+  "never-answer": {
+    field: "never_answer",
+  },
+};
+
+const getAiBehaviorPayload = (sectionKey, value) => {
+  const definition = AI_BEHAVIOR_FIELDS[sectionKey];
+  if (!definition) return null;
+
+  return { [definition.field]: value.trim() };
+};
 
 const initialSources = [
   {
@@ -112,14 +125,11 @@ const ConfigurationPage = () => {
   const [sources, setSources] = useState(initialSources);
   const [editingSection, setEditingSection] = useState(null);
 
-  const otherSettings = currentChatbot?.other_settings || {};
   const aiSettings = {
     aiEnabled: Boolean(currentChatbot?.ai_enabled),
     instructions: currentChatbot?.instructions || "",
-    tone: otherSettings.ai_tone || DEFAULT_AI_TONE,
-    escalationRule:
-      otherSettings.escalation_rule || DEFAULT_ESCALATION_RULE,
-    neverAnswer: otherSettings.never_answer || DEFAULT_NEVER_ANSWER,
+    escalationRule: currentChatbot?.escalation_rule || "",
+    neverAnswer: currentChatbot?.never_answer || "",
     welcome: currentChatbot?.welcome_message || "",
     fallback: currentChatbot?.fallback_message || "",
   };
@@ -131,100 +141,72 @@ const ConfigurationPage = () => {
       language: currentChatbot?.language || "en",
       timezone: currentChatbot?.timezone || "UTC",
     },
-    ai: {
-      aiEnabled: aiSettings.aiEnabled,
-      instructions: aiSettings.instructions,
-      tone: aiSettings.tone,
-    },
-    escalation: {
-      escalationRule: aiSettings.escalationRule,
-      neverAnswer: aiSettings.neverAnswer,
-    },
-    messages: {
-      welcome: aiSettings.welcome,
-      fallback: aiSettings.fallback,
-    },
   };
 
-  const saveSection = async (sectionKey, values) => {
-    const isChatbotSection = [
-      "details",
-      "ai",
-      "escalation",
-      "messages",
-    ].includes(sectionKey);
-
-    if (!isChatbotSection) {
-      setConfig((current) => ({ ...current, [sectionKey]: values }));
-      setEditingSection(null);
-      toast.success("Configuration saved");
-      return;
-    }
-
-    if (!currentChatbot?.slug) return;
-
-    let payload;
-
-    if (sectionKey === "details") {
-      payload = new FormData();
-      payload.append("name", values.name.trim());
-      payload.append("description", values.description.trim());
-      payload.append("language", values.language);
-      payload.append("timezone", values.timezone);
-      if (values.logoFile) payload.append("logo", values.logoFile);
-    } else if (sectionKey === "ai") {
-      payload = {
-        ai_enabled: values.aiEnabled,
-        instructions: values.instructions.trim(),
-        other_settings: {
-          ...otherSettings,
-          ai_tone: values.tone,
-        },
-      };
-    } else if (sectionKey === "escalation") {
-      payload = {
-        other_settings: {
-          ...otherSettings,
-          escalation_rule: values.escalationRule.trim(),
-          never_answer: values.neverAnswer.trim(),
-        },
-      };
-    } else {
-      payload = {
-        welcome_message: values.welcome.trim(),
-        fallback_message: values.fallback.trim(),
-      };
-    }
+  const persistChatbot = async (payload, successMessage, errorMessage) => {
+    if (!currentChatbot?.slug) return false;
 
     try {
       await updateChatbot({
         chatbotSlug: currentChatbot.slug,
         payload,
       }).unwrap();
-      setEditingSection(null);
-      toast.success("Configuration saved");
+      toast.success(successMessage);
+      return true;
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Unable to save the configuration."),
-      );
+      toast.error(getApiErrorMessage(error, errorMessage));
+      return false;
     }
   };
 
-  const toggleFeature = async (field, enabled) => {
-    if (!currentChatbot?.slug) return;
-
-    const label =
-      field === "human_handoff_enabled" ? "Human handoff" : "Knowledge base";
-
-    try {
-      await updateChatbot({
-        chatbotSlug: currentChatbot.slug,
-        payload: { [field]: enabled },
-      }).unwrap();
-      toast.success(`${label} ${enabled ? "enabled" : "disabled"}`);
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, `Unable to update ${label}.`));
+  const saveSection = async (sectionKey, values) => {
+    if (sectionKey !== "details") {
+      setConfig((current) => ({ ...current, [sectionKey]: values }));
+      setEditingSection(null);
+      toast.success("Configuration saved");
+      return true;
     }
+
+    const payload = new FormData();
+    payload.append("name", values.name.trim());
+    payload.append("description", values.description.trim());
+    payload.append("language", values.language);
+    payload.append("timezone", values.timezone);
+    if (values.logoFile) payload.append("logo", values.logoFile);
+
+    const saved = await persistChatbot(
+      payload,
+      "Chatbot details updated",
+      "Unable to save the chatbot details.",
+    );
+    if (saved) setEditingSection(null);
+    return saved;
+  };
+
+  const saveAiBehavior = (sectionKey, value) => {
+    const payload = getAiBehaviorPayload(sectionKey, value);
+    if (!payload) return Promise.resolve(false);
+
+    return persistChatbot(
+      payload,
+      "AI behavior updated",
+      "Unable to update the AI behavior.",
+    );
+  };
+
+  const toggleSetting = (field, enabled) => {
+    const labels = {
+      ai_enabled: "AI replies",
+      human_handoff_enabled: "Human handoff",
+      knowledge_base_enabled: "Knowledge base",
+    };
+    const label = labels[field] || "Feature";
+
+    return persistChatbot(
+      { [field]: enabled },
+      `${label} ${enabled ? "enabled" : "disabled"}`,
+      `Unable to update ${label}.`,
+    );
   };
 
   return (
@@ -271,7 +253,8 @@ const ConfigurationPage = () => {
           isFeatureUpdating={isUpdatingChatbot}
           edit={setEditingSection}
           onRetry={refetchChatbot}
-          onToggleFeature={toggleFeature}
+          onSaveAiBehavior={saveAiBehavior}
+          onToggleSetting={toggleSetting}
         />
       )}
       {activeTab === "knowledge" && (

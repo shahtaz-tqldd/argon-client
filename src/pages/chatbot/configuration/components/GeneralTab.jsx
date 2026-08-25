@@ -1,49 +1,47 @@
+import { useState } from "react";
 import {
   ArrowUpRight,
   Bot,
-  BrainCircuit,
   Building2,
   CalendarDays,
+  Clock3,
   Database,
-  Globe2,
   Headphones,
   Languages,
   Lock,
-  MessageSquareText,
   Pencil,
   RefreshCw,
-  ShieldAlert,
-  Sparkles,
   UserRoundPlus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import ConfirmDialog from "@/components/dialog/confirm-dialog";
+import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section";
 import { LANGUAGES } from "@/constants/language";
 import { getCloudinaryPreviewUrl } from "@/lib/image";
 import { cn, formatStatus, getInitials } from "@/lib/utils";
 
-import {
-  SectionCard,
-  ToggleControl,
-  ValueRow,
-} from "./shared";
-import { SectionTitle } from "@/components/ui/section";
+import AiBehaviorItem from "./AiBehaviorItem";
+import { ToggleControl } from "./shared";
 
-const DetailItem = ({ icon, label, value }) => {
+const DetailTile = ({ icon, label, value, children }) => {
   const DetailIcon = icon;
 
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl border bg-muted/10 p-4">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <div className="flex items-start gap-3">
+      <span className="flex size-10 center rounded-xl bg-primary/10 text-primary">
         <DetailIcon className="size-4" />
       </span>
-      <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
-        <p className="mt-1 truncate text-sm font-semibold">{value}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        {children || (
+          <p className="mt-1 break-words text-sm font-semibold text-foreground">
+            {value}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -122,7 +120,7 @@ const FeatureCard = ({
             )}
           >
             <span className="size-1.5 rounded-full bg-current" />
-            {enabled ? "On" : "Off"}
+            {enabled ? "Active" : "Inactive"}
           </span>
         )}
       </div>
@@ -132,24 +130,32 @@ const FeatureCard = ({
 
 const GeneralTabSkeleton = () => (
   <div className="space-y-6" aria-label="Loading chatbot details">
-    <div className="grid gap-5 lg:grid-cols-2">
-      <Card className="animate-pulse p-0">
-        <div className="h-20 border-b bg-muted/30" />
-        <div className="flex gap-5 p-6">
-          <div className="size-24 rounded-3xl bg-muted" />
-          <div className="flex-1 space-y-3 py-2">
-            <div className="h-5 w-44 rounded bg-muted" />
-            <div className="h-3 w-3/4 rounded bg-muted" />
-            <div className="h-3 w-1/2 rounded bg-muted" />
+    <div className="grid gap-5 lg:grid-cols-5">
+      <div className="space-y-5 lg:col-span-3">
+        <Card className="animate-pulse p-0">
+          <div className="h-20 border-b bg-muted/30" />
+          <div className="flex gap-5 p-6">
+            <div className="size-16 rounded-2xl bg-muted" />
+            <div className="flex-1 space-y-3 py-1">
+              <div className="h-5 w-44 rounded bg-muted" />
+              <div className="h-3 w-3/4 rounded bg-muted" />
+              <div className="h-3 w-1/2 rounded bg-muted" />
+            </div>
           </div>
-        </div>
-        <div className="grid gap-4 border-t p-6 md:grid-cols-3">
+          <div className="grid gap-3 p-5 pt-0 sm:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-24 rounded-2xl bg-muted" />
+            ))}
+          </div>
+        </Card>
+        <Card className="animate-pulse space-y-4 p-5">
+          <div className="h-12 rounded-2xl bg-muted" />
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="h-20 rounded-2xl bg-muted" />
+            <div key={index} className="h-40 rounded-3xl bg-muted" />
           ))}
-        </div>
-      </Card>
-      <Card className="animate-pulse p-0">
+        </Card>
+      </div>
+      <Card className="animate-pulse p-0 lg:col-span-2">
         <div className="h-20 border-b bg-muted/30" />
         <div className="divide-y">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -176,8 +182,11 @@ const GeneralTab = ({
   isFeatureUpdating,
   edit,
   onRetry,
-  onToggleFeature,
+  onSaveAiBehavior,
+  onToggleSetting,
 }) => {
+  const [pendingToggle, setPendingToggle] = useState(null);
+
   if (isLoading && !chatbot) return <GeneralTabSkeleton />;
 
   if (isError && !chatbot) {
@@ -206,7 +215,6 @@ const GeneralTab = ({
     chatbot.language ||
     "Not set";
   const status = formatStatus(chatbot.status);
-  const isActive = chatbot.status === "active";
   const features = [
     {
       key: "human-handoff",
@@ -217,7 +225,11 @@ const GeneralTab = ({
       enabled: Boolean(chatbot.human_handoff_enabled),
       disabled: isFeatureUpdating,
       onToggle: (enabled) =>
-        onToggleFeature("human_handoff_enabled", enabled),
+        setPendingToggle({
+          field: "human_handoff_enabled",
+          label: "Human handoff",
+          enabled,
+        }),
     },
     {
       key: "knowledge-base",
@@ -228,7 +240,11 @@ const GeneralTab = ({
       enabled: Boolean(chatbot.knowledge_base_enabled),
       disabled: isFeatureUpdating,
       onToggle: (enabled) =>
-        onToggleFeature("knowledge_base_enabled", enabled),
+        setPendingToggle({
+          field: "knowledge_base_enabled",
+          label: "Knowledge base",
+          enabled,
+        }),
     },
     {
       key: "lead-collection",
@@ -247,30 +263,60 @@ const GeneralTab = ({
       locked: true,
     },
   ];
+  const behaviorGroups = [
+    {
+      key: "welcome-message",
+      label: "Welcome message",
+      value: aiSettings.welcome,
+      emptyValue: "No welcome message added yet.",
+    },
+    {
+      key: "fallback-response",
+      label: "Fallback response",
+      value: aiSettings.fallback,
+      emptyValue: "No fallback response added yet.",
+    },
+    {
+      key: "escalation-rule",
+      label: "Escalate when",
+      value: aiSettings.escalationRule,
+      emptyValue: "No escalation rule added yet.",
+    },
+    {
+      key: "never-answer",
+      label: "Topics AI should not answer",
+      value: aiSettings.neverAnswer,
+      emptyValue: "No restricted topics added yet.",
+    },
+    {
+      key: "ai-instructions",
+      label: "Additional AI Instruction",
+      value: aiSettings.instructions,
+      emptyValue: "No AI instructions added yet.",
+      className: "md:col-span-2",
+    },
+  ];
+
+  const confirmToggle = async () => {
+    if (!pendingToggle) return;
+
+    const updated = await onToggleSetting(
+      pendingToggle.field,
+      pendingToggle.enabled,
+    );
+    if (updated) setPendingToggle(null);
+  };
 
   return (
     <div className="space-y-7">
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card className="p-0">
-          <div className="flex flex-col gap-4 border-b bg-muted/15 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-base font-bold">Chatbot details</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                The core information used across your chatbot and workspace.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold",
-                  isActive
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : "bg-amber-500/10 text-amber-600",
-                )}
-              >
-                <span className="size-2 rounded-full bg-current" />
-                {status}
-              </span>
+      <div className="grid gap-5 lg:grid-cols-5">
+        <div className="space-y-5 lg:col-span-3">
+          <Card className="p-0">
+            <div className="flex flex-col gap-4 border-b bg-muted/15 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <SectionTitle
+                title="Chatbot details"
+                details="The core information used across your chatbot and workspace."
+              />
               <Button
                 onClick={() => edit("details")}
                 variant="ghost"
@@ -280,162 +326,118 @@ const GeneralTab = ({
                 <Pencil />
               </Button>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-5 px-6 py-7 sm:flex-row sm:items-center">
-            <span className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-primary/10 text-2xl font-bold text-primary ring-1 ring-primary/10">
-              {chatbot.logo ? (
-                <img
-                  src={getCloudinaryPreviewUrl(chatbot.logo, 240)}
-                  alt={`${chatbot.name} logo`}
-                  className="size-full object-cover"
-                />
-              ) : (
-                getInitials(chatbot.name)
-              )}
-            </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold">{chatbot.name}</h1>
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
-                  {formatStatus(chatbot.current_user_role || "member")}
-                </span>
+            <div className="flex flex-col gap-5 p-5 sm:flex-row">
+              <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-2xl font-bold text-primary ring-1 ring-primary/10">
+                {chatbot.logo ? (
+                  <img
+                    src={getCloudinaryPreviewUrl(chatbot.logo, 240)}
+                    alt={`${chatbot.name} logo`}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  getInitials(chatbot.name)
+                )}
+              </span>
+              <div className="min-w-0">
+                <div className="flex justify-between">
+                  <div>
+                    <div className="flx gap-3">
+                      <h1 className="text-lg font-bold">{chatbot.name}</h1>
+                      <StatusBadge>{status}</StatusBadge>
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2 text-xs font-medium text-primary">
+                      <Building2 size={14} />
+                      {chatbot.workspace?.name || "Not set"}
+                    </div>
+                  </div>
+                  <div className="flx gap-4">
+                    <span className="text-sm font-bold text-primary">
+                      AI reply
+                    </span>
+                    <ToggleControl
+                      checked={aiSettings.aiEnabled}
+                      onChange={(enabled) =>
+                        setPendingToggle({
+                          field: "ai_enabled",
+                          label: "AI replies",
+                          enabled,
+                        })
+                      }
+                      disabled={isFeatureUpdating}
+                      label={`${aiSettings.aiEnabled ? "Disable" : "Enable"} AI replies`}
+                    />
+                  </div>
+                </div>
+
+                <p className="mt-3.5 leading-7 text-muted-foreground">
+                  {chatbot.description || "No description has been added yet."}
+                </p>
+                <div className="mt-8 mb-5 grid grid-cols-2 gap-3">
+                  <DetailTile
+                    icon={Languages}
+                    label="Language"
+                    value={language}
+                  />
+                  <DetailTile
+                    icon={Clock3}
+                    label="Timezone"
+                    value={chatbot.timezone || "Not set"}
+                  />
+                </div>
               </div>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                {chatbot.description || "No description has been added yet."}
-              </p>
             </div>
-          </div>
 
-          <div className="grid gap-4 border-t px-6 py-6 md:grid-cols-3">
-            <DetailItem icon={Languages} label="Language" value={language} />
-            <DetailItem
-              icon={Globe2}
-              label="Timezone"
-              value={chatbot.timezone || "Not set"}
-            />
-            <DetailItem
-              icon={Building2}
-              label="Workspace"
-              value={chatbot.workspace?.name || "Not set"}
-            />
-          </div>
-        </Card>
-
-        <Card className="p-0">
-          <div className="flex items-center justify-between gap-4 border-b bg-muted/15 px-6 py-5">
-            <div className="flex min-w-0 items-start gap-3">
+            <div className="border-t border-b bg-muted/15 px-6 py-5">
+              <SectionTitle
+                title="AI behavior"
+                details="Control how your chatbot responds, communicates, and hands off conversations."
+              />
+            </div>
+            <div className="space-y-4 p-4 sm:p-5 ">
+              {behaviorGroups.map((item) => (
+                <AiBehaviorItem
+                  key={item.key}
+                  {...item}
+                  sectionKey={item.key}
+                  isSaving={isFeatureUpdating}
+                  onSave={(value) => onSaveAiBehavior(item.key, value)}
+                />
+              ))}
+            </div>
+          </Card>
+        </div>
+        <div className="lg:col-span-2">
+          <Card className="p-0">
+            <div className="flex items-center justify-between gap-4 border-b bg-muted/15 px-6 py-5">
               <SectionTitle
                 title="Features"
                 details="Manage your chatbot’s capabilities and available upgrades."
               />
             </div>
-            <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary sm:inline-flex">
-              <span className="size-1.5 rounded-full bg-current" />
-              {features.filter((feature) => feature.enabled).length} active
-            </span>
-          </div>
-          <div className="divide-y">
-            {features.map((feature) => (
-              <FeatureCard
-                key={feature.key}
-                {...feature}
-                upgradePath={`/chatbot/${chatbot.slug}/plan-and-billing`}
-              />
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      <section>
-        <div className="mb-4 flex items-center gap-2">
-          <BrainCircuit className="size-4 text-primary" />
-          <div>
-            <h2 className="text-base font-bold">AI & conversation behavior</h2>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Control how your chatbot responds, communicates, and hands off
-              conversations.
-            </p>
-          </div>
-        </div>
-        <div className="grid items-stretch gap-5 lg:grid-cols-2">
-          <SectionCard
-            icon={BrainCircuit}
-            title="AI behavior"
-            description="Instructions and response tone for AI-generated replies."
-            onEdit={() => edit("ai")}
-          >
             <div className="divide-y">
-              <ValueRow
-                label="AI replies"
-                value={aiSettings.aiEnabled ? "Enabled" : "Disabled"}
-              />
-              <ValueRow label="Tone" value={aiSettings.tone} />
+              {features.map((feature) => (
+                <FeatureCard
+                  key={feature.key}
+                  {...feature}
+                  upgradePath={`/chatbot/${chatbot.slug}/plan-and-billing`}
+                />
+              ))}
             </div>
-            <div className="mt-3 rounded-2xl border bg-muted/20 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                AI instructions
-              </p>
-              <p className="mt-2 line-clamp-3 text-xs leading-5">
-                {aiSettings.instructions || "No AI instructions added yet."}
-              </p>
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            icon={ShieldAlert}
-            title="Escalation & guardrails"
-            description="Define when AI should hand off and what it must avoid."
-            onEdit={() => edit("escalation")}
-          >
-            <div className="space-y-3">
-              <div className="rounded-2xl border bg-muted/20 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Escalate when
-                </p>
-                <p className="mt-2 line-clamp-3 text-xs leading-5">
-                  {aiSettings.escalationRule}
-                </p>
-              </div>
-              <div className="rounded-2xl border bg-muted/20 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Never answer
-                </p>
-                <p className="mt-2 line-clamp-3 text-xs leading-5">
-                  {aiSettings.neverAnswer}
-                </p>
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            icon={MessageSquareText}
-            title="Conversation messages"
-            description="Welcome visitors and provide a consistent fallback response."
-            onEdit={() => edit("messages")}
-            className="lg:col-span-2"
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border bg-muted/20 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Welcome message
-                </p>
-                <p className="mt-2 text-sm leading-6">
-                  {aiSettings.welcome || "No welcome message added yet."}
-                </p>
-              </div>
-              <div className="rounded-2xl border bg-muted/20 p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Fallback response
-                </p>
-                <p className="mt-2 text-sm leading-6">
-                  {aiSettings.fallback || "No fallback response added yet."}
-                </p>
-              </div>
-            </div>
-          </SectionCard>
+          </Card>
         </div>
-      </section>
+      </div>
+      <ConfirmDialog
+        open={Boolean(pendingToggle)}
+        setOpen={(open) => {
+          if (!open && !isFeatureUpdating) setPendingToggle(null);
+        }}
+        title={`${pendingToggle?.enabled ? "Enable" : "Disable"} ${pendingToggle?.label || "setting"}?`}
+        description={`This will ${pendingToggle?.enabled ? "enable" : "disable"} ${pendingToggle?.label?.toLowerCase() || "this setting"} for this chatbot.`}
+        confirmText={pendingToggle?.enabled ? "Enable" : "Disable"}
+        onConfirm={confirmToggle}
+        isLoading={isFeatureUpdating}
+      />
     </div>
   );
 };

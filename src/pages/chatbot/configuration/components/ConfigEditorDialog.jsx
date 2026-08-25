@@ -14,6 +14,7 @@ import { FloatingInput } from "@/components/ui/input";
 import { FloatingSelect, SelectItem } from "@/components/ui/select";
 import { FloatingTextarea } from "@/components/ui/textarea";
 import { LANGUAGES } from "@/constants/language";
+import { cn } from "@/lib/utils";
 import { TIMEZONES } from "@/lib/timezone";
 
 import { ToggleControl } from "./shared";
@@ -22,10 +23,21 @@ const editorDefinitions = {
   details: {
     title: "Edit chatbot details",
     description: "Update the identity and regional settings for this chatbot.",
+    contentClassName: "grid gap-5 sm:grid-cols-2",
     fields: [
-      { key: "logo", label: "Chatbot logo", type: "image" },
-      { key: "name", label: "Chatbot name" },
-      { key: "description", label: "Description", type: "textarea" },
+      {
+        key: "logo",
+        label: "Chatbot logo",
+        type: "image",
+        className: "sm:col-span-2",
+      },
+      { key: "name", label: "Chatbot name", className: "sm:col-span-2" },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        className: "sm:col-span-2",
+      },
       {
         key: "language",
         label: "Language",
@@ -40,57 +52,6 @@ const editorDefinitions = {
           value: timezone,
           label: timezone.replaceAll("_", " "),
         })),
-      },
-    ],
-  },
-  ai: {
-    title: "Edit AI behavior",
-    description: "Control AI replies, instructions, and response tone.",
-    fields: [
-      {
-        key: "aiEnabled",
-        label: "Enable AI replies",
-        type: "toggle",
-        help: "Allow the chatbot to respond automatically using AI.",
-      },
-      { key: "instructions", label: "AI instructions", type: "textarea" },
-      {
-        key: "tone",
-        label: "Tone",
-        type: "select",
-        options: ["Professional", "Friendly", "Empathetic", "Direct"],
-      },
-    ],
-  },
-  escalation: {
-    title: "Edit escalation rules",
-    description: "Tell Argon when a human teammate should take over.",
-    fields: [
-      {
-        key: "escalationRule",
-        label: "Escalate when",
-        type: "textarea",
-      },
-      {
-        key: "neverAnswer",
-        label: "Topics AI should not answer",
-        type: "textarea",
-      },
-    ],
-  },
-  messages: {
-    title: "Edit conversation messages",
-    description: "Set the messages visitors see at key moments.",
-    fields: [
-      {
-        key: "welcome",
-        label: "Welcome message",
-        type: "textarea",
-      },
-      {
-        key: "fallback",
-        label: "Fallback response",
-        type: "textarea",
       },
     ],
   },
@@ -209,10 +170,7 @@ const ConfigEditorDialog = ({
   };
 
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => !open && !isSaving && onClose()}
-    >
+    <Dialog open onOpenChange={(open) => !open && !isSaving && onClose()}>
       <DialogContent className="custom-scrollbar max-h-[90vh] overflow-y-auto rounded-3xl p-0 sm:max-w-xl">
         <form onSubmit={submit}>
           <DialogHeader className="border-b bg-muted/30 px-6 py-6">
@@ -221,7 +179,12 @@ const ConfigEditorDialog = ({
               {definition.description}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-5 px-6 py-6">
+          <div
+            className={cn(
+              "px-6 py-6",
+              definition.contentClassName || "space-y-5",
+            )}
+          >
             {definition.fields.map((field) => {
               if (field.type === "textarea") {
                 return (
@@ -232,6 +195,7 @@ const ConfigEditorDialog = ({
                     rows={4}
                     value={draft[field.key] ?? ""}
                     onChange={(event) => update(field.key, event.target.value)}
+                    className={field.className}
                     textareaClassName="min-h-28"
                     disabled={isSaving}
                   />
@@ -248,6 +212,7 @@ const ConfigEditorDialog = ({
                     key={field.key}
                     label={field.label}
                     value={draft[field.key]}
+                    className={field.className}
                     displayValue={
                       selectedOption
                         ? getOptionLabel(selectedOption)
@@ -275,7 +240,10 @@ const ConfigEditorDialog = ({
                 return (
                   <div
                     key={field.key}
-                    className="flex items-start justify-between gap-5 rounded-2xl border bg-muted/20 p-4"
+                    className={cn(
+                      "flex items-start justify-between gap-5 rounded-2xl border bg-muted/20 p-4",
+                      field.className,
+                    )}
                   >
                     <div>
                       <p className="text-sm font-semibold">{field.label}</p>
@@ -299,7 +267,10 @@ const ConfigEditorDialog = ({
                 return (
                   <div
                     key={field.key}
-                    className="flex items-center gap-3 rounded-2xl border p-3"
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl border p-3",
+                      field.className,
+                    )}
                   >
                     <input
                       type="color"
@@ -331,7 +302,10 @@ const ConfigEditorDialog = ({
                 return (
                   <label
                     key={field.key}
-                    className="flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed p-4 transition hover:border-primary hover:bg-primary/[0.03]"
+                    className={cn(
+                      "flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed p-4 transition hover:border-primary hover:bg-primary/[0.03]",
+                      field.className,
+                    )}
                   >
                     <span className="flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
                       {draft[field.key] ? (
@@ -377,6 +351,7 @@ const ConfigEditorDialog = ({
                   key={field.key}
                   name={field.key}
                   label={field.label}
+                  className={field.className}
                   value={draft[field.key] ?? ""}
                   onChange={(event) => update(field.key, event.target.value)}
                   disabled={isSaving}
