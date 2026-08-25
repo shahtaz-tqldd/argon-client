@@ -24,7 +24,7 @@ import WidgetTab from "./components/WidgetTab";
 
 const tabs = [
   { value: "general", label: "General", icon: Settings2 },
-  { value: "knowledge", label: "Knowledge", icon: Database, count: 4 },
+  { value: "knowledge", label: "Knowledge", icon: Database },
   { value: "widget", label: "Widget", icon: Palette },
   { value: "channels", label: "Channels", icon: Link2, count: 3 },
 ];
@@ -68,49 +68,6 @@ const getAiBehaviorPayload = (sectionKey, value) => {
   return { [definition.field]: value.trim() };
 };
 
-const initialSources = [
-  {
-    id: "source-1",
-    name: "Help center articles",
-    detail: "https://help.atlas.co",
-    type: "Website",
-    size: "8.4 MB",
-    chunks: 842,
-    status: "Ready",
-    updated: "12 min ago",
-  },
-  {
-    id: "source-2",
-    name: "Product handbook.pdf",
-    detail: "PDF document",
-    type: "File",
-    size: "4.2 MB",
-    chunks: 386,
-    status: "Ready",
-    updated: "Yesterday",
-  },
-  {
-    id: "source-3",
-    name: "Refund and cancellation policy",
-    detail: "Pasted content",
-    type: "Text",
-    size: "42 KB",
-    chunks: 18,
-    status: "Ready",
-    updated: "Aug 18, 2026",
-  },
-  {
-    id: "source-4",
-    name: "Developer documentation",
-    detail: "https://docs.atlas.co",
-    type: "Website",
-    size: "—",
-    chunks: 0,
-    status: "Processing",
-    updated: "Just now",
-  },
-];
-
 const ConfigurationPage = () => {
   const {
     currentChatbot,
@@ -122,7 +79,6 @@ const ConfigurationPage = () => {
     useUpdateChatbotMutation();
   const [activeTab, setActiveTab] = useState("general");
   const [config, setConfig] = useState(initialConfig);
-  const [sources, setSources] = useState(initialSources);
   const [editingSection, setEditingSection] = useState(null);
 
   const aiSettings = {
@@ -258,7 +214,10 @@ const ConfigurationPage = () => {
         />
       )}
       {activeTab === "knowledge" && (
-        <KnowledgeTab sources={sources} setSources={setSources} />
+        <KnowledgeTab
+          chatbotSlug={currentChatbot?.slug}
+          chatbotName={currentChatbot?.name}
+        />
       )}
       {activeTab === "widget" && (
         <WidgetTab config={config} edit={setEditingSection} />

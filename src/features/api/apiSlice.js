@@ -99,6 +99,9 @@ export const apiSlice = createApi({
     "notifications",
     "workspace",
     "workspace-invitations",
+    "knowledge",
+    "knowledge-details",
+    "knowledge-training-logs",
   ],
   keepUnusedDataFor: 300, // Don't keep any unused data
   refetchOnMountOrArgChange: false, // Always refetch when component mounts

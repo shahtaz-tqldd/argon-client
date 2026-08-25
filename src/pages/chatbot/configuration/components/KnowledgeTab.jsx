@@ -3,8 +3,10 @@ import {
   Database,
   FileText,
   Globe2,
+  HardDrive,
   MessageSquareText,
   Plus,
+  RefreshCw,
   Search,
   UploadCloud,
 } from "lucide-react";
@@ -23,35 +25,215 @@ import {
 } from "@/components/ui/dialog";
 import { FloatingInput, Input } from "@/components/ui/input";
 import { FloatingTextarea } from "@/components/ui/textarea";
+import {
+  useDeleteKnowledgeMutation,
+  useKnowledgeListQuery,
+  useLazyKnowledgeDetailsQuery,
+  useUpdateKnowledgeMutation,
+  useUploadKnowledgeMutation,
+} from "@/features/knowledge/knowledgeApiSlice";
+import { formatDateTime } from "@/lib/date-time";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { cn } from "@/lib/utils";
 
-function UsageCard({
-  icon,
-  label,
-  current,
-  total,
-  display,
-  tone = "bg-primary",
-}) {
-  const UsageIcon = icon;
-  const percent = Math.min(100, Math.round((current / total) * 100));
+const SOURCE_TYPES = [
+  { type: "file", label: "File", icon: FileText },
+  { type: "url", label: "Website", icon: Globe2 },
+  { type: "custom", label: "Text", icon: MessageSquareText },
+];
+
+const getResponseRecords = (response) => {
+  const containers = [response, response?.data, response?.data?.data];
+
+  for (const container of containers) {
+    if (Array.isArray(container)) return container;
+
+    for (const key of ["results", "items", "sources", "knowledge_bases"]) {
+      if (Array.isArray(container?.[key])) return container[key];
+    }
+  }
+
+  return [];
+};
+
+const getResponseMeta = (response) =>
+  response?.meta ||
+  response?.data?.meta ||
+  response?.pagination ||
+  response?.data?.pagination ||
+  {};
+
+const getResponseDetails = (response) => {
+  const data = response?.data ?? response;
+  return data?.data && !Array.isArray(data.data) ? data.data : data;
+};
+
+const firstDefined = (object, keys) => {
+  for (const key of keys) {
+    if (object?.[key] !== undefined && object[key] !== null) {
+      return object[key];
+    }
+  }
+
+  return undefined;
+};
+
+const finiteNumber = (value, fallback = 0) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+
+const normalizeType = (value) => {
+  const type = String(value || "").toLowerCase();
+  if (type.includes("file") || type.includes("document")) return "file";
+  if (type.includes("url") || type.includes("web")) return "url";
+  return "custom";
+};
+
+const typeLabel = (type) =>
+  ({ file: "File", url: "Website", custom: "Text" })[type] || "Text";
+
+const normalizeStatus = (value) => {
+  const status = String(value || "processing").toLowerCase();
+
+  if (["ready", "trained", "completed", "complete", "success"].includes(status)) {
+    return "Ready";
+  }
+  if (["failed", "failure", "error"].includes(status)) return "Failed";
+  if (
+    [
+      "processing",
+      "pending",
+      "queued",
+      "training",
+      "in_progress",
+      "in-progress",
+    ].includes(status)
+  ) {
+    return "Processing";
+  }
+
+  return status
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const fileNameFromPath = (path) => {
+  if (typeof path !== "string") return "";
+  const segment = path.split("?")[0].split("/").filter(Boolean).at(-1);
+
+  try {
+    return decodeURIComponent(segment || "");
+  } catch {
+    return segment || "";
+  }
+};
+
+const formatBytes = (value) => {
+  if (value === undefined || value === null || value === "") return "—";
+  if (typeof value === "string" && !/^\d+(\.\d+)?$/.test(value)) return value;
+
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes < 0) return "—";
+  if (bytes === 0) return "0 B";
+
+  const units = ["B", "KB", "MB", "GB"];
+  const unitIndex = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+  const amount = bytes / 1024 ** unitIndex;
+
+  return `${amount >= 10 || unitIndex === 0 ? amount.toFixed(0) : amount.toFixed(1)} ${units[unitIndex]}`;
+};
+
+const parseBytes = (value) => {
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return 0;
+
+  const match = value.trim().match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB)?$/i);
+  if (!match) return 0;
+
+  const multipliers = { B: 1, KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 };
+  return Number(match[1]) * multipliers[(match[2] || "B").toUpperCase()];
+};
+
+const normalizeSource = (source) => {
+  const apiType = normalizeType(
+    firstDefined(source, ["type", "source_type", "knowledge_type", "content_type"]),
+  );
+  const fileValue = firstDefined(source, ["file_name", "filename", "original_filename"]);
+  const filePath = typeof source.file === "string" ? source.file : source.file?.name;
+  const fileName = fileValue || fileNameFromPath(filePath);
+  const url = firstDefined(source, ["url", "source_url"]);
+  const content = firstDefined(source, ["content", "text"]);
+  const title = firstDefined(source, ["title", "name"]);
+  const rawChunks = firstDefined(source, [
+    "chunk_count",
+    "chunks_count",
+    "number_of_chunks",
+    "chunks",
+    "vector_count",
+  ]);
+  const chunks = Array.isArray(rawChunks) ? rawChunks.length : Number(rawChunks || 0);
+  const rawSize = firstDefined(source, [
+    "file_size_display",
+    "size_display",
+    "file_size",
+    "size",
+  ]);
+  const fallbackTitle =
+    fileName ||
+    (apiType === "url"
+      ? url
+      : apiType === "file"
+        ? "Uploaded file"
+        : "Custom knowledge") ||
+    "Untitled knowledge";
+  const detail =
+    apiType === "url"
+      ? url
+      : apiType === "file"
+        ? fileName || "Uploaded file"
+        : content || "Custom text content";
+
+  return {
+    id: firstDefined(source, ["id", "knowledge_base_id", "uuid"]),
+    name: title || fallbackTitle,
+    detail: String(detail || typeLabel(apiType)),
+    apiType,
+    type: typeLabel(apiType),
+    size: formatBytes(rawSize),
+    sizeBytes: parseBytes(rawSize),
+    chunks: Number.isFinite(chunks) ? chunks : 0,
+    status: normalizeStatus(
+      firstDefined(source, ["status", "training_status", "processing_status"]),
+    ),
+    updated: formatDateTime(
+      firstDefined(source, ["updated_at", "last_trained_at", "created_at"]),
+    ),
+    raw: source,
+  };
+};
+
+function SummaryCard({ icon, label, value, detail, tone = "text-primary" }) {
+  const SummaryIcon = icon;
 
   return (
     <Card className="p-5">
-      <div className="flex items-center justify-between">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <UsageIcon className="size-4" />
-        </span>
-        <span className="text-xs font-bold">{percent}%</span>
-      </div>
-      <p className="mt-4 text-sm font-semibold">{label}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{display}</p>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn("h-full rounded-full", tone)}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
+      <span
+        className={cn(
+          "flex size-9 items-center justify-center rounded-xl bg-current/10",
+          tone,
+        )}
+      >
+        <SummaryIcon className="size-4" />
+      </span>
+      <p className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+        {value}
+      </p>
+      <p className="mt-1 text-sm font-semibold">{label}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
     </Card>
   );
 }
@@ -81,27 +263,29 @@ function SourceStatus({ status }) {
   );
 }
 
-function AddKnowledgeDialog({ open, onClose, onAdd }) {
-  const [sourceType, setSourceType] = useState("Website");
-  const [name, setName] = useState("");
+function AddKnowledgeDialog({ open, onClose, onAdd, isLoading }) {
+  const [sourceType, setSourceType] = useState("url");
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [file, setFile] = useState(null);
 
-  const submit = (event) => {
-    event.preventDefault();
-    onAdd({
-      sourceType,
-      name:
-        name ||
-        (sourceType === "File" ? "Uploaded document" : "New knowledge source"),
-      content,
-    });
-    setName("");
+  const close = () => {
+    if (isLoading) return;
+    setSourceType("url");
+    setTitle("");
     setContent("");
+    setFile(null);
     onClose();
   };
 
+  const submit = async (event) => {
+    event.preventDefault();
+    const saved = await onAdd({ sourceType, title, content, file });
+    if (saved) close();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+    <Dialog open={open} onOpenChange={(next) => !next && close()}>
       <DialogContent className="rounded-3xl p-0 sm:max-w-xl">
         <form onSubmit={submit}>
           <DialogHeader className="border-b bg-muted/30 px-6 py-6">
@@ -112,18 +296,18 @@ function AddKnowledgeDialog({ open, onClose, onAdd }) {
           </DialogHeader>
           <div className="space-y-5 px-6 py-6">
             <div className="grid grid-cols-3 gap-2">
-              {[
-                { type: "File", icon: FileText },
-                { type: "Website", icon: Globe2 },
-                { type: "Text", icon: MessageSquareText },
-              ].map(({ type, icon }) => {
+              {SOURCE_TYPES.map(({ type, label, icon }) => {
                 const TypeIcon = icon;
 
                 return (
                   <button
                     key={type}
                     type="button"
-                    onClick={() => setSourceType(type)}
+                    onClick={() => {
+                      setSourceType(type);
+                      setContent("");
+                      setFile(null);
+                    }}
                     className={cn(
                       "flex flex-col items-center gap-2 rounded-2xl border px-3 py-4 text-xs font-semibold transition",
                       sourceType === type
@@ -132,44 +316,49 @@ function AddKnowledgeDialog({ open, onClose, onAdd }) {
                     )}
                   >
                     <TypeIcon className="size-5" />
-                    {type}
+                    {label}
                   </button>
                 );
               })}
             </div>
             <FloatingInput
-              name="source-name"
-              label="Source name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+              name="knowledge-title"
+              label="Title (optional)"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              disabled={isLoading}
             />
-            {sourceType === "File" ? (
+            {sourceType === "file" ? (
               <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-8 text-center transition hover:border-primary hover:bg-primary/[0.03]">
                 <UploadCloud className="size-6 text-primary" />
                 <span className="mt-2 text-sm font-semibold">Choose a file</span>
                 <span className="mt-1 text-xs text-muted-foreground">
-                  PDF, DOCX, TXT, CSV · max 20 MB
+                  PDF, DOCX, TXT, or CSV
                 </span>
                 <input
                   type="file"
                   className="sr-only"
-                  onChange={(event) =>
-                    setContent(event.target.files?.[0]?.name || "")
-                  }
+                  accept=".pdf,.doc,.docx,.txt,.csv"
+                  required
+                  disabled={isLoading}
+                  onChange={(event) => setFile(event.target.files?.[0] || null)}
                 />
-                {content && (
-                  <span className="mt-3 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                    {content}
+                {file && (
+                  <span className="mt-3 max-w-full truncate rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    {file.name}
                   </span>
                 )}
               </label>
-            ) : sourceType === "Website" ? (
+            ) : sourceType === "url" ? (
               <FloatingInput
-                name="website-url"
+                name="knowledge-url"
+                type="url"
                 label="Website URL"
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
-                placeholder="https://"
+                placeholder="https://example.com"
+                required
+                disabled={isLoading}
               />
             ) : (
               <FloatingTextarea
@@ -178,16 +367,21 @@ function AddKnowledgeDialog({ open, onClose, onAdd }) {
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
                 rows={6}
+                required
+                disabled={isLoading}
               />
             )}
           </div>
           <DialogFooter className="border-t bg-muted/20 px-6 py-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={close} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit">
-              <Plus />
-              Add source
+            <Button
+              type="submit"
+              disabled={isLoading || (sourceType === "file" ? !file : !content.trim())}
+            >
+              {isLoading ? <RefreshCw className="animate-spin" /> : <Plus />}
+              {isLoading ? "Adding…" : "Add source"}
             </Button>
           </DialogFooter>
         </form>
@@ -196,36 +390,222 @@ function AddKnowledgeDialog({ open, onClose, onAdd }) {
   );
 }
 
-const KnowledgeTab = ({ sources, setSources }) => {
-  const [addOpen, setAddOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const visibleSources = useMemo(
-    () =>
-      sources.filter((source) =>
-        `${source.name} ${source.type}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-      ),
-    [sources, search],
-  );
+function UpdateCustomDialog({ source, onClose, onSave, isLoading }) {
+  const [content, setContent] = useState(source.content || "");
 
-  const reprocess = (_, row) => {
-    setSources((current) =>
-      current.map((source) =>
-        source.id === row.id
-          ? { ...source, status: "Processing", updated: "Just now" }
-          : source,
-      ),
+  const submit = async (event) => {
+    event.preventDefault();
+    const saved = await onSave(content.trim());
+    if (saved) onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={(next) => !next && !isLoading && onClose()}>
+      <DialogContent className="rounded-3xl p-0 sm:max-w-xl">
+        <form onSubmit={submit}>
+          <DialogHeader className="border-b bg-muted/30 px-6 py-6">
+            <DialogTitle>Update custom knowledge</DialogTitle>
+            <DialogDescription>
+              Replace the content for {source.name}. Existing vectors stay active
+              until the replacement training finishes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 py-6">
+            <FloatingTextarea
+              name="replacement-content"
+              label="Replacement content"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              rows={10}
+              required
+              disabled={isLoading}
+            />
+          </div>
+          <DialogFooter className="border-t bg-muted/20 px-6 py-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading || !content.trim()}>
+              <RefreshCw className={cn(isLoading && "animate-spin")} />
+              {isLoading ? "Retraining…" : "Replace and retrain"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const KnowledgeTab = ({ chatbotSlug, chatbotName }) => {
+  const [addOpen, setAddOpen] = useState(false);
+  const [editingSource, setEditingSource] = useState(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useKnowledgeListQuery(
+    { chatbotSlug, page, pageSize },
+    { skip: !chatbotSlug },
+  );
+  const [uploadKnowledge, { isLoading: isUploading }] =
+    useUploadKnowledgeMutation();
+  const [getKnowledgeDetails, { isFetching: isLoadingDetails }] =
+    useLazyKnowledgeDetailsQuery();
+  const [updateKnowledge, { isLoading: isUpdating }] =
+    useUpdateKnowledgeMutation();
+  const [deleteKnowledge, { isLoading: isDeleting }] =
+    useDeleteKnowledgeMutation();
+
+  const sources = useMemo(
+    () => getResponseRecords(data).map(normalizeSource).filter((source) => source.id),
+    [data],
+  );
+  const visibleSources = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return sources;
+
+    return sources.filter((source) =>
+      `${source.name} ${source.type} ${source.detail} ${source.status}`
+        .toLowerCase()
+        .includes(query),
     );
-    toast.success(`${row.name} queued for reprocessing`);
+  }, [search, sources]);
+  const meta = getResponseMeta(data);
+  const totalSources = finiteNumber(
+    firstDefined(meta, ["count", "total", "total_count", "total_items"]) ??
+      sources.length,
+    sources.length,
+  );
+  const pageChunks = sources.reduce((total, source) => total + source.chunks, 0);
+  const pageStorage = sources.reduce((total, source) => total + source.sizeBytes, 0);
+  const totalChunks = finiteNumber(
+    firstDefined(meta, ["total_chunks", "chunk_count", "chunks"]),
+    pageChunks,
+  );
+  const reportedStorage = firstDefined(meta, [
+    "storage_bytes",
+    "total_storage",
+    "total_size",
+  ]);
+  const totalStorage =
+    reportedStorage === undefined ? pageStorage : parseBytes(reportedStorage);
+  const isPageSummary = totalSources > sources.length;
+
+  const addSource = async ({ sourceType, title, content, file }) => {
+    let payload;
+
+    if (sourceType === "file") {
+      payload = new FormData();
+      payload.append("file", file);
+      if (title.trim()) payload.append("title", title.trim());
+    } else {
+      payload = {
+        ...(sourceType === "url"
+          ? { url: content.trim() }
+          : { content: content.trim() }),
+        ...(title.trim() ? { title: title.trim() } : {}),
+      };
+    }
+
+    try {
+      const response = await uploadKnowledge({
+        chatbotSlug,
+        type: sourceType,
+        payload,
+      }).unwrap();
+      toast.success(response?.message || "Knowledge source added and training started");
+      return true;
+    } catch (uploadError) {
+      toast.error(
+        getApiErrorMessage(uploadError, "Unable to add the knowledge source."),
+      );
+      return false;
+    }
+  };
+
+  const reprocess = async (_, row) => {
+    const source = row.raw;
+
+    if (source.apiType === "custom") {
+      try {
+        const response = await getKnowledgeDetails({
+          knowledgeBaseId: source.id,
+        }).unwrap();
+        const details = getResponseDetails(response);
+        setEditingSource({
+          ...source,
+          content: firstDefined(details, ["content", "text"]) || source.raw.content || "",
+        });
+      } catch (detailsError) {
+        toast.error(
+          getApiErrorMessage(detailsError, "Unable to load the source content."),
+        );
+      }
+      return;
+    }
+
+    try {
+      const response = await updateKnowledge({
+        chatbotSlug,
+        knowledgeBaseId: source.id,
+        type: source.apiType,
+      }).unwrap();
+      toast.success(response?.message || "Knowledge source queued for retraining");
+    } catch (updateError) {
+      toast.error(
+        getApiErrorMessage(updateError, "Unable to retrain the knowledge source."),
+      );
+    }
+  };
+
+  const updateCustomSource = async (content) => {
+    try {
+      const response = await updateKnowledge({
+        chatbotSlug,
+        knowledgeBaseId: editingSource.id,
+        type: "custom",
+        payload: { content },
+      }).unwrap();
+      toast.success(response?.message || "Replacement content queued for training");
+      return true;
+    } catch (updateError) {
+      toast.error(
+        getApiErrorMessage(updateError, "Unable to update the custom knowledge."),
+      );
+      return false;
+    }
+  };
+
+  const removeSource = async (id) => {
+    try {
+      const response = await deleteKnowledge({
+        chatbotSlug,
+        knowledgeBaseId: id,
+      }).unwrap();
+      if (sources.length === 1 && page > 1) setPage((current) => current - 1);
+      toast.success(response?.message || "Knowledge source deleted");
+      return true;
+    } catch (deleteError) {
+      toast.error(
+        getApiErrorMessage(deleteError, "Unable to delete the knowledge source."),
+      );
+      return false;
+    }
   };
 
   const rows = visibleSources.map((source) => ({
-    ...source,
+    id: source.id,
+    raw: source,
     source: (
-      <div className="min-w-56">
+      <div className="min-w-56 max-w-80">
         <p className="text-sm font-semibold text-foreground">{source.name}</p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+        <p className="mt-0.5 truncate text-xs text-muted-foreground" title={source.detail}>
           {source.detail}
         </p>
       </div>
@@ -244,45 +624,26 @@ const KnowledgeTab = ({ sources, setSources }) => {
     action: "",
   }));
 
-  const addSource = ({ sourceType, name, content }) => {
-    setSources((current) => [
-      ...current,
-      {
-        id: `source-${Date.now()}`,
-        name,
-        detail: content || `${sourceType} source`,
-        type: sourceType,
-        size: sourceType === "File" ? "1.2 MB" : "—",
-        chunks: 0,
-        status: "Processing",
-        updated: "Just now",
-      },
-    ]);
-    toast.success("Knowledge source added and processing started");
-  };
-
   return (
     <div className="space-y-5">
       <div className="grid gap-5 md:grid-cols-2">
-        <UsageCard
+        <SummaryCard
           icon={Database}
-          label="Chunk usage"
-          current={1246}
-          total={2500}
-          display="1,246 of 2,500 chunks"
+          label="Indexed chunks"
+          value={totalChunks.toLocaleString()}
+          detail={isPageSummary ? "Across sources on this page" : "Across all knowledge sources"}
         />
-        <UsageCard
-          icon={FileText}
-          label="Storage usage"
-          current={13.7}
-          total={50}
-          display="13.7 MB of 50 MB"
-          tone="bg-violet-500"
+        <SummaryCard
+          icon={HardDrive}
+          label="Storage indexed"
+          value={formatBytes(totalStorage)}
+          detail={isPageSummary ? "Across files on this page" : "Across all uploaded files"}
+          tone="text-violet-500"
         />
       </div>
       <ReusableTable
         title="Knowledge sources"
-        description={`${sources.length} sources training Atlas Support`}
+        description={`${totalSources} source${totalSources === 1 ? "" : "s"}${chatbotName ? ` training ${chatbotName}` : ""}`}
         headerActions={
           <div className="flex items-center gap-2">
             <label className="relative hidden sm:block">
@@ -291,10 +652,16 @@ const KnowledgeTab = ({ sources, setSources }) => {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 className="h-9 w-52 rounded-xl bg-slate-50 pl-9"
-                placeholder="Search sources"
+                placeholder="Search this page"
               />
             </label>
-            <Button size="sm" onClick={() => setAddOpen(true)}>
+            {isError && (
+              <Button size="sm" variant="outline" onClick={refetch}>
+                <RefreshCw />
+                Retry
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setAddOpen(true)} disabled={!chatbotSlug}>
               <Plus />
               Add knowledge
             </Button>
@@ -310,29 +677,54 @@ const KnowledgeTab = ({ sources, setSources }) => {
           { header: "Last updated", accessorKey: "updated" },
           { header: "", accessorKey: "action" },
         ]}
-        isLoading={false}
-        totalItems={rows.length}
-        page={1}
-        setPage={() => {}}
-        pageSize={10}
-        setPageSize={() => {}}
+        isLoading={isLoading || isFetching}
+        totalItems={search ? rows.length : totalSources}
+        page={search ? 1 : page}
+        setPage={setPage}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
         table_options={[
-          { label: "Reprocess", action: reprocess },
+          {
+            label: "Retry training",
+            hidden: (row) =>
+              row.raw.apiType !== "file" || row.raw.status !== "Failed",
+            disabled: () => isUpdating || isLoadingDetails,
+            action: reprocess,
+          },
+          {
+            label: "Retrain source",
+            hidden: (row) => row.raw.apiType === "file",
+            disabled: () => isUpdating || isLoadingDetails,
+            action: reprocess,
+          },
           { label: "Delete source", type: "delete" },
         ]}
-        onDeleteConfirm={async (id) => {
-          setSources((current) => current.filter((source) => source.id !== id));
-          toast.success("Knowledge source deleted");
-        }}
-        deleteLoading={false}
-        emptyTitle="No knowledge sources"
-        emptyDescription="Add a file, website, or text content to start training Argon."
+        onDeleteConfirm={removeSource}
+        deleteLoading={isDeleting}
+        emptyTitle={isError ? "Unable to load knowledge sources" : "No knowledge sources"}
+        emptyDescription={
+          isError
+            ? getApiErrorMessage(error, "Please try again later.")
+            : search
+              ? "No sources on this page match your search."
+              : "Add a file, website, or text content to start training Argon."
+        }
       />
       <AddKnowledgeDialog
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onAdd={addSource}
+        isLoading={isUploading}
       />
+      {editingSource && (
+        <UpdateCustomDialog
+          key={editingSource.id}
+          source={editingSource}
+          onClose={() => setEditingSource(null)}
+          onSave={updateCustomSource}
+          isLoading={isUpdating}
+        />
+      )}
     </div>
   );
 };

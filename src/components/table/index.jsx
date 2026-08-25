@@ -80,7 +80,8 @@ const ReusableTable = ({
 
   const handleConfirm = async () => {
     if (!selectedId) return;
-    await onDeleteConfirm(selectedId);
+    const deleted = await onDeleteConfirm(selectedId);
+    if (deleted === false) return;
     setDeleteDialogOpen(false);
     setSelectedId(null);
   };
