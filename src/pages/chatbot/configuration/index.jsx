@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Database,
   Link2,
@@ -16,18 +17,21 @@ import { useUpdateChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
-import ChannelsTab from "./components/ChannelsTab";
+import ChannelsTab from "./channels";
+import ChatbotWidgetTab from "./chatbot-widget";
 import ConfigEditorDialog from "./components/ConfigEditorDialog";
-import GeneralTab from "./components/GeneralTab";
-import KnowledgeTab from "./components/KnowledgeTab";
-import WidgetTab from "./components/WidgetTab";
+import CoreDetailsTab from "./core-details";
+import KnowledgeSourceTab from "./knowledge-source";
 
 const tabs = [
-  { value: "general", label: "General", icon: Settings2 },
-  { value: "knowledge", label: "Knowledge", icon: Database },
-  { value: "widget", label: "Widget", icon: Palette },
+  { value: "general", label: "Core Details", icon: Settings2 },
+  { value: "knowledge", label: "Knowledge Base", icon: Database },
+  { value: "widget", label: "Chatbot Widget", icon: Palette },
   { value: "channels", label: "Channels", icon: Link2, count: 3 },
 ];
+
+const DEFAULT_TAB = "general";
+const tabValues = new Set(tabs.map((tab) => tab.value));
 
 const initialConfig = {
   appearance: {
@@ -69,6 +73,7 @@ const getAiBehaviorPayload = (sectionKey, value) => {
 };
 
 const ConfigurationPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     currentChatbot,
     isLoading: isChatbotLoading,
@@ -77,9 +82,20 @@ const ConfigurationPage = () => {
   } = useCurrentChatbot();
   const [updateChatbot, { isLoading: isUpdatingChatbot }] =
     useUpdateChatbotMutation();
-  const [activeTab, setActiveTab] = useState("general");
   const [config, setConfig] = useState(initialConfig);
   const [editingSection, setEditingSection] = useState(null);
+  const tabFromUrl = searchParams.get("tab");
+  const activeTab = tabValues.has(tabFromUrl) ? tabFromUrl : DEFAULT_TAB;
+
+  const changeTab = (tab) => {
+    if (!tabValues.has(tab)) return;
+
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+      nextParams.set("tab", tab);
+      return nextParams;
+    });
+  };
 
   const aiSettings = {
     aiEnabled: Boolean(currentChatbot?.ai_enabled),
@@ -92,7 +108,9 @@ const ConfigurationPage = () => {
   const editorValues = {
     details: {
       logo: currentChatbot?.logo || "",
-      name: currentChatbot?.name || "",
+      business_name: currentChatbot?.business_name || "",
+      chatbot_name:
+        currentChatbot?.chatbot_name || currentChatbot?.name || "",
       description: currentChatbot?.description || "",
       language: currentChatbot?.language || "en",
       timezone: currentChatbot?.timezone || "UTC",
@@ -124,7 +142,8 @@ const ConfigurationPage = () => {
     }
 
     const payload = new FormData();
-    payload.append("name", values.name.trim());
+    payload.append("business_name", values.business_name.trim());
+    payload.append("chatbot_name", values.chatbot_name.trim());
     payload.append("description", values.description.trim());
     payload.append("language", values.language);
     payload.append("timezone", values.timezone);
@@ -177,7 +196,7 @@ const ConfigurationPage = () => {
         <TabMenu
           tabs={tabs}
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={changeTab}
           scrollable
           className="sticky top-0 z-10 bg-background/95 backdrop-blur"
         />
@@ -201,7 +220,7 @@ const ConfigurationPage = () => {
       </div>
 
       {activeTab === "general" && (
-        <GeneralTab
+        <CoreDetailsTab
           chatbot={currentChatbot}
           aiSettings={aiSettings}
           isLoading={isChatbotLoading}
@@ -214,13 +233,13 @@ const ConfigurationPage = () => {
         />
       )}
       {activeTab === "knowledge" && (
-        <KnowledgeTab
+        <KnowledgeSourceTab
           chatbotSlug={currentChatbot?.slug}
           chatbotName={currentChatbot?.name}
         />
       )}
       {activeTab === "widget" && (
-        <WidgetTab config={config} edit={setEditingSection} />
+        <ChatbotWidgetTab chatbotSlug={currentChatbot?.slug} />
       )}
       {activeTab === "channels" && (
         <ChannelsTab config={config} edit={setEditingSection} />

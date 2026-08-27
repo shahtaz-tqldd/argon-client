@@ -163,7 +163,7 @@ const NavHeader = ({ className }) => {
     : storedChatbotEnabled;
   const isChatbotEnabled =
     chatbotEnabledOverrides[chatbotStateKey] ?? serverChatbotEnabled;
-  const chatbotName = activeChatbot?.name || "Atlas Support";
+  const chatbotName = activeChatbot?.chatbot_name || "Atlas Support";
   const chatbotLogo = activeChatbot?.logo || "";
   const notifications = toArray(notificationResponse?.data);
   const unreadCount =

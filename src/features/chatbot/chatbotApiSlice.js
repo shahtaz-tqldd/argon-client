@@ -24,14 +24,27 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
       ],
     }),
 
-    chatbotShortDetails: builder.query({
-      query: ({ chatbotSlug }) => {
-        return {
-          url: `/chatbots/short-details/?chatbot=${chatbotSlug}`,
-          method: "GET",
-        };
-      },
-      providesTags: ["chatbot-short-details"],
+    chatbotWidgetDetails: builder.query({
+      query: ({ chatbotSlug }) => ({
+        url: "/chatbots/widget-details/",
+        method: "GET",
+        params: { chatbot: chatbotSlug },
+      }),
+      providesTags: (_result, _error, { chatbotSlug }) => [
+        { type: "chatbot-widget-details", id: chatbotSlug },
+      ],
+    }),
+
+    updateChatbotWidget: builder.mutation({
+      query: ({ chatbotSlug, payload }) => ({
+        url: "/chatbots/widget-update/",
+        method: "PATCH",
+        params: { chatbot: chatbotSlug },
+        body: payload,
+      }),
+      invalidatesTags: (_result, _error, { chatbotSlug }) => [
+        { type: "chatbot-widget-details", id: chatbotSlug },
+      ],
     }),
 
     createChatbot: builder.mutation({
@@ -52,6 +65,7 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: (_result, _error, { chatbotSlug }) => [
         "chatbots",
         { type: "chatbot-details", id: chatbotSlug },
+        { type: "chatbot-widget-details", id: chatbotSlug },
       ],
     }),
 
@@ -119,7 +133,8 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
 export const {
   useChatbotListQuery,
   useChatbotDetailsQuery,
-  useChatbotShortDetailsQuery,
+  useChatbotWidgetDetailsQuery,
+  useUpdateChatbotWidgetMutation,
   useCreateChatbotMutation,
   useUpdateChatbotMutation,
   useDeleteChatbotMutation,

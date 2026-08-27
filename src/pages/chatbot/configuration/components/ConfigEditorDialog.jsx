@@ -31,7 +31,18 @@ const editorDefinitions = {
         type: "image",
         className: "sm:col-span-2",
       },
-      { key: "name", label: "Chatbot name", className: "sm:col-span-2" },
+      {
+        key: "business_name",
+        label: "Business name",
+        required: true,
+        maxLength: 120,
+      },
+      {
+        key: "chatbot_name",
+        label: "Chatbot name",
+        required: true,
+        maxLength: 120,
+      },
       {
         key: "description",
         label: "Description",
@@ -355,6 +366,8 @@ const ConfigEditorDialog = ({
                   value={draft[field.key] ?? ""}
                   onChange={(event) => update(field.key, event.target.value)}
                   disabled={isSaving}
+                  required={field.required}
+                  maxLength={field.maxLength}
                 />
               );
             })}

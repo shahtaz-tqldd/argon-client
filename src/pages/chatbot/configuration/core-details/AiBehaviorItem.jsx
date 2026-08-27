@@ -4,6 +4,7 @@ import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Text } from "@/components/ui/typography";
 
 const AiBehaviorItem = ({
   label,
@@ -36,7 +37,7 @@ const AiBehaviorItem = ({
   return (
     <div
       className={cn(
-        "group flex flex-col rounded-2xl border border-slate-200 p-4 dark:border-border",
+        "group flex flex-col rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-border",
         className,
       )}
       aria-busy={isSaving || undefined}
@@ -54,7 +55,7 @@ const AiBehaviorItem = ({
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder={emptyValue}
-            className="mt-3 min-h-28 flex-1 resize-y bg-background leading-6"
+            className="mt-3 min-h-20 flex-1 resize-y bg-background leading-6 focus-visible:ring-transparent outline-none focus-visible:border-primary/50"
             disabled={isSaving}
             autoFocus
           />
@@ -78,7 +79,7 @@ const AiBehaviorItem = ({
       ) : (
         <>
           <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-bold text-foreground">{label}</p>
+            <h5 className="text-sm font-bold">{label}</h5>
             <Button
               onClick={() => {
                 setDraft(value || "");
@@ -93,16 +94,15 @@ const AiBehaviorItem = ({
               <Pencil className="size-3.5" />
             </Button>
           </div>
-          <p
+          <Text
+            variant="sm"
             className={cn(
-              "mt-2 line-clamp-3 leading-6",
-              value
-                ? "text-muted-foreground"
-                : "italic text-muted-foreground/80",
+              "mt-2 line-clamp-3 leading-6 text-sm",
+              value ? "" : "italic !text-slate-400",
             )}
           >
             {value || emptyValue}
-          </p>
+          </Text>
         </>
       )}
     </div>

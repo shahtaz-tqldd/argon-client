@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { Bot, Check, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -24,9 +24,30 @@ import { useNavigate } from "react-router-dom";
 import { LANGUAGES } from "@/constants/language";
 import { DETECTED_TIMEZONE, TIMEZONES } from "@/lib/timezone";
 
+const CHATBOT_NAME_SUFFIX = " Assistant";
+const MAX_CHATBOT_NAME_LENGTH = 120;
+
+const createChatbotName = (businessName) => {
+  const normalizedBusinessName = businessName.trim();
+  if (!normalizedBusinessName) return "";
+
+  const availableBusinessNameLength =
+    MAX_CHATBOT_NAME_LENGTH - CHATBOT_NAME_SUFFIX.length;
+
+  return `${normalizedBusinessName
+    .slice(0, availableBusinessNameLength)
+    .trimEnd()}${CHATBOT_NAME_SUFFIX}`;
+};
+
 const getCreatedChatbot = (response) => {
   const data = response?.data?.data || response?.data || response;
   return data?.chatbot || data;
+};
+
+const ChatbotLogoUploader = ({ control, ...props }) => {
+  const chatbotName = useWatch({ control, name: "chatbot_name" });
+
+  return <LogoUploader {...props} name={chatbotName} />;
 };
 
 const CreateChatbotDialog = ({
@@ -40,29 +61,33 @@ const CreateChatbotDialog = ({
   const [selectedPlan, setSelectedPlan] = useState("Free");
   const [submissionError, setSubmissionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const lastGeneratedChatbotNameRef = useRef("");
 
   const [createChatbot] = useCreateChatbotMutation();
   const navigate = useNavigate();
 
   const {
     control,
+    getValues,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: {
-      name: "",
+      chatbot_name: "",
+      business_name: "",
       language: "en",
       timezone: DETECTED_TIMEZONE,
       description: "",
     },
   });
 
-  const chatbotName = useWatch({ control, name: "name" });
-
   const resetDialog = () => {
+    lastGeneratedChatbotNameRef.current = "";
     reset({
-      name: "",
+      business_name: "",
+      chatbot_name: "",
       language: "en",
       timezone: DETECTED_TIMEZONE,
       description: "",
@@ -88,7 +113,8 @@ const CreateChatbotDialog = ({
     setIsSubmitting(true);
 
     const payload = new FormData();
-    payload.append("name", values.name.trim());
+    payload.append("business_name", values.business_name.trim());
+    payload.append("chatbot_name", values.chatbot_name.trim());
     payload.append("language", values.language);
     payload.append("timezone", values.timezone);
     payload.append("description", values.description.trim());
@@ -124,46 +150,94 @@ const CreateChatbotDialog = ({
         <form onSubmit={handleSubmit(submitChatbot)}>
           <DialogHeader className="border-b border-border bg-muted/40 px-6 py-6">
             <DialogHeaderTitle
-              icon={Bot}
-              title="Create a chatbot"
-              details={`Add an identity for your assistant and choose a plan for it in ${workspaceName}.`}
+              title="Create a new Chatbot Assistant"
+              details={`Describe your ideal assistant and choose a plan for it in ${workspaceName}.`}
             />
           </DialogHeader>
 
           <div className="space-y-6 px-6 py-6">
             <section className="flex flex-col gap-5 sm:flex-row">
-              <LogoUploader
+              <ChatbotLogoUploader
+                control={control}
                 value={logoFile}
                 onChange={setLogoFile}
-                name={chatbotName}
                 fallbackIcon={Bot}
                 disabled={isSubmitting}
                 logoLabel="Chatbot logo"
               />
 
               <div className="min-w-0 flex-1 space-y-5 pt-1">
-                <Controller
-                  name="name"
-                  control={control}
-                  rules={{
-                    required: "Chatbot name is required",
-                    validate: (value) =>
-                      value.trim().length > 0 || "Chatbot name is required",
-                    maxLength: {
-                      value: 120,
-                      message: "Use 120 characters or fewer",
-                    },
-                  }}
-                  render={({ field }) => (
-                    <FloatingInput
-                      {...field}
-                      label="Chatbot name"
-                      error={errors.name?.message}
-                      disabled={isSubmitting}
-                      autoFocus
-                    />
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Controller
+                    name="business_name"
+                    control={control}
+                    rules={{
+                      required: "Business name is required",
+                      validate: (value) =>
+                        value.trim().length > 0 || "Business name is required",
+                      maxLength: {
+                        value: 120,
+                        message: "Use 120 characters or fewer",
+                      },
+                    }}
+                    render={({ field }) => {
+                      const handleBusinessNameChange = (event) => {
+                        const generatedChatbotName = createChatbotName(
+                          event.target.value,
+                        );
+                        const currentChatbotName = getValues("chatbot_name");
+                        const shouldUpdateChatbotName =
+                          !currentChatbotName.trim() ||
+                          currentChatbotName ===
+                            lastGeneratedChatbotNameRef.current;
+
+                        field.onChange(event);
+                        lastGeneratedChatbotNameRef.current =
+                          generatedChatbotName;
+
+                        if (shouldUpdateChatbotName) {
+                          setValue("chatbot_name", generatedChatbotName, {
+                            shouldDirty: true,
+                            shouldValidate: Boolean(errors.chatbot_name),
+                          });
+                        }
+                      };
+
+                      return (
+                        <FloatingInput
+                          {...field}
+                          onChange={handleBusinessNameChange}
+                          label="Business Name"
+                          error={errors.business_name?.message}
+                          disabled={isSubmitting}
+                          autoFocus
+                        />
+                      );
+                    }}
+                  />
+
+                  <Controller
+                    name="chatbot_name"
+                    control={control}
+                    rules={{
+                      required: "Chatbot name is required",
+                      validate: (value) =>
+                        value.trim().length > 0 || "Chatbot name is required",
+                      maxLength: {
+                        value: MAX_CHATBOT_NAME_LENGTH,
+                        message: "Use 120 characters or fewer",
+                      },
+                    }}
+                    render={({ field }) => (
+                      <FloatingInput
+                        {...field}
+                        label="Chatbot name"
+                        error={errors.chatbot_name?.message}
+                        disabled={isSubmitting}
+                      />
+                    )}
+                  />
+                </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <Controller
@@ -243,8 +317,8 @@ const CreateChatbotDialog = ({
                   render={({ field }) => (
                     <FloatingTextarea
                       {...field}
-                      label="Description (optional)"
-                      placeholder="What should this chatbot help with?"
+                      label="Description"
+                      placeholder="Write briefely what does your business/brand do"
                       rows={4}
                       textareaClassName="min-h-28 resize-none"
                       error={errors.description?.message}

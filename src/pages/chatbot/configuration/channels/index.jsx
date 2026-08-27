@@ -1,28 +1,27 @@
-import { Facebook, Instagram, Link2, MessageCircleMore } from "lucide-react";
-
+import { Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { StatusBadge } from "@/components/ui/badge";
 
 const channelDetails = [
   {
     key: "facebook",
-    name: "Facebook",
-    icon: Facebook,
+    name: "Facebook Messanger",
+    img: "/ms.webp",
     tone: "bg-blue-600 text-white",
     description: "Handle Facebook Messenger conversations in Inbox.",
   },
   {
     key: "instagram",
     name: "Instagram",
-    icon: Instagram,
+    img: "/insta.webp",
     tone: "bg-gradient-to-br from-fuchsia-500 to-amber-400 text-white",
     description: "Reply to Instagram direct messages from Argon.",
   },
   {
     key: "whatsapp",
     name: "WhatsApp",
-    icon: MessageCircleMore,
+    img: "/wp.webp",
     tone: "bg-emerald-500 text-white",
     description: "Support customers through your WhatsApp Business number.",
   },
@@ -46,40 +45,24 @@ const ChannelsTab = ({ config, edit }) => (
     </div>
     <div className="grid gap-5 lg:grid-cols-3">
       {channelDetails.map((channel) => {
-        const ChannelIcon = channel.icon;
         const values = config[channel.key];
         const connected = values.status === "Connected";
 
         return (
           <Card key={channel.key} className="flex min-h-72 flex-col p-5">
             <div className="flex items-start justify-between">
-              <span
-                className={cn(
-                  "flex size-12 items-center justify-center rounded-2xl shadow-sm",
-                  channel.tone,
-                )}
-              >
-                <ChannelIcon className="size-5" />
-              </span>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                  connected
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : values.status === "Needs attention"
-                      ? "bg-amber-500/10 text-amber-600"
-                      : "bg-muted text-muted-foreground",
-                )}
-              >
-                <span className="size-1.5 rounded-full bg-current" />
-                {values.status}
-              </span>
+              <img
+                src={channel.img}
+                alt={channel.name}
+                className="size-8 object-contain"
+              />
+              <StatusBadge>{values.status}</StatusBadge>
             </div>
             <h2 className="mt-5 font-bold">{channel.name}</h2>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {channel.description}
             </p>
-            <div className="mt-5 rounded-xl bg-muted/35 p-3">
+            <div className="mt-5 rounded-xl bg-muted p-4">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 Connected account
               </p>

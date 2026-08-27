@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import Pagination from "./pagination";
-import DeleteDialog from "../dialog/delete-dialog";
+import ConfirmDialog from "../dialog/confirm-dialog";
 import { useState } from "react";
 import { Checkbox } from "../ui/checkbox";
 import { SectionTitle } from "../ui/section";
@@ -69,6 +69,10 @@ const ReusableTable = ({
   headerActions,
   emptyTitle = "No entry found",
   emptyDescription = "There are no records to show right now.",
+  deleteTitle = "Delete this item?",
+  deleteDescription =
+    "This item will be permanently deleted. This action cannot be undone.",
+  deleteConfirmText = "Delete",
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -286,9 +290,13 @@ const ReusableTable = ({
           </div>
         )}
       </div>
-      <DeleteDialog
+      <ConfirmDialog
         open={deleteDialogOpen}
         setOpen={setDeleteDialogOpen}
+        title={deleteTitle}
+        description={deleteDescription}
+        confirmText={deleteConfirmText}
+        confirmVariant="destructive"
         onConfirm={handleConfirm}
         isLoading={deleteLoading}
       />

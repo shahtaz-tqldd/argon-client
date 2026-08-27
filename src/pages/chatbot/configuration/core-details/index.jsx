@@ -11,21 +11,28 @@ import {
   Lock,
   Pencil,
   RefreshCw,
+  Sparkles,
+  Trash2,
+  TriangleAlert,
   UserRoundPlus,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import ConfirmDialog from "@/components/dialog/confirm-dialog";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { SectionTitle } from "@/components/ui/section";
 import { LANGUAGES } from "@/constants/language";
+import { useDeleteChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { getCloudinaryPreviewUrl } from "@/lib/image";
 import { cn, formatStatus, getInitials } from "@/lib/utils";
 
 import AiBehaviorItem from "./AiBehaviorItem";
-import { ToggleControl } from "./shared";
+import { ToggleControl } from "../components/shared";
 
 const DetailTile = ({ icon, label, value, children }) => {
   const DetailIcon = icon;
@@ -128,7 +135,7 @@ const FeatureCard = ({
   );
 };
 
-const GeneralTabSkeleton = () => (
+const CoreDetailsTabSkeleton = () => (
   <div className="space-y-6" aria-label="Loading chatbot details">
     <div className="grid gap-5 lg:grid-cols-5">
       <div className="space-y-5 lg:col-span-3">
@@ -174,7 +181,7 @@ const GeneralTabSkeleton = () => (
   </div>
 );
 
-const GeneralTab = ({
+const CoreDetailsTab = ({
   chatbot,
   aiSettings,
   isLoading,
@@ -186,8 +193,12 @@ const GeneralTab = ({
   onToggleSetting,
 }) => {
   const [pendingToggle, setPendingToggle] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteChatbot, { isLoading: isDeleting }] = useDeleteChatbotMutation();
+  const navigate = useNavigate();
 
-  if (isLoading && !chatbot) return <GeneralTabSkeleton />;
+  if (isLoading && !chatbot) return <CoreDetailsTabSkeleton />;
 
   if (isError && !chatbot) {
     return (
@@ -215,6 +226,9 @@ const GeneralTab = ({
     chatbot.language ||
     "Not set";
   const status = formatStatus(chatbot.status);
+  const chatbotName = chatbot.chatbot_name || chatbot.name || "";
+  const isDeleteConfirmed =
+    Boolean(chatbotName) && deleteConfirmation === chatbotName;
   const features = [
     {
       key: "human-handoff",
@@ -265,12 +279,6 @@ const GeneralTab = ({
   ];
   const behaviorGroups = [
     {
-      key: "welcome-message",
-      label: "Welcome message",
-      value: aiSettings.welcome,
-      emptyValue: "No welcome message added yet.",
-    },
-    {
       key: "fallback-response",
       label: "Fallback response",
       value: aiSettings.fallback,
@@ -307,6 +315,23 @@ const GeneralTab = ({
     if (updated) setPendingToggle(null);
   };
 
+  const handleDeleteDialogOpen = (open) => {
+    if (!open) setDeleteConfirmation("");
+    setDeleteDialogOpen(open);
+  };
+
+  const confirmDelete = async () => {
+    if (!chatbot.slug || !isDeleteConfirmed || isDeleting) return;
+
+    try {
+      await deleteChatbot({ chatbotSlug: chatbot.slug }).unwrap();
+      toast.success("Chatbot deleted successfully");
+      navigate("/", { replace: true });
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to delete the chatbot."));
+    }
+  };
+
   return (
     <div className="space-y-7">
       <div className="grid gap-5 lg:grid-cols-5">
@@ -332,18 +357,20 @@ const GeneralTab = ({
                 {chatbot.logo ? (
                   <img
                     src={getCloudinaryPreviewUrl(chatbot.logo, 240)}
-                    alt={`${chatbot.name} logo`}
+                    alt={`${chatbot.chatbot_name} logo`}
                     className="size-full object-cover"
                   />
                 ) : (
-                  getInitials(chatbot.name)
+                  getInitials(chatbot.chatbot_name)
                 )}
               </span>
-              <div className="min-w-0">
+              <div className="w-full">
                 <div className="flex justify-between">
                   <div>
                     <div className="flx gap-3">
-                      <h1 className="text-lg font-bold">{chatbot.name}</h1>
+                      <h1 className="text-lg font-bold">
+                        {chatbot.chatbot_name}
+                      </h1>
                       <StatusBadge>{status}</StatusBadge>
                     </div>
                     <div className="mt-1.5 flex items-center gap-2 text-xs font-medium text-primary">
@@ -351,22 +378,36 @@ const GeneralTab = ({
                       {chatbot.workspace?.name || "Not set"}
                     </div>
                   </div>
-                  <div className="flx gap-4">
-                    <span className="text-sm font-bold text-primary">
-                      AI reply
-                    </span>
-                    <ToggleControl
-                      checked={aiSettings.aiEnabled}
-                      onChange={(enabled) =>
-                        setPendingToggle({
-                          field: "ai_enabled",
-                          label: "AI replies",
-                          enabled,
-                        })
-                      }
-                      disabled={isFeatureUpdating}
-                      label={`${aiSettings.aiEnabled ? "Disable" : "Enable"} AI replies`}
-                    />
+                  <div
+                    className={cn(
+                      "p-3 rounded-full border",
+                      aiSettings.aiEnabled
+                        ? "border-emerald-500/30 bg-emerald-500/10"
+                        : "border-red-500/30 bg-red-500/10",
+                    )}
+                  >
+                    <div className="flx gap-2">
+                      <span
+                        className={cn(
+                          "size-2 rounded-full",
+                          aiSettings.aiEnabled ? "bg-emerald-500" : "bg-red-500",
+                        )}
+                      ></span>
+                      <span className="text-sm font-bold mr-4">AI Reply</span>
+                      <ToggleControl
+                        checked={aiSettings.aiEnabled}
+                        bgcolor="bg-emerald-500"
+                        onChange={(enabled) =>
+                          setPendingToggle({
+                            field: "ai_enabled",
+                            label: "AI replies",
+                            enabled,
+                          })
+                        }
+                        disabled={isFeatureUpdating}
+                        label={`${aiSettings.aiEnabled ? "Disable" : "Enable"} AI replies`}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -387,9 +428,11 @@ const GeneralTab = ({
                 </div>
               </div>
             </div>
-
-            <div className="border-t border-b bg-muted/15 px-6 py-5">
+          </Card>
+          <Card className="p-0">
+            <div className="border-b px-6 py-5">
               <SectionTitle
+                icon={Sparkles}
                 title="AI behavior"
                 details="Control how your chatbot responds, communicates, and hands off conversations."
               />
@@ -407,7 +450,7 @@ const GeneralTab = ({
             </div>
           </Card>
         </div>
-        <div className="lg:col-span-2">
+        <div className="space-y-5 lg:col-span-2">
           <Card className="p-0">
             <div className="flex items-center justify-between gap-4 border-b bg-muted/15 px-6 py-5">
               <SectionTitle
@@ -425,6 +468,39 @@ const GeneralTab = ({
               ))}
             </div>
           </Card>
+
+          <Card className="border-destructive/30 p-0">
+            <div className="border-b border-destructive/20 bg-destructive/[0.04] px-6 py-5">
+              <div className="flex items-start gap-4">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                  <TriangleAlert className="size-5" />
+                </span>
+                <div>
+                  <h2 className="font-semibold text-destructive">
+                    Danger zone
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Permanently delete this chatbot and its associated data.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-5">
+              <p className="text-sm leading-6 text-muted-foreground">
+                This action cannot be undone. All chatbot configuration and
+                related data will be permanently removed.
+              </p>
+              <Button
+                className="mt-8 text-red-500 bg-red-500/10 hover:bg-red-500/15"
+                variant="secondary"
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={isDeleting}
+              >
+                <Trash2 />
+                Delete chatbot
+              </Button>
+            </div>
+          </Card>
         </div>
       </div>
       <ConfirmDialog
@@ -438,8 +514,43 @@ const GeneralTab = ({
         onConfirm={confirmToggle}
         isLoading={isFeatureUpdating}
       />
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        setOpen={handleDeleteDialogOpen}
+        title="Delete chatbot permanently?"
+        description="This action cannot be undone. Enter the chatbot name below to confirm deletion."
+        confirmText="Delete chatbot"
+        confirmVariant="destructive"
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        confirmDisabled={!isDeleteConfirmed}
+      >
+        <div className="mt-4 space-y-2">
+          <label
+            htmlFor="delete-chatbot-confirmation"
+            className="block text-sm font-medium text-foreground"
+          >
+            Type <span className="font-bold">{chatbotName}</span> to confirm
+          </label>
+          <Input
+            id="delete-chatbot-confirmation"
+            value={deleteConfirmation}
+            onChange={(event) => setDeleteConfirmation(event.target.value)}
+            placeholder={chatbotName}
+            autoComplete="off"
+            spellCheck={false}
+            disabled={isDeleting}
+            autoFocus
+          />
+          {deleteConfirmation && !isDeleteConfirmed && (
+            <p className="text-xs text-destructive">
+              The chatbot name does not match.
+            </p>
+          )}
+        </div>
+      </ConfirmDialog>
     </div>
   );
 };
 
-export default GeneralTab;
+export default CoreDetailsTab;

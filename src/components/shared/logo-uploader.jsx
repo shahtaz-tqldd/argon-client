@@ -9,8 +9,7 @@ import { cn, getInitials } from "@/lib/utils";
 
 const DEFAULT_FORMATS_LABEL = "PNG, JPG, or WebP";
 
-const formatMaxFileSize = (size) =>
-  formatFileSize(size).replace(".0 ", " ");
+const formatMaxFileSize = (size) => formatFileSize(size).replace(".0 ", " ");
 
 const LogoUploader = ({
   value,
@@ -59,7 +58,7 @@ const LogoUploader = ({
 
   return (
     <div className={cn("w-full shrink-0 sm:w-32", className)}>
-      <div className="group relative mx-auto size-28 overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/20 via-primary/10 to-cyan-100 shadow-sm dark:to-cyan-950/40 sm:mx-0">
+      <div className="flex group relative mx-auto size-28 overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/20 via-primary/10 to-cyan-100 shadow-sm dark:to-cyan-950/40 sm:mx-0">
         {activePreview ? (
           <img
             src={activePreview}
@@ -110,7 +109,7 @@ const LogoUploader = ({
         className="sr-only"
       />
 
-      <div className="mt-2 text-center text-[10px] text-muted-foreground sm:text-left">
+      <div className="mt-2 text-center text-[10px] text-muted-foreground -ml-3.5">
         <p className="truncate">{value ? value.name : formatsLabel}</p>
         <p>{value ? formatFileSize(value.size) : `max ${maxSizeLabel}`}</p>
       </div>

@@ -19,34 +19,48 @@ const ConfirmDialog = ({
   confirmVariant = "default",
   onConfirm,
   isLoading = false,
-}) => (
-  <Dialog open={open} onOpenChange={setOpen}>
-    <DialogContent className="sm:max-w-[468px]">
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription className="mt-4">{description}</DialogDescription>
-      </DialogHeader>
+  confirmDisabled = false,
+  children,
+}) => {
+  const handleOpenChange = (nextOpen) => {
+    if (!nextOpen && isLoading) return;
+    setOpen(nextOpen);
+  };
 
-      <DialogFooter className="mt-4">
-        <DialogClose asChild>
-          <Button variant="outline" disabled={isLoading}>
-            {cancelText}
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[468px]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="mt-4">
+            {description}
+          </DialogDescription>
+        </DialogHeader>
+
+        {children}
+
+        <DialogFooter className="mt-4">
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={isLoading}>
+              {cancelText}
+            </Button>
+          </DialogClose>
+          <Button
+            type="button"
+            onClick={onConfirm}
+            variant={confirmVariant}
+            disabled={isLoading || confirmDisabled}
+          >
+            {isLoading ? (
+              <span className="spinner spinner-white" />
+            ) : (
+              confirmText
+            )}
           </Button>
-        </DialogClose>
-        <Button
-          onClick={onConfirm}
-          variant={confirmVariant}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <span className="spinner spinner-white" />
-          ) : (
-            confirmText
-          )}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-);
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export default ConfirmDialog;

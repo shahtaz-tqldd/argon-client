@@ -9,6 +9,7 @@ export function ToggleControl({
   onChange,
   disabled = false,
   label = "Toggle setting",
+  bgcolor = "bg-primary",
 }) {
   return (
     <button
@@ -20,7 +21,7 @@ export function ToggleControl({
       onClick={() => onChange(!checked)}
       className={cn(
         "relative h-6 w-11 shrink-0 rounded-full transition",
-        checked ? "bg-primary" : "bg-muted-foreground/25",
+        checked ? bgcolor : "bg-muted-foreground/25",
         disabled && "cursor-not-allowed opacity-50",
       )}
     >

@@ -89,7 +89,7 @@ const ChatbotCard = ({ chatbot }) => (
             {chatbot.logo ? (
               <img
                 src={chatbot.logo}
-                alt={`${chatbot.name} logo`}
+                alt={`${chatbot.chatbot_name} logo`}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -98,7 +98,7 @@ const ChatbotCard = ({ chatbot }) => (
           </div>
           <div className="min-w-0">
             <h3 className="truncate font-semibold text-foreground">
-              {chatbot.name}
+              {chatbot.chatbot_name}
             </h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Updated {formatDate(chatbot.updated_at)}

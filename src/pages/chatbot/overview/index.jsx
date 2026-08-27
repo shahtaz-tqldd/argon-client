@@ -34,7 +34,7 @@ const ChatbotOverviewPage = () => {
             Hey {user?.name}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Welcome to {chatbot.name} management platform
+            Welcome to {chatbot.chatbot_name} management platform
           </p>
         </div>
 

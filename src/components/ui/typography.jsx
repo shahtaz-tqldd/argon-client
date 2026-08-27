@@ -27,7 +27,7 @@ export function Text({ children, variant = "md", className }) {
 
   return (
     <p
-      className={clsx(sizeClasses[variant], "text-muted-foreground", className)}
+      className={clsx(sizeClasses[variant], "text-slate-700", className)}
     >
       {children}
     </p>

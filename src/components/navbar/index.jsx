@@ -2,16 +2,18 @@ import React from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import AppLogo from "../ui/logo";
 
-import useAuth from "@/hooks/useAuth";
+import { useGetWorkspaceQuery } from "@/features/workspace/workspaceApiSlice";
 import { getCloudinaryPreviewUrl } from "@/lib/image";
+import { getInitials } from "@/lib/utils";
 import { getSidebarItems } from "./_constants";
 
 const SideMenu = ({ isHidden = false }) => {
   const location = useLocation();
   const { chatbotSlug } = useParams();
-  const { user } = useAuth();
-  const fullName = user?.name;
-  const avatar = user?.avatar_url || "";
+  const { data: workspaceResponse } = useGetWorkspaceQuery();
+  const workspace = workspaceResponse?.data;
+  const workspaceName = workspace?.name || "Workspace";
+  const workspaceLogo = workspace?.logo || "";
 
   if (isHidden) return null;
 
@@ -61,16 +63,31 @@ const SideMenu = ({ isHidden = false }) => {
         </ul>
       </div>
 
-      <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-background/60 p-3">
-        <img
-          src={getCloudinaryPreviewUrl(avatar, 120)}
-          className="size-9 rounded-full object-cover"
-        />
-        <div className="flex-1">
-          <h2 className="text-sm font-medium text-foreground">{fullName}</h2>
-          <p className="text-xs text-muted-foreground">Super Admin</p>
-        </div>
-      </div>
+      <Link
+        to="/"
+        aria-label={`Open ${workspaceName}`}
+        className="w-full flex items-center gap-2 rounded-full border border-primary/20 bg-background/60 p-3 transition-colors hover:bg-background"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-xs font-bold text-primary">
+          {workspaceLogo ? (
+            <img
+              src={getCloudinaryPreviewUrl(workspaceLogo, 120)}
+              alt={`${workspaceName} logo`}
+              className="size-full object-cover"
+            />
+          ) : (
+            getInitials(workspaceName)
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-foreground">
+            {workspaceName}
+          </span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {workspace?.industry || "Workspace"}
+          </span>
+        </span>
+      </Link>
     </div>
   );
 };
