@@ -104,6 +104,8 @@ export const apiSlice = createApi({
     "knowledge-details",
     "knowledge-usage",
     "knowledge-training-logs",
+    "subscription",
+    "subscription-payments",
   ],
   keepUnusedDataFor: 300, // Don't keep any unused data
   refetchOnMountOrArgChange: false, // Always refetch when component mounts

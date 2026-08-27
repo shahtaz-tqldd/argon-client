@@ -121,7 +121,7 @@ const WidgetPreview = ({ settings, chatbot }) => {
             }}
           >
             <div className="flex items-center gap-3">
-              <span className="flex size-9 center bg-white p-1 rounded-lg">
+              <span className="flex size-9 center">
                 {chatbot.logo ? (
                   <img
                     src={chatbot.logo}
@@ -156,7 +156,7 @@ const WidgetPreview = ({ settings, chatbot }) => {
                 >
                   <span
                     className={cn(
-                      "size-7 shrink-0 center",
+                      "size-6 shrink-0 center",
                       fromUser
                         ? "bg-slate-200 text-slate-600 rounded-full"
                         : "",

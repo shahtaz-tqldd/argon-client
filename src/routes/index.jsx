@@ -30,6 +30,7 @@ const TeamMemberPage = lazy(() => import("@/pages/chatbot/team-member"));
 const PlanAndBillingPage = lazy(
   () => import("@/pages/chatbot/plan-and-billing"),
 );
+const StripeReturnPage = lazy(() => import("@/pages/checkout/stripe-return"));
 
 // others
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -83,6 +84,18 @@ export const routes = createBrowserRouter([
       {
         path: "/chatbot/:chatbotSlug/plan-and-billing",
         element: withSuspense(<PlanAndBillingPage />),
+      },
+      {
+        path: "/checkout/success",
+        element: withSuspense(<StripeReturnPage status="success" />),
+      },
+      {
+        path: "/checkout/cancel",
+        element: withSuspense(<StripeReturnPage status="cancel" />),
+      },
+      {
+        path: "/settings/billing",
+        element: withSuspense(<StripeReturnPage />),
       },
       {
         path: "/search",
