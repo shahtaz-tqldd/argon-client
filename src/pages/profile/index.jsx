@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ArrowLeft, CheckCircle2, KeyRound, ShieldCheck } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { CheckCircle2, KeyRound, ShieldCheck, User } from "lucide-react";
+
 import { toast } from "sonner";
 
 import Card from "@/components/ui/card";
@@ -13,18 +13,13 @@ import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { getCloudinaryPreviewUrl } from "@/lib/image";
 import { getInitials } from "@/lib/utils";
 import PasswordUpdateDialog from "./components/password-update";
+import { SectionTitle } from "@/components/ui/section";
 
 const ProfilePage = () => {
-  const { chatbotSlug } = useParams();
   const { user, isLoading: isProfileLoading, refetchProfile } = useAuth();
-  const [updateAccount, { isLoading: isSaving }] =
-    useUpdateAccountMutation();
+  const [updateAccount, { isLoading: isSaving }] = useUpdateAccountMutation();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [previewProfile, setPreviewProfile] = useState(() => ({
-    name: "Shahtaz Ahmed",
-    email: "shahtaz@argon.ai",
-    avatar_url: "",
-  }));
+  const [previewProfile, setPreviewProfile] = useState(() => ({}));
 
   const profile = user || previewProfile;
   const formValues = useMemo(
@@ -76,17 +71,12 @@ const ProfilePage = () => {
   return (
     <div className="mx-auto w-full max-w-4xl pb-10 pt-3">
       <header className="pr-14">
-        <Link
-          to={chatbotSlug ? `/chatbot/${chatbotSlug}` : "/"}
-          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" />
-          {chatbotSlug ? "Back to chatbot" : "Back to workspace"}
-        </Link>
-        <h1 className="text-3xl font-semibold tracking-tight">Profile</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Manage your personal details and account security.
-        </p>
+        <SectionTitle
+          icon={User}
+          title="Profile"
+          details="Manage your personal details and account security"
+          lg
+        />
       </header>
 
       <Card className="mt-7 p-0">

@@ -24,6 +24,12 @@ const Badge = ({ children }) => {
     reject: "bg-red-100 text-red-600 ring-red-500/20",
     rejected: "bg-red-100 text-red-600 ring-red-500/20",
     deleted: "bg-red-100 text-red-600 ring-red-500/20",
+
+    ai_enabled: "bg-emerald-500/10 text-emerald-500 ring-transparent",
+    ai_disabled: "bg-red-500/10 text-red-500 ring-transparent",
+    growth: "bg-orange-500/10 text-orange-500 ring-transparent",
+    starter: "bg-blue-500/10 text-blue-500 ring-transparent",
+    free: "bg-slate-400/10 text-slate-600 ring-transparent",
   };
 
   const appliedStyle =

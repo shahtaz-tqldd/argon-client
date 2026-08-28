@@ -232,14 +232,14 @@ const NavHeader = ({ className }) => {
 
   return (
     <aside className={cn("fixed right-8 top-7 z-50", className)}>
-      <div className="p-1 flex items-center overflow-hidden rounded-full border border-border/70 bg-background/50 shadow-sm backdrop-blur-xl">
+      <div className="p-1 flex items-center overflow-hidden rounded-full border border-primary/25 bg-primary/10 shadow-sm backdrop-blur-xl">
         {chatbotSlug ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 aria-label={`Manage ${chatbotName}`}
-                className="group flex min-w-0 items-center gap-2.5 rounded-full p-2 text-left outline-none transition hover:bg-accent/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
+                className="group flex min-w-0 items-center gap-2.5 rounded-full p-1 pr-2 text-left outline-none transition hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
               >
                 <span className="flex size-9 shrink-0 center overflow-hidden rounded-full bg-primary/10 text-primary">
                   {chatbotLogo ? (
@@ -249,11 +249,13 @@ const NavHeader = ({ className }) => {
                       className="size-full object-cover"
                     />
                   ) : (
-                    <Bot className="size-5" />
+                    <div className="text-sm font-bold">
+                      {getInitials(chatbotName)}
+                    </div>
                   )}
                 </span>
                 <span className="min-w-0 pr-1">
-                  <span className="block max-w-36 truncate text-xs font-semibold text-foreground">
+                  <span className="block max-w-36 truncate text-xs font-bold text-foreground">
                     {chatbotName}
                   </span>
                   <span
@@ -292,7 +294,9 @@ const NavHeader = ({ className }) => {
                       className="size-full object-cover"
                     />
                   ) : (
-                    <Bot className="size-5" />
+                    <div className="text-sm font-bold">
+                      {getInitials(chatbotName)}
+                    </div>
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -354,7 +358,7 @@ const NavHeader = ({ className }) => {
             <button
               type="button"
               aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
-              className="relative center size-14 rounded-full text-muted-foreground outline-none transition hover:bg-accent/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
+              className="relative center size-12 rounded-full text-muted-foreground outline-none transition hover:bg-primary/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
             >
               <Bell className="size-5" />
               {unreadCount > 0 && (
@@ -486,7 +490,7 @@ const NavHeader = ({ className }) => {
             <button
               type="button"
               aria-label="Open account menu"
-              className="p-2 rounded-full outline-none transition hover:bg-accent/70 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
+              className="p-1 rounded-full outline-none transition hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
             >
               <Avatar
                 avatar={avatar}

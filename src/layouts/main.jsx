@@ -5,7 +5,7 @@ import NavHeader from "@/components/navbar/nav-header";
 
 const DashboardLayout = () => {
   const { pathname } = useLocation();
-  const hiddenSidebarRoutes = ["/", "/onboarding"];
+  const hiddenSidebarRoutes = ["/", "/onboarding", "/profile"];
   const isHidden = hiddenSidebarRoutes.includes(pathname);
   const isInbox = pathname.includes("/chat-session");
   return (

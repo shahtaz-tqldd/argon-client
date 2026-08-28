@@ -1,23 +1,67 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowUpRight,
-  Bot,
-  Plus,
-  RefreshCw,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { ArrowUpRight, Bot, Plus, RefreshCw, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import Card from "@/components/ui/card";
+import { Badge, StatusBadge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section";
 import { useChatbotListQuery } from "@/features/chatbot/chatbotApiSlice";
-import { formatDate } from "@/lib/date-time";
 
 import CreateChatbotDialog from "./create-chatbot";
-import { toArray } from "@/lib/utils";
+import { cn, getInitials, toArray } from "@/lib/utils";
+
+const avatarColors = [
+  "bg-violet-500 text-white",
+  "bg-orange-500 text-white",
+  "bg-emerald-600 text-white",
+  "bg-amber-500 text-amber-950",
+  "bg-rose-500 text-white",
+  "bg-blue-600 text-white",
+];
+
+const cardGradients = [
+  "from-violet-50 via-white to-cyan-50 dark:from-violet-950/45 dark:via-card dark:to-cyan-950/35",
+  "from-emerald-50 via-white to-teal-50 dark:from-emerald-950/40 dark:via-card dark:to-teal-950/35",
+  "from-amber-50/50 via-white to-cyan-50 dark:from-amber-950/35 dark:via-card dark:to-cyan-950/35",
+  "from-blue-50 via-white to-indigo-50 dark:from-blue-950/40 dark:via-card dark:to-indigo-950/35",
+];
+
+const getPaletteIndex = (value, palette) => {
+  const hash = String(value || "argon")
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+
+  return hash % palette.length;
+};
+
+const getAvatar = (person) =>
+  person?.avatar_url || person?.avatar || person?.image || "";
+
+const PersonAvatar = ({ person, index = 0, className }) => {
+  const name = person?.name?.trim() || person?.email || "Team member";
+  const avatar = getAvatar(person);
+
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-bold ring-2 ring-background",
+        avatarColors[index % avatarColors.length],
+        className,
+      )}
+      title={name}
+    >
+      {avatar ? (
+        <img
+          src={avatar}
+          alt={`${name} avatar`}
+          className="size-full object-cover"
+        />
+      ) : (
+        getInitials(name)
+      )}
+    </span>
+  );
+};
 
 const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -56,10 +100,11 @@ const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
             <ChatbotsError onRetry={refetch} />
           ) : chatbots.length ? (
             <div className="grid gap-4 md:grid-cols-2">
-              {chatbots.map((chatbot) => (
+              {chatbots.map((chatbot, index) => (
                 <ChatbotCard
                   key={chatbot.id || chatbot.slug}
                   chatbot={chatbot}
+                  colorIndex={index}
                 />
               ))}
             </div>
@@ -80,52 +125,119 @@ const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
   );
 };
 
-const ChatbotCard = ({ chatbot }) => (
-  <Link to={`/chatbot/${chatbot.slug}`} className="block">
-    <article className="group rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
-            {chatbot.logo ? (
-              <img
-                src={chatbot.logo}
-                alt={`${chatbot.chatbot_name} logo`}
-                className="h-full w-full object-cover"
-              />
+const ChatbotCard = ({ chatbot, colorIndex }) => {
+  const members = toArray(chatbot.members);
+  const visibleMembers = members.slice(0, 3);
+  const remainingMembers = Math.max(members.length - visibleMembers.length, 0);
+  const creator = chatbot.created_by;
+  const isAdmin = String(chatbot.current_user_role).toLowerCase() === "admin";
+  const chatbotPaletteIndex = colorIndex % avatarColors.length;
+  const gradientIndex = colorIndex % cardGradients.length;
+
+  return (
+    <Link to={`/chatbot/${chatbot.slug}`} className="block h-full">
+      <article
+        className={cn(
+          "group relative h-full overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:shadow-black/10",
+          cardGradients[gradientIndex],
+        )}
+      >
+        <div className="pointer-events-none absolute -right-10 -top-12 size-32 rounded-full bg-white/40 blur-2xl dark:bg-white/[0.04]" />
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className={cn(
+                "flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-bold",
+                avatarColors[chatbotPaletteIndex],
+              )}
+            >
+              {chatbot.logo ? (
+                <img
+                  src={chatbot.logo}
+                  alt={`${chatbot.chatbot_name} logo`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                getInitials(chatbot.chatbot_name)
+              )}
+            </div>
+            <div className="min-w-0">
+              <h3 className="truncate font-semibold text-foreground">
+                {chatbot.chatbot_name}
+              </h3>
+              {isAdmin ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Created by you
+                </p>
+              ) : (
+                <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <PersonAvatar
+                    person={creator}
+                    index={getPaletteIndex(
+                      creator?.name || creator?.email,
+                      avatarColors,
+                    )}
+                    className="size-5 ring-1"
+                  />
+                  <span className="truncate">
+                    Created by {creator?.name || creator?.email || "Unknown"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <StatusBadge>{chatbot.status || "draft"}</StatusBadge>
+        </div>
+
+        <p className="mt-4 line-clamp-2 min-h-12 text-sm leading-6 text-muted-foreground">
+          {chatbot.description ||
+            "Configure this chatbot's knowledge, behavior, and customer channels."}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          <Badge>{chatbot?.subscription_plan_name}</Badge>
+          {chatbot.ai_enabled ? (
+            <Badge>ai_enabled</Badge>
+          ) : (
+            <Badge>ai_disabled</Badge>
+          )}
+        </div>
+        <div className="mt-2.5 flex items-center justify-between border-t border-border/70 pt-3">
+          <div className="flex items-center">
+            {visibleMembers.length ? (
+              <div
+                className="flex -space-x-2"
+                aria-label={`${members.length} team members`}
+              >
+                {visibleMembers.map((member, index) => (
+                  <PersonAvatar
+                    key={member.id || member.email || `${member.name}-${index}`}
+                    person={member.user || member}
+                    index={
+                      (chatbotPaletteIndex + index + 1) % avatarColors.length
+                    }
+                    className="size-6"
+                  />
+                ))}
+                {remainingMembers > 0 && (
+                  <span className="flex size-8 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground ring-2 ring-background">
+                    +{remainingMembers}
+                  </span>
+                )}
+              </div>
             ) : (
-              <Bot className="size-5" />
+              <span className="text-xs text-muted-foreground">
+                No team members
+              </span>
             )}
           </div>
-          <div className="min-w-0">
-            <h3 className="truncate font-semibold text-foreground">
-              {chatbot.chatbot_name}
-            </h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Updated {formatDate(chatbot.updated_at)}
-            </p>
-          </div>
+          <span className="flex items-center gap-1 text-xs font-semibold text-primary opacity-70 transition group-hover:opacity-100">
+            Open <ArrowUpRight className="size-3.5" />
+          </span>
         </div>
-        <Badge>{chatbot.status || "draft"}</Badge>
-      </div>
-
-      <p className="mt-4 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">
-        {chatbot.description ||
-          "Configure this chatbot’s knowledge, behavior, and customer channels."}
-      </p>
-
-      <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Users className="size-3.5" />
-          {chatbot.member_count ?? 0} member
-          {(chatbot.member_count ?? 0) === 1 ? "" : "s"}
-        </div>
-        <span className="flex items-center gap-1 text-xs font-semibold text-primary opacity-70 transition group-hover:opacity-100">
-          Open <ArrowUpRight className="size-3.5" />
-        </span>
-      </div>
-    </article>
-  </Link>
-);
+      </article>
+    </Link>
+  );
+};
 
 const ChatbotsLoading = () => (
   <div className="grid animate-pulse gap-4 md:grid-cols-2">
