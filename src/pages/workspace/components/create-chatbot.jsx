@@ -146,7 +146,7 @@ const CreateChatbotDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[calc(100vh-2rem)] custom-scrollbar rounded-3xl p-0 sm:max-w-2xl">
+      <DialogContent className="rounded-3xl p-0 sm:max-w-2xl overflow-hidden">
         <form onSubmit={handleSubmit(submitChatbot)}>
           <DialogHeader className="border-b border-border bg-muted/40 px-6 py-6">
             <DialogHeaderTitle
@@ -155,7 +155,7 @@ const CreateChatbotDialog = ({
             />
           </DialogHeader>
 
-          <div className="space-y-6 px-6 py-6">
+          <div className="space-y-6 px-6 py-6 max-h-[calc(100vh-15rem)] custom-scrollbar">
             <section className="flex flex-col gap-5 sm:flex-row">
               <ChatbotLogoUploader
                 control={control}
@@ -319,8 +319,8 @@ const CreateChatbotDialog = ({
                       {...field}
                       label="Description"
                       placeholder="Write briefely what does your business/brand do"
-                      rows={4}
-                      textareaClassName="min-h-28 resize-none"
+                      rows={3}
+                      textareaClassName="min-h-24 resize-none"
                       error={errors.description?.message}
                       disabled={isSubmitting}
                     />

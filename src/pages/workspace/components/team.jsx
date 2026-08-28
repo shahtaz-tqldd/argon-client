@@ -5,7 +5,10 @@ import { toast } from "sonner";
 import InviteMemberDialog from "@/components/dialog/invite-member-dialog";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
-import { useInviteWorkspaceMemberMutation } from "@/features/workspace/workspaceApiSlice";
+import {
+  useInviteWorkspaceMemberMutation,
+  useWorkspaceMemberListQuery,
+} from "@/features/workspace/workspaceApiSlice";
 import { cn, getInitials, toArray } from "@/lib/utils";
 
 const isMemberOnline = (member, currentUserId) => {
@@ -17,7 +20,7 @@ const isMemberOnline = (member, currentUserId) => {
 
 const MemberAvatar = ({ member, isOnline }) => {
   const person = member.user || member;
-  const name = person.name || person.email;
+  const name = person.name?.trim() || person.email;
   const avatar = person.avatar_url || person.avatar;
 
   return (
@@ -52,7 +55,7 @@ const MemberRow = ({ member, currentUserId }) => {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <p className="truncate text-sm font-semibold text-foreground">
-            {person.name || person.email}
+            {person.name?.trim() || person.email}
           </p>
           {String(role).toLowerCase() === "owner" && (
             <ShieldCheck className="size-3.5 shrink-0 text-primary" />
@@ -79,22 +82,35 @@ const MemberRow = ({ member, currentUserId }) => {
   );
 };
 
-const PendingInvitationRow = ({ invitation }) => (
-  <div className="flex items-center gap-3 py-3">
-    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
-      <Clock3 className="size-4" />
+const PendingInvitationRow = ({ invitation }) => {
+  const person = invitation.user || invitation;
+  const email = person.email || invitation.email;
+  const name = person.name?.trim();
+
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+        <Clock3 className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-foreground">
+          {name || email || "Invited member"}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {name && email ? email : "Invitation sent"}
+        </p>
+      </div>
+      <div className="text-right">
+        <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+          Pending
+        </span>
+        <p className="mt-1 text-[11px] capitalize text-muted-foreground">
+          {invitation.role || "Member"}
+        </p>
+      </div>
     </div>
-    <div className="min-w-0 flex-1">
-      <p className="truncate text-sm font-semibold text-foreground">
-        {invitation.email}
-      </p>
-      <p className="text-xs text-muted-foreground">Invitation sent</p>
-    </div>
-    <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-      Pending request
-    </span>
-  </div>
-);
+  );
+};
 
 const getMembers = (workspace, currentUser) => {
   const members = toArray(workspace.members || workspace.memberships);
@@ -115,31 +131,69 @@ const getMembers = (workspace, currentUser) => {
   ];
 };
 
-const getPendingInvitations = (workspace, sentInvitations) => {
+const getMemberList = (response) => {
+  const payload = response?.data ?? response;
+
+  if (Array.isArray(payload)) return payload;
+
+  return toArray(payload?.results || payload?.members || payload?.memberships);
+};
+
+const isPendingInvitation = (member) =>
+  member.invitation_request_accepted === false;
+
+const getInvitationEmail = (invitation) =>
+  invitation.user?.email || invitation.email;
+
+const getPendingInvitations = (workspace, teamInvitations, sentInvitations) => {
   const apiInvitations = toArray(
     workspace.pending_invitations || workspace.invitations,
-  ).filter((invitation) => !invitation.accepted_at);
+  ).filter(
+    (invitation) =>
+      invitation.invitation_request_accepted === false ||
+      (!("invitation_request_accepted" in invitation) &&
+        !invitation.accepted_at),
+  );
 
-  return [...sentInvitations, ...apiInvitations].filter(
+  return [...sentInvitations, ...teamInvitations, ...apiInvitations].filter(
     (invitation, index, invitations) =>
       invitations.findIndex((item) => {
         const hasMatchingId = invitation.id && item.id === invitation.id;
+        const invitationEmail = getInvitationEmail(invitation)?.toLowerCase();
         const hasMatchingEmail =
-          item.email?.toLowerCase() === invitation.email?.toLowerCase();
+          invitationEmail &&
+          getInvitationEmail(item)?.toLowerCase() === invitationEmail;
         return hasMatchingId || hasMatchingEmail;
       }) === index,
   );
 };
 
 const WorkspaceTeam = ({ workspace, currentUser, onWorkspaceChange }) => {
+  const { data: memberResponse } = useWorkspaceMemberListQuery({
+    workspaceSlug: workspace?.slug,
+  });
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [sentInvitations, setSentInvitations] = useState([]);
   const [inviteWorkspaceMember, { isLoading: isInviting }] =
     useInviteWorkspaceMemberMutation();
 
-  const members = getMembers(workspace, currentUser);
-  const pendingInvitations = getPendingInvitations(workspace, sentInvitations);
-  const memberCount = workspace.member_count ?? members.length;
+  const apiMembers = getMemberList(memberResponse);
+  const teamRecords =
+    memberResponse === undefined
+      ? getMembers(workspace, currentUser)
+      : apiMembers;
+  const members = teamRecords.filter((member) => !isPendingInvitation(member));
+  const pendingInvitations = getPendingInvitations(
+    workspace,
+    teamRecords.filter(isPendingInvitation),
+    sentInvitations,
+  );
+  const workspaceMemberCount =
+    Number(workspace.member_count ?? members.length) || 0;
+  const memberCount =
+    memberResponse === undefined
+      ? Math.max(workspaceMemberCount, members.length)
+      : members.length;
 
   const sendInvitation = async (email) => {
     const response = await inviteWorkspaceMember({
@@ -165,7 +219,9 @@ const WorkspaceTeam = ({ workspace, currentUser, onWorkspaceChange }) => {
           <div>
             <h2 className="font-bold text-foreground">Members</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              {memberCount} active member{memberCount === 1 ? "" : "s"}
+              {memberCount} member{memberCount === 1 ? "" : "s"}
+              {pendingInvitations.length > 0 &&
+                ` · ${pendingInvitations.length} pending`}
             </p>
           </div>
           <Button

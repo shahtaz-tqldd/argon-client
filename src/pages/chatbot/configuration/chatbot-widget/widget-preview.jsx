@@ -189,7 +189,10 @@ const WidgetPreview = ({ settings, chatbot }) => {
                     )}
                     style={
                       fromUser
-                        ? { backgroundColor: settings.primaryColor }
+                        ? {
+                            backgroundColor: settings.primaryColor,
+                            color: settings.secondaryColor,
+                          }
                         : undefined
                     }
                   >
@@ -231,7 +234,11 @@ const WidgetPreview = ({ settings, chatbot }) => {
               {/* Send */}
               <button
                 type="button"
-                className="center size-8 shrink-0 rounded-full bg-primary text-white transition-opacity hover:opacity-90"
+                className="center size-8 shrink-0 rounded-full transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: settings.primaryColor,
+                  color: settings.secondaryColor,
+                }}
               >
                 <Send className="size-3.5" />
               </button>

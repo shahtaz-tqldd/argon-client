@@ -97,6 +97,8 @@ export const apiSlice = createApi({
     "chatbot-details",
     "chatbot-widget-details",
     "chatbot-invitations",
+    "workspace-team",
+
     "notifications",
     "workspace",
     "workspace-invitations",

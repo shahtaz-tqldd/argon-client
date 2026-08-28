@@ -36,11 +36,11 @@ const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
 
   return (
     <>
-      <Card className="p-0">
-        <div className="border-b border-border p-5 sm:p-6">
+      <div>
+        <div className="mb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <SectionTitle
-              title="Chatbots"
+              title="Your Chatbots"
               details="Build, publish, and manage assistants for your customers."
             />
             <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -49,7 +49,7 @@ const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
           </div>
         </div>
 
-        <div className="p-5 sm:p-6">
+        <div>
           {isLoading ? (
             <ChatbotsLoading />
           ) : isError ? (
@@ -67,7 +67,7 @@ const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
             <ChatbotsEmpty onCreate={() => setIsCreateDialogOpen(true)} />
           )}
         </div>
-      </Card>
+      </div>
 
       <CreateChatbotDialog
         open={isCreateDialogOpen}

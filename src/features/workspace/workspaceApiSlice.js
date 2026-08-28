@@ -21,13 +21,31 @@ export const workspaceApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["workspace"],
     }),
 
+    // team
+    workspaceMemberList: builder.query({
+      query: ({ workspaceSlug }) => ({
+        url: `/workspaces/team/member-list?workspace=${workspaceSlug}`,
+        method: "GET",
+      }),
+      providesTags: ["workspace-team"],
+    }),
+
     inviteWorkspaceMember: builder.mutation({
       query: ({ workspaceSlug, email }) => ({
-        url: `/workspaces/${workspaceSlug}/invitations/`,
+        url: `/workspaces/team/invite/?workspace=${workspaceSlug}`,
         method: "POST",
         body: { email },
       }),
-      invalidatesTags: ["workspace-invitations"],
+      invalidatesTags: ["workspace-team"],
+    }),
+
+    acceptWorkspaceInvitation: builder.mutation({
+      query: (payload) => ({
+        url: "/workspaces/team/accept-invite/",
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["workspace", "workspace-team"],
     }),
   }),
 });
@@ -35,5 +53,9 @@ export const workspaceApiSlice = apiSlice.injectEndpoints({
 export const {
   useGetWorkspaceQuery,
   useUpdateWorkspaceMutation,
+
+  // team
+  useWorkspaceMemberListQuery,
   useInviteWorkspaceMemberMutation,
+  useAcceptWorkspaceInvitationMutation,
 } = workspaceApiSlice;
