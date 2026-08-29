@@ -1,12 +1,25 @@
 import { useMemo, useState } from "react";
 import {
-  Activity, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Building2, Check,
-  ChevronRight, Clock3, Download, Facebook, FileSpreadsheet, Flame, Globe2,
-  Network as Hub, Instagram, Lightbulb, Mail, MessageCircleMore, Pencil, Phone, Plus,
-  Search, Settings2, SlidersHorizontal, Sparkles, Target, TrendingUp,
-  UserRoundCheck, UserRoundSearch, UsersRound,
+  Activity,
+  Building2,
+  ChevronRight,
+  Download,
+  Facebook,
+  Flame,
+  Globe2,
+  Instagram,
+  Mail,
+  MessageCircleMore,
+  Phone,
+  Search,
+  Settings2,
+  Sparkles,
+  Target,
+  TrendingUp,
+  UserRoundCheck,
+  UserRoundSearch,
+  UsersRound,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import ReusableTable from "@/components/table";
@@ -14,28 +27,47 @@ import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FloatingInput, Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import {
-  FloatingSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  FloatingSelect,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import TabMenu from "@/components/ui/tab";
-import { FloatingTextarea } from "@/components/ui/textarea";
 import { cn, getInitials } from "@/lib/utils";
 
-import { initialCaptureFields, initialLeads, leadTrend, sourcePerformance } from "./demo-data";
+import { initialLeads } from "./demo-data";
+import { SectionTitle } from "@/components/ui/section";
+import LeadCaptureConfig from "./config";
+import LeadAnalyticsTab from "./analytics";
 
 const pageTabs = [
-  { value: "leads", label: "Collected leads", icon: UserRoundSearch, count: 286 },
+  {
+    value: "leads",
+    label: "Collected leads",
+    icon: UserRoundSearch,
+    count: 286,
+  },
   { value: "analysis", label: "Lead analysis", icon: TrendingUp },
   { value: "settings", label: "Settings", icon: Settings2 },
 ];
 
 const channelMeta = {
   Website: { icon: Globe2, tone: "bg-sky-500/10 text-sky-600" },
-  WhatsApp: { icon: MessageCircleMore, tone: "bg-emerald-500/10 text-emerald-600" },
+  WhatsApp: {
+    icon: MessageCircleMore,
+    tone: "bg-emerald-500/10 text-emerald-600",
+  },
   Instagram: { icon: Instagram, tone: "bg-fuchsia-500/10 text-fuchsia-600" },
   Facebook: { icon: Facebook, tone: "bg-blue-600/10 text-blue-600" },
 };
@@ -51,67 +83,422 @@ const statusStyles = {
   Disqualified: "bg-muted text-muted-foreground",
 };
 
-function Toggle({ checked, onChange, disabled = false }) {
-  return <button type="button" role="switch" aria-checked={checked} disabled={disabled} onClick={() => onChange(!checked)} className={cn("relative h-6 w-11 shrink-0 rounded-full transition", checked ? "bg-primary" : "bg-muted-foreground/25", disabled && "cursor-not-allowed opacity-50")}><span className={cn("absolute top-0.5 size-5 rounded-full bg-white shadow transition", checked ? "left-[22px]" : "left-0.5")} /></button>;
-}
-
 function ChannelLabel({ source }) {
   const meta = channelMeta[source] || channelMeta.Website;
   const ChannelIcon = meta.icon;
-  return <span className="inline-flex items-center gap-2 text-xs font-medium"><span className={cn("flex size-7 items-center justify-center rounded-full", meta.tone)}><ChannelIcon className="size-3.5" /></span>{source}</span>;
+  return (
+    <span className="inline-flex items-center gap-2 text-xs font-medium">
+      <span
+        className={cn(
+          "flex size-7 items-center justify-center rounded-full",
+          meta.tone,
+        )}
+      >
+        <ChannelIcon className="size-3.5" />
+      </span>
+      {source}
+    </span>
+  );
 }
 
 function LeadIdentity({ lead }) {
-  return <div className="flex min-w-52 items-center gap-3"><div className="relative shrink-0"><span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{getInitials(lead.name)}</span>{lead.quality === "Hot" && <span className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-card bg-red-500 text-white"><Flame className="size-2.5" /></span>}</div><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{lead.name}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{lead.email}</p></div></div>;
+  return (
+    <div className="flex min-w-52 items-center gap-3">
+      <div className="relative shrink-0">
+        <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+          {getInitials(lead.name)}
+        </span>
+        {lead.quality === "Hot" && (
+          <span className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-card bg-red-500 text-white">
+            <Flame className="size-2.5" />
+          </span>
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-foreground">
+          {lead.name}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {lead.email}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function QualityScore({ lead }) {
-  return <div className="min-w-24"><span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", qualityStyles[lead.quality])}>{lead.quality === "Hot" && <Flame className="size-3" />}{lead.quality}</span><div className="mt-2 flex items-center gap-2"><span className="h-1.5 w-14 overflow-hidden rounded-full bg-muted"><span className="block h-full rounded-full bg-primary" style={{ width: `${lead.score}%` }} /></span><span className="text-[11px] font-semibold text-muted-foreground">{lead.score}</span></div></div>;
+  return (
+    <div className="min-w-24">
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+          qualityStyles[lead.quality],
+        )}
+      >
+        {lead.quality === "Hot" && <Flame className="size-3" />}
+        {lead.quality}
+      </span>
+      <div className="mt-2 flex items-center gap-2">
+        <span className="h-1.5 w-14 overflow-hidden rounded-full bg-muted">
+          <span
+            className="block h-full rounded-full bg-primary"
+            style={{ width: `${lead.score}%` }}
+          />
+        </span>
+        <span className="text-[11px] font-semibold text-muted-foreground">
+          {lead.score}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 function LeadStatus({ lead }) {
-  return <div><span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", statusStyles[lead.status])}>{lead.status}</span><p className="mt-2 text-[11px] text-muted-foreground">{lead.owner}</p></div>;
-}
-
-function MetricCard({ icon, label, value, detail, tone, badge }) {
-  const MetricIcon = icon;
-  return <Card className="p-5"><div className="flex items-center justify-between"><span className={cn("flex size-9 items-center justify-center rounded-xl", tone)}><MetricIcon className="size-4" /></span>{badge}</div><p className="mt-4 text-2xl font-bold tracking-tight">{value}</p><p className="mt-1 text-xs font-medium text-muted-foreground">{label}</p><p className="mt-3 text-[11px] text-muted-foreground">{detail}</p></Card>;
+  return (
+    <div>
+      <span
+        className={cn(
+          "rounded-full px-2.5 py-1 text-xs font-semibold",
+          statusStyles[lead.status],
+        )}
+      >
+        {lead.status}
+      </span>
+      <p className="mt-2 text-[11px] text-muted-foreground">{lead.owner}</p>
+    </div>
+  );
 }
 
 function DetailRow({ icon, label, value }) {
   const DetailIcon = icon;
-  return <div className="flex gap-3"><DetailIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><div className="min-w-0"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-0.5 truncate text-xs font-medium">{value}</p></div></div>;
+  return (
+    <div className="flex gap-3">
+      <DetailIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-0.5 truncate text-xs font-medium">{value}</p>
+      </div>
+    </div>
+  );
 }
 
 function LeadDetailsDialog({ lead, onClose, onStatusChange }) {
   if (!lead) return null;
-  return <Dialog open onOpenChange={(open) => !open && onClose()}><DialogContent className="custom-scrollbar max-h-[90vh] overflow-y-auto rounded-3xl p-0 sm:max-w-3xl"><DialogHeader className="border-b bg-muted/30 px-6 py-6"><div className="flex items-center gap-4"><span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{getInitials(lead.name)}</span><div><div className="flex flex-wrap items-center gap-2"><DialogTitle>{lead.name}</DialogTitle><span className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold", qualityStyles[lead.quality])}>{lead.quality} lead · {lead.score}</span></div><DialogDescription className="mt-1">{lead.role} at {lead.company}</DialogDescription></div></div></DialogHeader><div className="grid md:grid-cols-[0.9fr_1.35fr]"><section className="border-b p-6 md:border-b-0 md:border-r"><p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Contact details</p><div className="mt-4 space-y-4">{[[Mail, "Email", lead.email], [Phone, "Phone", lead.phone], [Building2, "Company", lead.company], [Globe2, "Location", lead.location]].map(([icon, label, value]) => <DetailRow key={label} icon={icon} label={label} value={value} />)}</div><div className="mt-6 rounded-2xl border bg-muted/20 p-4"><p className="text-[10px] font-bold uppercase text-muted-foreground">Source conversation</p><div className="mt-3 flex items-center justify-between"><ChannelLabel source={lead.source} /><button className="flex items-center gap-1 text-xs font-semibold text-primary">{lead.session}<ChevronRight className="size-3.5" /></button></div></div><div className="mt-4"><FloatingSelect label="Lead status" value={lead.status} displayValue={lead.status} onValueChange={(value) => onStatusChange(lead.id, value)}>{["New", "Contacted", "Qualified", "Disqualified"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</FloatingSelect></div></section><div><section className="border-b p-6"><div className="flex items-center gap-2"><Sparkles className="size-4 text-primary" /><p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">AI lead summary</p></div><p className="mt-3 text-sm leading-6">{lead.summary}</p><div className="mt-4 rounded-xl bg-primary/[0.05] p-3"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Detected intent</p><p className="mt-1 text-xs font-semibold text-primary">{lead.intent}</p></div></section><section className="border-b p-6"><p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Collected fields</p><div className="mt-3 divide-y">{Object.entries(lead.fields).map(([label, value]) => <div key={label} className="flex items-center justify-between gap-4 py-2.5 text-xs"><span className="text-muted-foreground">{label}</span><span className="font-semibold">{value}</span></div>)}</div></section><section className="p-6"><div className="flex items-center gap-2"><Activity className="size-4 text-primary" /><p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Activity</p></div><div className="mt-4 space-y-4">{lead.activity.map(([event, time], index) => <div key={event} className="relative flex gap-3">{index < lead.activity.length - 1 && <span className="absolute left-[7px] top-5 h-[calc(100%+4px)] w-px bg-border" />}<span className="relative mt-1.5 size-3.5 rounded-full border-[3px] border-primary/20 bg-primary" /><div><p className="text-xs font-medium">{event}</p><p className="mt-1 text-[11px] text-muted-foreground">{time}</p></div></div>)}</div></section></div></div></DialogContent></Dialog>;
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="custom-scrollbar max-h-[90vh] overflow-y-auto rounded-3xl p-0 sm:max-w-3xl">
+        <DialogHeader className="border-b bg-muted/30 px-6 py-6">
+          <div className="flex items-center gap-4">
+            <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              {getInitials(lead.name)}
+            </span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <DialogTitle>{lead.name}</DialogTitle>
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[10px] font-semibold",
+                    qualityStyles[lead.quality],
+                  )}
+                >
+                  {lead.quality} lead · {lead.score}
+                </span>
+              </div>
+              <DialogDescription className="mt-1">
+                {lead.role} at {lead.company}
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+        <div className="grid md:grid-cols-[0.9fr_1.35fr]">
+          <section className="border-b p-6 md:border-b-0 md:border-r">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Contact details
+            </p>
+            <div className="mt-4 space-y-4">
+              {[
+                [Mail, "Email", lead.email],
+                [Phone, "Phone", lead.phone],
+                [Building2, "Company", lead.company],
+                [Globe2, "Location", lead.location],
+              ].map(([icon, label, value]) => (
+                <DetailRow
+                  key={label}
+                  icon={icon}
+                  label={label}
+                  value={value}
+                />
+              ))}
+            </div>
+            <div className="mt-6 rounded-2xl border bg-muted/20 p-4">
+              <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                Source conversation
+              </p>
+              <div className="mt-3 flex items-center justify-between">
+                <ChannelLabel source={lead.source} />
+                <button className="flex items-center gap-1 text-xs font-semibold text-primary">
+                  {lead.session}
+                  <ChevronRight className="size-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="mt-4">
+              <FloatingSelect
+                label="Lead status"
+                value={lead.status}
+                displayValue={lead.status}
+                onValueChange={(value) => onStatusChange(lead.id, value)}
+              >
+                {["New", "Contacted", "Qualified", "Disqualified"].map(
+                  (item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ),
+                )}
+              </FloatingSelect>
+            </div>
+          </section>
+          <div>
+            <section className="border-b p-6">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-primary" />
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  AI lead summary
+                </p>
+              </div>
+              <p className="mt-3 text-sm leading-6">{lead.summary}</p>
+              <div className="mt-4 rounded-xl bg-primary/[0.05] p-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Detected intent
+                </p>
+                <p className="mt-1 text-xs font-semibold text-primary">
+                  {lead.intent}
+                </p>
+              </div>
+            </section>
+            <section className="border-b p-6">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Collected fields
+              </p>
+              <div className="mt-3 divide-y">
+                {Object.entries(lead.fields).map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between gap-4 py-2.5 text-xs"
+                  >
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-semibold">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="p-6">
+              <div className="flex items-center gap-2">
+                <Activity className="size-4 text-primary" />
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Activity
+                </p>
+              </div>
+              <div className="mt-4 space-y-4">
+                {lead.activity.map(([event, time], index) => (
+                  <div key={event} className="relative flex gap-3">
+                    {index < lead.activity.length - 1 && (
+                      <span className="absolute left-[7px] top-5 h-[calc(100%+4px)] w-px bg-border" />
+                    )}
+                    <span className="relative mt-1.5 size-3.5 rounded-full border-[3px] border-primary/20 bg-primary" />
+                    <div>
+                      <p className="text-xs font-medium">{event}</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {time}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-const exportFields = ["Name", "Email", "Phone", "Company", "Role", "Source", "Score", "Status", "Owner", "Captured"];
+const exportFields = [
+  "Name",
+  "Email",
+  "Phone",
+  "Company",
+  "Role",
+  "Source",
+  "Score",
+  "Status",
+  "Owner",
+  "Captured",
+];
 
 function ExportDialog({ open, onClose, leads, selectedCount }) {
   const [format, setFormat] = useState("CSV");
-  const [scope, setScope] = useState(selectedCount ? `Selected leads (${selectedCount})` : "All leads");
+  const [scope, setScope] = useState(
+    selectedCount ? `Selected leads (${selectedCount})` : "All leads",
+  );
   const [dateRange, setDateRange] = useState("All time");
   const [fields, setFields] = useState(exportFields);
-  const toggleField = (field) => setFields((current) => current.includes(field) ? current.filter((item) => item !== field) : [...current, field]);
+  const toggleField = (field) =>
+    setFields((current) =>
+      current.includes(field)
+        ? current.filter((item) => item !== field)
+        : [...current, field],
+    );
   const runExport = async () => {
-    const mapped = leads.map((lead) => ({ Name: lead.name, Email: lead.email, Phone: lead.phone, Company: lead.company, Role: lead.role, Source: lead.source, Score: lead.score, Status: lead.status, Owner: lead.owner, Captured: lead.captured }));
-    const data = mapped.map((row) => Object.fromEntries(fields.map((field) => [field, row[field]])));
+    const mapped = leads.map((lead) => ({
+      Name: lead.name,
+      Email: lead.email,
+      Phone: lead.phone,
+      Company: lead.company,
+      Role: lead.role,
+      Source: lead.source,
+      Score: lead.score,
+      Status: lead.status,
+      Owner: lead.owner,
+      Captured: lead.captured,
+    }));
+    const data = mapped.map((row) =>
+      Object.fromEntries(fields.map((field) => [field, row[field]])),
+    );
     if (format === "Excel") {
       const XLSX = await import("xlsx");
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(data), "Leads");
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(data),
+        "Leads",
+      );
       XLSX.writeFile(workbook, "atlas-leads.xlsx");
     } else {
-      const csv = [fields.join(","), ...data.map((row) => fields.map((field) => `"${String(row[field] ?? "").replaceAll('"', '""')}"`).join(","))].join("\n");
+      const csv = [
+        fields.join(","),
+        ...data.map((row) =>
+          fields
+            .map(
+              (field) => `"${String(row[field] ?? "").replaceAll('"', '""')}"`,
+            )
+            .join(","),
+        ),
+      ].join("\n");
       const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-      const anchor = document.createElement("a"); anchor.href = url; anchor.download = "atlas-leads.csv"; anchor.click(); URL.revokeObjectURL(url);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "atlas-leads.csv";
+      anchor.click();
+      URL.revokeObjectURL(url);
     }
-    toast.success(`${format} export downloaded`); onClose();
+    toast.success(`${format} export downloaded`);
+    onClose();
   };
-  return <Dialog open={open} onOpenChange={(next) => !next && onClose()}><DialogContent className="custom-scrollbar max-h-[90vh] overflow-y-auto rounded-3xl p-0 sm:max-w-xl"><DialogHeader className="border-b bg-muted/30 px-6 py-6"><span className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Download className="size-5" /></span><DialogTitle>Export lead data</DialogTitle><DialogDescription>Choose the records, fields, and file format to download.</DialogDescription></DialogHeader><div className="space-y-5 px-6 py-6"><div className="grid gap-4 sm:grid-cols-2"><FloatingSelect label="Format" value={format} displayValue={format} onValueChange={setFormat}>{["CSV", "Excel"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</FloatingSelect><FloatingSelect label="Date range" value={dateRange} displayValue={dateRange} onValueChange={setDateRange}>{["All time", "Last 7 days", "Last 30 days", "This quarter"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</FloatingSelect></div><FloatingSelect label="Export scope" value={scope} displayValue={scope} onValueChange={setScope}>{["All leads", "Current filtered view", ...(selectedCount ? [`Selected leads (${selectedCount})`] : [])].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</FloatingSelect><div><div className="flex items-center justify-between"><p className="text-sm font-semibold">Included fields</p><button onClick={() => setFields(fields.length === exportFields.length ? [] : exportFields)} className="text-xs font-semibold text-primary">{fields.length === exportFields.length ? "Clear all" : "Select all"}</button></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{exportFields.map((field) => <label key={field} className="flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-xs"><Checkbox checked={fields.includes(field)} onCheckedChange={() => toggleField(field)} />{field}</label>)}</div></div></div><DialogFooter className="border-t bg-muted/20 px-6 py-4"><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!fields.length} onClick={runExport}><Download />Export {format}</Button></DialogFooter></DialogContent></Dialog>;
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="custom-scrollbar max-h-[90vh] overflow-y-auto rounded-3xl p-0 sm:max-w-xl">
+        <DialogHeader className="border-b bg-muted/30 px-6 py-6">
+          <span className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Download className="size-5" />
+          </span>
+          <DialogTitle>Export lead data</DialogTitle>
+          <DialogDescription>
+            Choose the records, fields, and file format to download.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-5 px-6 py-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FloatingSelect
+              label="Format"
+              value={format}
+              displayValue={format}
+              onValueChange={setFormat}
+            >
+              {["CSV", "Excel"].map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </FloatingSelect>
+            <FloatingSelect
+              label="Date range"
+              value={dateRange}
+              displayValue={dateRange}
+              onValueChange={setDateRange}
+            >
+              {["All time", "Last 7 days", "Last 30 days", "This quarter"].map(
+                (item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ),
+              )}
+            </FloatingSelect>
+          </div>
+          <FloatingSelect
+            label="Export scope"
+            value={scope}
+            displayValue={scope}
+            onValueChange={setScope}
+          >
+            {[
+              "All leads",
+              "Current filtered view",
+              ...(selectedCount ? [`Selected leads (${selectedCount})`] : []),
+            ].map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
+          </FloatingSelect>
+          <div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold">Included fields</p>
+              <button
+                onClick={() =>
+                  setFields(
+                    fields.length === exportFields.length ? [] : exportFields,
+                  )
+                }
+                className="text-xs font-semibold text-primary"
+              >
+                {fields.length === exportFields.length
+                  ? "Clear all"
+                  : "Select all"}
+              </button>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {exportFields.map((field) => (
+                <label
+                  key={field}
+                  className="flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-xs"
+                >
+                  <Checkbox
+                    checked={fields.includes(field)}
+                    onCheckedChange={() => toggleField(field)}
+                  />
+                  {field}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter className="border-t bg-muted/20 px-6 py-4">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={!fields.length} onClick={runExport}>
+            <Download />
+            Export {format}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function LeadsTab({ leads, setLeads, openLead, openExport }) {
@@ -120,60 +507,214 @@ function LeadsTab({ leads, setLeads, openLead, openExport }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const visible = useMemo(() => leads.filter((lead) => `${lead.name} ${lead.email} ${lead.company}`.toLowerCase().includes(query.toLowerCase()) && (status === "all" || lead.status.toLowerCase() === status)), [leads, query, status]);
-  const rows = visible.slice((page - 1) * pageSize, page * pageSize).map((lead) => ({ id: lead.id, raw: lead, lead: <LeadIdentity lead={lead} />, company: <div><p className="text-xs font-semibold text-foreground">{lead.company}</p><p className="mt-0.5 text-[11px] text-muted-foreground">{lead.role}</p></div>, source: <ChannelLabel source={lead.source} />, quality: <QualityScore lead={lead} />, status: <LeadStatus lead={lead} />, captured: <div><p className="text-xs font-medium text-foreground">{lead.captured}</p><p className="mt-0.5 text-[11px] text-muted-foreground">Session {lead.session}</p></div>, action: "" }));
-  return <div className="space-y-5"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><MetricCard icon={UsersRound} label="Total leads" value="286" detail="+18.4% from last month" tone="bg-primary/10 text-primary" badge={<span className="text-xs font-semibold text-emerald-600">+18.4%</span>} /><MetricCard icon={UserRoundCheck} label="Qualified leads" value="88" detail="30.8% qualification rate" tone="bg-emerald-500/10 text-emerald-600" badge={<span className="text-xs font-semibold text-emerald-600">+12</span>} /><MetricCard icon={Flame} label="Hot leads" value="54" detail="19 need follow-up today" tone="bg-red-500/10 text-red-600" badge={<span className="size-2 rounded-full bg-red-500" />} /><MetricCard icon={Target} label="Conversion rate" value="18.4%" detail="Lead to booked meeting" tone="bg-violet-500/10 text-violet-600" badge={<span className="text-xs font-semibold text-emerald-600">+2.6%</span>} /></div><ReusableTable title="Collected leads" description={`${visible.length} matching leads · Updated just now`} headerActions={<div className="flex flex-wrap items-center gap-2">{selectedIds.length > 0 && <Button size="sm" variant="outline" onClick={() => openExport(selectedIds)}><Download />Export {selectedIds.length}</Button>}<label className="relative hidden md:block"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} className="h-9 w-52 rounded-xl bg-slate-50 pl-9" placeholder="Search leads" /></label><Select value={status} onValueChange={(value) => { setStatus(value); setPage(1); }}><SelectTrigger className="h-9 w-36 rounded-xl bg-slate-50"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem>{["New", "Contacted", "Qualified", "Disqualified"].map((item) => <SelectItem key={item} value={item.toLowerCase()}>{item}</SelectItem>)}</SelectContent></Select></div>} data={rows} columns={[{ header: "Lead", accessorKey: "lead" }, { header: "Company", accessorKey: "company" }, { header: "Source", accessorKey: "source" }, { header: "Quality", accessorKey: "quality" }, { header: "Status", accessorKey: "status" }, { header: "Captured", accessorKey: "captured" }, { header: "", accessorKey: "action" }]} isLoading={false} totalItems={visible.length} page={page} setPage={setPage} pageSize={pageSize} setPageSize={setPageSize} selectedIds={selectedIds} onSelectedIdsChange={setSelectedIds} table_options={[{ label: "View lead details", action: (_, row) => openLead(row.raw) }, { label: "Open conversation", action: (_, row) => toast.success(`Opening conversation ${row.raw.session}`) }, { label: "Mark as qualified", hidden: (row) => row.raw.status === "Qualified", action: (_, row) => { setLeads((current) => current.map((lead) => lead.id === row.id ? { ...lead, status: "Qualified" } : lead)); toast.success("Lead marked as qualified"); } }, { label: "Delete lead", type: "delete" }]} onDeleteConfirm={async (id) => { setLeads((current) => current.filter((lead) => lead.id !== id)); setSelectedIds((current) => current.filter((item) => item !== id)); toast.success("Lead deleted"); }} deleteLoading={false} emptyTitle="No leads found" emptyDescription="Try changing your search or status filter." /></div>;
-}
-
-function TrendChart() {
-  const max = Math.max(...leadTrend);
-  return <div className="flex h-40 items-end gap-2">{leadTrend.map((value, index) => <div key={`${value}-${index}`} className="group flex h-full flex-1 items-end"><div className="relative w-full rounded-t-md bg-primary/20 transition hover:bg-primary" style={{ height: `${(value / max) * 100}%` }}><span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded bg-foreground px-1.5 py-0.5 text-[9px] text-background group-hover:block">{value}</span></div></div>)}</div>;
-}
-
-function AnalysisTab() {
-  return <div className="space-y-5"><div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.6fr)]"><Card><div className="flex items-start justify-between"><div><h2 className="text-sm font-bold">Lead growth</h2><p className="mt-1 text-xs text-muted-foreground">Captured leads over the last 12 weeks</p></div><span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600">+18.4%</span></div><div className="mt-7"><TrendChart /></div><div className="mt-3 flex justify-between text-[10px] text-muted-foreground"><span>Jun 1</span><span>Jun 29</span><span>Jul 27</span><span>Aug 20</span></div></Card><Card><h2 className="text-sm font-bold">Qualification funnel</h2><p className="mt-1 text-xs text-muted-foreground">This month</p><div className="mt-6 space-y-3">{[["Captured", 286, 100, "bg-primary"], ["Engaged", 194, 68, "bg-sky-500"], ["Qualified", 88, 31, "bg-violet-500"], ["Meeting booked", 53, 19, "bg-emerald-500"]].map(([label, count, width, color]) => <div key={label}><div className="mb-1.5 flex items-center justify-between text-xs"><span className="font-medium">{label}</span><span className="font-bold">{count}</span></div><div className="h-7 overflow-hidden rounded-lg bg-muted"><div className={cn("flex h-full items-center justify-end rounded-lg px-2 text-[10px] font-semibold text-white", color)} style={{ width: `${width}%` }}>{width}%</div></div></div>)}</div></Card></div><div className="grid gap-5 lg:grid-cols-2"><Card><div className="flex items-start justify-between"><div><h2 className="text-sm font-bold">Source performance</h2><p className="mt-1 text-xs text-muted-foreground">Qualified conversion by channel</p></div><Globe2 className="size-5 text-primary" /></div><div className="mt-6 space-y-5">{sourcePerformance.map((source) => <div key={source.source}><div className="flex items-center justify-between text-xs"><ChannelLabel source={source.source} /><span className="font-semibold">{source.qualified} qualified · {source.conversion}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className={cn("h-full rounded-full", source.color)} style={{ width: `${source.conversion * 2}%` }} /></div><p className="mt-1 text-[10px] text-muted-foreground">{source.leads} total leads</p></div>)}</div></Card><Card><div className="flex items-start justify-between"><div><h2 className="text-sm font-bold">AI lead insights</h2><p className="mt-1 text-xs text-muted-foreground">Common intent and recommended action</p></div><Sparkles className="size-5 text-violet-500" /></div><div className="mt-5 rounded-2xl border border-violet-500/15 bg-violet-500/[0.05] p-4"><div className="flex gap-3"><Lightbulb className="mt-0.5 size-5 shrink-0 text-violet-500" /><div><p className="text-xs font-bold">High-intent traffic is shifting to WhatsApp</p><p className="mt-1 text-xs leading-5 text-muted-foreground">WhatsApp leads convert 14 points higher than website leads. Consider routing hot enquiries directly to sales.</p><button className="mt-3 text-xs font-semibold text-violet-600">Create routing rule →</button></div></div></div><div className="mt-5 space-y-3">{[["Pricing & plans", 34], ["WhatsApp automation", 27], ["Team collaboration", 19], ["Security & SSO", 12]].map(([intent, percent]) => <div key={intent} className="flex items-center gap-3"><span className="min-w-0 flex-1 text-xs font-medium">{intent}</span><span className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><span className="block h-full rounded-full bg-violet-500" style={{ width: `${percent * 2.5}%` }} /></span><span className="w-8 text-right text-[11px] font-semibold text-muted-foreground">{percent}%</span></div>)}</div></Card></div></div>;
-}
-
-function SettingsCard({ icon, title, description, action, children }) {
-  const SettingsIcon = icon;
-  return <Card className="p-0"><div className="flex items-start justify-between gap-4 border-b p-5"><div className="flex gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><SettingsIcon className="size-5" /></span><div><h2 className="text-sm font-bold">{title}</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p></div></div>{action}</div><div className="p-5">{children}</div></Card>;
-}
-
-function CaptureDialog({ open, onClose, fields, setFields, settings, setSettings }) {
-  const [draftFields, setDraftFields] = useState(fields);
-  const [draft, setDraft] = useState(settings);
-  const updateField = (id, key, value) => setDraftFields((current) => current.map((field) => field.id === id ? { ...field, [key]: value } : field));
-  const move = (index, direction) => { const target = index + direction; if (target < 0 || target >= draftFields.length) return; setDraftFields((current) => { const next = [...current]; [next[index], next[target]] = [next[target], next[index]]; return next; }); };
-  const save = () => { setFields(draftFields); setSettings(draft); toast.success("Lead capture settings saved"); onClose(); };
-  return <Dialog open={open} onOpenChange={(next) => !next && onClose()}><DialogContent className="custom-scrollbar max-h-[92vh] overflow-y-auto rounded-3xl p-0 sm:max-w-2xl"><DialogHeader className="border-b bg-muted/30 px-6 py-6"><DialogTitle>Configure lead collection</DialogTitle><DialogDescription>Choose when Argon asks for details and which information it should collect.</DialogDescription></DialogHeader><div className="space-y-6 px-6 py-6"><div className="grid gap-4 sm:grid-cols-2"><FloatingSelect label="Collection trigger" value={draft.trigger} displayValue={draft.trigger} onValueChange={(value) => setDraft((current) => ({ ...current, trigger: value }))}>{["After visitor engages", "Before first AI response", "Before escalation", "Only when intent is high"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</FloatingSelect><FloatingSelect label="Display style" value={draft.display} displayValue={draft.display} onValueChange={(value) => setDraft((current) => ({ ...current, display: value }))}>{["Conversational questions", "Compact form", "One question at a time"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</FloatingSelect></div><FloatingTextarea name="capture-prompt" label="Lead capture prompt" value={draft.prompt} onChange={(event) => setDraft((current) => ({ ...current, prompt: event.target.value }))} rows={3} /><div><div className="mb-3 flex items-center justify-between"><div><p className="text-sm font-semibold">Information to collect</p><p className="mt-1 text-xs text-muted-foreground">Enabled fields are asked in this order.</p></div><Button size="sm" variant="outline" onClick={() => setDraftFields((current) => [...current, { id: `field-${Date.now()}`, label: "Custom question", type: "Text", enabled: true, required: false }])}><Plus />Custom field</Button></div><div className="space-y-2">{draftFields.map((field, index) => <div key={field.id} className={cn("grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border p-3", !field.enabled && "opacity-55")}><div className="flex flex-col"><button onClick={() => move(index, -1)} disabled={index === 0} className="text-muted-foreground disabled:opacity-20"><ArrowUp className="size-3.5" /></button><button onClick={() => move(index, 1)} disabled={index === draftFields.length - 1} className="text-muted-foreground disabled:opacity-20"><ArrowDown className="size-3.5" /></button></div><div className="min-w-0"><input value={field.label} onChange={(event) => updateField(field.id, "label", event.target.value)} className="w-full bg-transparent text-xs font-semibold outline-none" /><p className="mt-1 text-[10px] text-muted-foreground">{field.type} field</p></div><div className="flex items-center gap-4"><label className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><Checkbox checked={field.required} disabled={!field.enabled} onCheckedChange={(value) => updateField(field.id, "required", value === true)} />Required</label><Toggle checked={field.enabled} onChange={(value) => updateField(field.id, "enabled", value)} disabled={field.locked} /></div></div>)}</div></div><div className="flex items-start justify-between gap-5 rounded-2xl border bg-muted/20 p-4"><div><p className="text-sm font-semibold">Respect previous answers</p><p className="mt-1 text-xs text-muted-foreground">Do not ask returning visitors for information already collected.</p></div><Toggle checked={draft.remember} onChange={(value) => setDraft((current) => ({ ...current, remember: value }))} /></div></div><DialogFooter className="border-t bg-muted/20 px-6 py-4"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={save}><Check />Save settings</Button></DialogFooter></DialogContent></Dialog>;
-}
-
-function HubSpotDialog({ open, onClose, integration, setIntegration }) {
-  const [draft, setDraft] = useState(integration);
-  const save = () => { setIntegration({ ...draft, connected: true, lastSync: "Just now" }); toast.success("HubSpot connected successfully"); onClose(); };
-  return <Dialog open={open} onOpenChange={(next) => !next && onClose()}><DialogContent className="rounded-3xl p-0 sm:max-w-xl"><DialogHeader className="border-b bg-muted/30 px-6 py-6"><span className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-orange-500 text-white"><Hub className="size-5" /></span><DialogTitle>{integration.connected ? "Manage HubSpot connection" : "Connect HubSpot"}</DialogTitle><DialogDescription>Send qualified chatbot leads directly to your CRM without manual entry.</DialogDescription></DialogHeader><div className="space-y-5 px-6 py-6"><FloatingInput name="hubspot-portal" label="HubSpot portal or account" value={draft.portal} onChange={(event) => setDraft((current) => ({ ...current, portal: event.target.value }))} /><div className="grid gap-4 sm:grid-cols-2"><FloatingSelect label="Sync direction" value={draft.sync} displayValue={draft.sync} onValueChange={(value) => setDraft((current) => ({ ...current, sync: value }))}>{["Argon to HubSpot", "Two-way sync"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</FloatingSelect><FloatingSelect label="Deal pipeline" value={draft.pipeline} displayValue={draft.pipeline} onValueChange={(value) => setDraft((current) => ({ ...current, pipeline: value }))}>{["Sales Pipeline", "Growth Pipeline", "Customer Success"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</FloatingSelect></div>{[["createContact", "Create or update contacts", "Match existing contacts by email."], ["createDeal", "Create deals for qualified leads", "Create a deal when lead score reaches 70."], ["syncConversation", "Include conversation summary", "Attach the AI summary and session source."]].map(([key, label, help]) => <div key={key} className="flex items-start justify-between gap-5 rounded-2xl border p-4"><div><p className="text-sm font-semibold">{label}</p><p className="mt-1 text-xs text-muted-foreground">{help}</p></div><Toggle checked={draft[key]} onChange={(value) => setDraft((current) => ({ ...current, [key]: value }))} /></div>)}</div><DialogFooter className="border-t bg-muted/20 px-6 py-4"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={save} className="bg-orange-500 hover:bg-orange-600"><Hub />{integration.connected ? "Save connection" : "Connect HubSpot"}</Button></DialogFooter></DialogContent></Dialog>;
-}
-
-function SettingsTab({ fields, setFields, openExport }) {
-  const [captureOpen, setCaptureOpen] = useState(false);
-  const [hubspotOpen, setHubspotOpen] = useState(false);
-  const [capture, setCapture] = useState({ trigger: "After visitor engages", display: "Conversational questions", prompt: "Before we continue, could I get a few details so our team can follow up?", remember: true });
-  const [hubspot, setHubspot] = useState({ connected: false, portal: "Atlas Workspace", sync: "Argon to HubSpot", pipeline: "Sales Pipeline", createContact: true, createDeal: true, syncConversation: true, lastSync: "Never" });
-  const [analysis, setAnalysis] = useState({ score: true, summary: true, intent: true, notifyHot: true });
-  const enabled = fields.filter((field) => field.enabled);
-  return <div className="grid items-start gap-5 lg:grid-cols-2"><SettingsCard icon={SlidersHorizontal} title="Lead capture" description="Choose when to ask and which information to collect." action={<Button variant="ghost" size="icon-sm" onClick={() => setCaptureOpen(true)}><Pencil /></Button>}><div className="flex items-center justify-between rounded-2xl bg-muted/30 p-4"><div><p className="text-sm font-semibold">{enabled.length} active fields</p><p className="mt-1 text-xs text-muted-foreground">{enabled.filter((field) => field.required).length} required · {capture.display}</p></div><span className="flex size-9 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600"><Check className="size-4" /></span></div><div className="mt-3 flex flex-wrap gap-2">{enabled.map((field) => <span key={field.id} className="rounded-full border px-2.5 py-1 text-[11px] font-medium">{field.label}{field.required && <span className="ml-1 text-red-500">*</span>}</span>)}</div><button onClick={() => setCaptureOpen(true)} className="mt-4 flex items-center gap-1 text-xs font-semibold text-primary">Configure fields and timing <ArrowRight className="size-3.5" /></button></SettingsCard><SettingsCard icon={Hub} title="HubSpot integration" description="Sync captured and qualified leads with your CRM." action={<span className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold", hubspot.connected ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground")}>{hubspot.connected ? "Connected" : "Not connected"}</span>}><div className="flex items-center gap-4 rounded-2xl border border-orange-500/15 bg-orange-500/[0.04] p-4"><span className="flex size-11 items-center justify-center rounded-2xl bg-orange-500 text-white"><Hub className="size-5" /></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{hubspot.connected ? hubspot.portal : "Connect your HubSpot portal"}</p><p className="mt-1 text-xs text-muted-foreground">{hubspot.connected ? `Last synced ${hubspot.lastSync}` : "Contacts, deals, fields, and summaries"}</p></div></div><Button onClick={() => setHubspotOpen(true)} variant={hubspot.connected ? "outline" : "default"} className={cn("mt-4 w-full", !hubspot.connected && "bg-orange-500 hover:bg-orange-600")}><Hub />{hubspot.connected ? "Manage connection" : "Connect HubSpot"}</Button></SettingsCard><SettingsCard icon={Sparkles} title="Lead analysis" description="Let Atlas qualify, summarize, and prioritize leads."><div className="divide-y">{[["score", "AI lead scoring", "Score intent, fit, urgency, and engagement."], ["summary", "Conversation summaries", "Generate a concise sales-ready summary."], ["intent", "Intent detection", "Tag what the visitor wants."], ["notifyHot", "Hot lead alerts", "Notify teammates when score exceeds 80."]].map(([key, label, help]) => <div key={key} className="flex items-center justify-between gap-4 py-3"><div><p className="text-xs font-semibold">{label}</p><p className="mt-0.5 text-[11px] text-muted-foreground">{help}</p></div><Toggle checked={analysis[key]} onChange={(value) => setAnalysis((current) => ({ ...current, [key]: value }))} /></div>)}</div><div className="mt-3 flex items-center justify-between rounded-xl bg-primary/[0.05] p-3 text-xs"><span className="text-muted-foreground">Qualification threshold</span><span className="font-bold text-primary">70 / 100</span></div></SettingsCard><SettingsCard icon={FileSpreadsheet} title="Export & data" description="Download leads for reporting, outreach, or another CRM."><div className="grid grid-cols-2 gap-3"><div className="rounded-2xl border p-4"><Download className="size-4 text-primary" /><p className="mt-3 text-xs font-semibold">Manual export</p><p className="mt-1 text-[11px] text-muted-foreground">CSV or Excel</p></div><div className="rounded-2xl border p-4"><Clock3 className="size-4 text-violet-500" /><p className="mt-3 text-xs font-semibold">Scheduled export</p><p className="mt-1 text-[11px] text-muted-foreground">Coming soon</p></div></div><Button variant="outline" className="mt-4 w-full" onClick={() => openExport([])}><Download />Export lead data</Button></SettingsCard><CaptureDialog open={captureOpen} onClose={() => setCaptureOpen(false)} fields={fields} setFields={setFields} settings={capture} setSettings={setCapture} /><HubSpotDialog open={hubspotOpen} onClose={() => setHubspotOpen(false)} integration={hubspot} setIntegration={setHubspot} /></div>;
+  const visible = useMemo(
+    () =>
+      leads.filter(
+        (lead) =>
+          `${lead.name} ${lead.email} ${lead.company}`
+            .toLowerCase()
+            .includes(query.toLowerCase()) &&
+          (status === "all" || lead.status.toLowerCase() === status),
+      ),
+    [leads, query, status],
+  );
+  const rows = visible
+    .slice((page - 1) * pageSize, page * pageSize)
+    .map((lead) => ({
+      id: lead.id,
+      raw: lead,
+      lead: <LeadIdentity lead={lead} />,
+      company: (
+        <div>
+          <p className="text-xs font-semibold text-foreground">
+            {lead.company}
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {lead.role}
+          </p>
+        </div>
+      ),
+      source: <ChannelLabel source={lead.source} />,
+      quality: <QualityScore lead={lead} />,
+      status: <LeadStatus lead={lead} />,
+      captured: (
+        <div>
+          <p className="text-xs font-medium text-foreground">{lead.captured}</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Session {lead.session}
+          </p>
+        </div>
+      ),
+      action: "",
+    }));
+  return (
+    <div className="space-y-5">
+      <ReusableTable
+        title="Collected leads"
+        description={`${visible.length} matching leads · Updated just now`}
+        headerActions={
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedIds.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openExport(selectedIds)}
+              >
+                <Download />
+                Export {selectedIds.length}
+              </Button>
+            )}
+            <label className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setPage(1);
+                }}
+                className="h-9 w-52 rounded-xl bg-slate-50 pl-9"
+                placeholder="Search leads"
+              />
+            </label>
+            <Select
+              value={status}
+              onValueChange={(value) => {
+                setStatus(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-36 rounded-xl bg-slate-50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                {["New", "Contacted", "Qualified", "Disqualified"].map(
+                  (item) => (
+                    <SelectItem key={item} value={item.toLowerCase()}>
+                      {item}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        }
+        data={rows}
+        columns={[
+          { header: "Lead", accessorKey: "lead" },
+          { header: "Company", accessorKey: "company" },
+          { header: "Source", accessorKey: "source" },
+          { header: "Quality", accessorKey: "quality" },
+          { header: "Status", accessorKey: "status" },
+          { header: "Captured", accessorKey: "captured" },
+          { header: "", accessorKey: "action" },
+        ]}
+        isLoading={false}
+        totalItems={visible.length}
+        page={page}
+        setPage={setPage}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        selectedIds={selectedIds}
+        onSelectedIdsChange={setSelectedIds}
+        table_options={[
+          { label: "View lead details", action: (_, row) => openLead(row.raw) },
+          {
+            label: "Open conversation",
+            action: (_, row) =>
+              toast.success(`Opening conversation ${row.raw.session}`),
+          },
+          {
+            label: "Mark as qualified",
+            hidden: (row) => row.raw.status === "Qualified",
+            action: (_, row) => {
+              setLeads((current) =>
+                current.map((lead) =>
+                  lead.id === row.id ? { ...lead, status: "Qualified" } : lead,
+                ),
+              );
+              toast.success("Lead marked as qualified");
+            },
+          },
+          { label: "Delete lead", type: "delete" },
+        ]}
+        onDeleteConfirm={async (id) => {
+          setLeads((current) => current.filter((lead) => lead.id !== id));
+          setSelectedIds((current) => current.filter((item) => item !== id));
+          toast.success("Lead deleted");
+        }}
+        deleteLoading={false}
+        emptyTitle="No leads found"
+        emptyDescription="Try changing your search or status filter."
+      />
+    </div>
+  );
 }
 
 const LeadCollectionPage = () => {
   const [activeTab, setActiveTab] = useState("leads");
   const [leads, setLeads] = useState(initialLeads);
-  const [fields, setFields] = useState(initialCaptureFields);
   const [selectedLead, setSelectedLead] = useState(null);
   const [exportState, setExportState] = useState({ open: false, ids: [] });
   const openExport = (ids = []) => setExportState({ open: true, ids });
-  const exportLeads = exportState.ids.length ? leads.filter((lead) => exportState.ids.includes(lead.id)) : leads;
-  const updateStatus = (id, status) => { setLeads((current) => current.map((lead) => lead.id === id ? { ...lead, status } : lead)); setSelectedLead((current) => current?.id === id ? { ...current, status } : current); toast.success(`Lead marked as ${status.toLowerCase()}`); };
-  return <section className="mx-auto max-w-7xl space-y-6 pb-8"><header className="flex flex-col gap-5 pr-14 xl:flex-row xl:items-end xl:justify-between"><div><Link to="/" className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-primary"><ArrowLeft className="size-4" />Back to workspace</Link><div className="flex items-center gap-4"><div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20"><UserRoundSearch className="size-7" /></div><div><h1 className="text-2xl font-bold tracking-tight md:text-3xl">Lead collection</h1><p className="mt-1 text-sm text-muted-foreground">Capture, qualify, and route high-intent visitors from every channel.</p></div></div></div><div className="flex items-center gap-2"><Button variant="outline" onClick={() => openExport([])}><Download />Export</Button><Button onClick={() => setActiveTab("settings")}><Settings2 />Configure collection</Button></div></header><TabMenu tabs={pageTabs} activeTab={activeTab} setActiveTab={setActiveTab} scrollable className="sticky top-0 z-10 bg-background/95 backdrop-blur" />{activeTab === "leads" && <LeadsTab leads={leads} setLeads={setLeads} openLead={setSelectedLead} openExport={openExport} />}{activeTab === "analysis" && <AnalysisTab />}{activeTab === "settings" && <SettingsTab fields={fields} setFields={setFields} openExport={openExport} />}<LeadDetailsDialog lead={selectedLead} onClose={() => setSelectedLead(null)} onStatusChange={updateStatus} /><ExportDialog key={`${exportState.open}-${exportState.ids.join("-")}`} open={exportState.open} onClose={() => setExportState({ open: false, ids: [] })} leads={exportLeads} selectedCount={exportState.ids.length} /></section>;
+  const exportLeads = exportState.ids.length
+    ? leads.filter((lead) => exportState.ids.includes(lead.id))
+    : leads;
+  const updateStatus = (id, status) => {
+    setLeads((current) =>
+      current.map((lead) => (lead.id === id ? { ...lead, status } : lead)),
+    );
+    setSelectedLead((current) =>
+      current?.id === id ? { ...current, status } : current,
+    );
+    toast.success(`Lead marked as ${status.toLowerCase()}`);
+  };
+  return (
+    <section className="mx-auto max-w-7xl space-y-6 pb-8">
+      <SectionTitle
+        icon={UserRoundSearch}
+        title="Lead Collections"
+        details=" Capture, qualify, and route high-intent visitors from every channel."
+      />
+
+      <div className="flbx">
+        <TabMenu
+          tabs={pageTabs}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          scrollable
+          className="w-fit bg-background/95 backdrop-blur"
+        />
+
+        <Button size="sm" variant="outline" onClick={() => openExport([])}>
+          <Download />
+          Export
+        </Button>
+      </div>
+      {activeTab === "leads" && (
+        <LeadsTab
+          leads={leads}
+          setLeads={setLeads}
+          openLead={setSelectedLead}
+          openExport={openExport}
+        />
+      )}
+      {activeTab === "analysis" && <LeadAnalyticsTab />}
+      {activeTab === "settings" && <LeadCaptureConfig />}
+      <LeadDetailsDialog
+        lead={selectedLead}
+        onClose={() => setSelectedLead(null)}
+        onStatusChange={updateStatus}
+      />
+      <ExportDialog
+        key={`${exportState.open}-${exportState.ids.join("-")}`}
+        open={exportState.open}
+        onClose={() => setExportState({ open: false, ids: [] })}
+        leads={exportLeads}
+        selectedCount={exportState.ids.length}
+      />
+    </section>
+  );
 };
 
 export default LeadCollectionPage;

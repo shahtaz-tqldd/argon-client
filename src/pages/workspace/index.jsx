@@ -12,6 +12,7 @@ import WorkspaceTeam from "./components/team";
 import useAuth from "@/hooks/useAuth";
 import { getInitials } from "@/lib/utils";
 import { useGetWorkspaceQuery } from "@/features/workspace/workspaceApiSlice";
+import useTitle from "@/hooks/useTitle";
 
 const WorkspacePage = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const WorkspacePage = () => {
   } = useGetWorkspaceQuery();
 
   const workspace = workspaceResponse?.data;
+  useTitle(`Argon Chatbot — ${workspace?.name}`);
 
   if (isLoading) return <WorkspacePageSkeleton />;
   if (isError || !workspace) return <WorkspaceError onRetry={refetch} />;

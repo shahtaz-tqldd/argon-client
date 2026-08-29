@@ -9,6 +9,7 @@ import { useChatbotListQuery } from "@/features/chatbot/chatbotApiSlice";
 
 import CreateChatbotDialog from "./create-chatbot";
 import { cn, getInitials, toArray } from "@/lib/utils";
+import Card from "@/components/ui/card";
 
 const avatarColors = [
   "bg-violet-500 text-white",
@@ -17,13 +18,6 @@ const avatarColors = [
   "bg-amber-500 text-amber-950",
   "bg-rose-500 text-white",
   "bg-blue-600 text-white",
-];
-
-const cardGradients = [
-  "from-violet-50 via-white to-cyan-50 dark:from-violet-950/45 dark:via-card dark:to-cyan-950/35",
-  "from-emerald-50 via-white to-teal-50 dark:from-emerald-950/40 dark:via-card dark:to-teal-950/35",
-  "from-amber-50/50 via-white to-cyan-50 dark:from-amber-950/35 dark:via-card dark:to-cyan-950/35",
-  "from-blue-50 via-white to-indigo-50 dark:from-blue-950/40 dark:via-card dark:to-indigo-950/35",
 ];
 
 const getPaletteIndex = (value, palette) => {
@@ -132,18 +126,12 @@ const ChatbotCard = ({ chatbot, colorIndex }) => {
   const creator = chatbot.created_by;
   const isAdmin = String(chatbot.current_user_role).toLowerCase() === "admin";
   const chatbotPaletteIndex = colorIndex % avatarColors.length;
-  const gradientIndex = colorIndex % cardGradients.length;
 
   return (
     <Link to={`/chatbot/${chatbot.slug}`} className="block h-full">
-      <article
-        className={cn(
-          "group relative h-full overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:shadow-black/10",
-          cardGradients[gradientIndex],
-        )}
-      >
-        <div className="pointer-events-none absolute -right-10 -top-12 size-32 rounded-full bg-white/40 blur-2xl dark:bg-white/[0.04]" />
-        <div className="flex items-start justify-between gap-3">
+      <Card className="p-0 relative group">
+        <div className="pointer-events-none absolute -right-10 -bottom-10 size-32 rounded-full bg-blue-100/50 blur-2xl dark:bg-blue-500/10" />
+        <div className="relative flex items-start justify-between gap-3 p-4">
           <div className="flex min-w-0 items-center gap-3">
             <div
               className={cn(
@@ -189,11 +177,11 @@ const ChatbotCard = ({ chatbot, colorIndex }) => {
           <StatusBadge>{chatbot.status || "draft"}</StatusBadge>
         </div>
 
-        <p className="mt-4 line-clamp-2 min-h-12 text-sm leading-6 text-muted-foreground">
+        <p className="px-4 line-clamp-2 min-h-12 text-sm leading-6 text-muted-foreground">
           {chatbot.description ||
             "Configure this chatbot's knowledge, behavior, and customer channels."}
         </p>
-        <div className="mt-4 flex flex-wrap gap-1.5">
+        <div className="px-4 mt-4 flex flex-wrap gap-1.5">
           <Badge>{chatbot?.subscription_plan_name}</Badge>
           {chatbot.ai_enabled ? (
             <Badge>ai_enabled</Badge>
@@ -201,7 +189,7 @@ const ChatbotCard = ({ chatbot, colorIndex }) => {
             <Badge>ai_disabled</Badge>
           )}
         </div>
-        <div className="mt-2.5 flex items-center justify-between border-t border-border/70 pt-3">
+        <div className="relative z-10 p-4 mt-2.5 flex items-center justify-between border-t border-border/70 pt-3">
           <div className="flex items-center">
             {visibleMembers.length ? (
               <div
@@ -230,11 +218,11 @@ const ChatbotCard = ({ chatbot, colorIndex }) => {
               </span>
             )}
           </div>
-          <span className="flex items-center gap-1 text-xs font-semibold text-primary opacity-70 transition group-hover:opacity-100">
-            Open <ArrowUpRight className="size-3.5" />
+          <span className="flex items-center gap-1 text-xs font-semibold text-primary opacity-80 transition group-hover:opacity-100">
+            Open Chatbot <ArrowUpRight className="size-3.5" />
           </span>
         </div>
-      </article>
+      </Card>
     </Link>
   );
 };
@@ -252,7 +240,7 @@ const ChatbotsError = ({ onRetry }) => (
     <Bot className="size-7 text-muted-foreground" />
     <h3 className="mt-3 font-semibold text-foreground">Chatbots unavailable</h3>
     <p className="mt-1 text-sm text-muted-foreground">
-      We couldn’t load your chatbot list.
+      We couldn't load your chatbot list.
     </p>
     <Button
       type="button"

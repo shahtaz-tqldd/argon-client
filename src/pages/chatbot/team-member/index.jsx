@@ -8,12 +8,12 @@ import MemberDetailsDialog from "./components/member-details";
 import { SectionTitle } from "@/components/ui/section";
 import TeamMemberList from "./components/member-list";
 
-import useTitle from "@/hooks/useTitle";
+import { useChatbotTitle } from "@/hooks/useTitle";
 import { useInviteChatbotMemberMutation } from "@/features/chatbot/chatbotApiSlice";
 import { UsersRound } from "lucide-react";
 
 const TeamMemberPage = () => {
-  useTitle("Team Member");
+  useChatbotTitle("Team");
   const { chatbotSlug } = useParams();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);

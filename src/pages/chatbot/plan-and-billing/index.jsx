@@ -63,6 +63,7 @@ import { cn, formatStatus } from "@/lib/utils";
 
 import PlanListDialog from "./components/plan-dialog";
 import EmbeddedCheckoutDialog from "./components/embedded-checkout-dialog";
+import { useChatbotTitle } from "@/hooks/useTitle";
 
 const CHECKOUT_SUCCESS_VALUES = new Set(["success", "complete", "completed"]);
 const CHECKOUT_CANCEL_VALUES = new Set(["cancel", "cancelled", "canceled"]);
@@ -286,11 +287,10 @@ function PaymentHistory({ payments, isLoading, isError, error, onRetry }) {
 
 const PlanAndBillingPage = () => {
   const { chatbotSlug } = useParams();
+  useChatbotTitle("Plan & Billing");
   const [searchParams] = useSearchParams();
   const checkoutMarker = String(
-    searchParams.get("checkout") ||
-      searchParams.get("checkout_status") ||
-      "",
+    searchParams.get("checkout") || searchParams.get("checkout_status") || "",
   ).toLowerCase();
   const returnedFromCheckout =
     CHECKOUT_SUCCESS_VALUES.has(checkoutMarker) ||
@@ -427,13 +427,13 @@ const PlanAndBillingPage = () => {
 
       const planPriceId = plan.selectedPrice?.id;
       if (!planPriceId) {
-        throw new Error("This billing option does not have a purchasable price.");
+        throw new Error(
+          "This billing option does not have a purchasable price.",
+        );
       }
 
       rememberStripeReturnPath(
-        "/chatbot/" +
-          encodeURIComponent(chatbotSlug) +
-          "/plan-and-billing",
+        "/chatbot/" + encodeURIComponent(chatbotSlug) + "/plan-and-billing",
       );
       const response = await createCheckout({
         chatbotSlug,
@@ -460,9 +460,7 @@ const PlanAndBillingPage = () => {
   const handleOpenPortal = async () => {
     try {
       rememberStripeReturnPath(
-        "/chatbot/" +
-          encodeURIComponent(chatbotSlug) +
-          "/plan-and-billing",
+        "/chatbot/" + encodeURIComponent(chatbotSlug) + "/plan-and-billing",
       );
       const response = await createPortal({ chatbotSlug }).unwrap();
       await redirectToStripeSession(getStripeSessionUrl(response));
@@ -482,9 +480,7 @@ const PlanAndBillingPage = () => {
     setAwaitingActivation(true);
     refetchSubscription();
     refetchPayments();
-    toast.info(
-      "Payment submitted. Confirming the subscription with Stripe…",
-    );
+    toast.info("Payment submitted. Confirming the subscription with Stripe…");
   }, [refetchPayments, refetchSubscription]);
 
   const handleCancellation = async () => {
@@ -502,12 +498,15 @@ const PlanAndBillingPage = () => {
         subscription.isFree
           ? "Free subscription canceled."
           : cancelAtPeriodEnd
-          ? "Cancellation scheduled for the end of the billing period."
-          : "Scheduled cancellation removed.",
+            ? "Cancellation scheduled for the end of the billing period."
+            : "Scheduled cancellation removed.",
       );
     } catch (error) {
       toast.error(
-        getApiErrorMessage(error, "Unable to update subscription cancellation."),
+        getApiErrorMessage(
+          error,
+          "Unable to update subscription cancellation.",
+        ),
       );
     }
   };
@@ -521,7 +520,9 @@ const PlanAndBillingPage = () => {
     subscription?.provider === "stripe" &&
     !checkoutPending &&
     !subscription?.isFree;
-  const canUpdateCancellation = Boolean(subscription?.isFree || canManageStripe);
+  const canUpdateCancellation = Boolean(
+    subscription?.isFree || canManageStripe,
+  );
 
   return (
     <Container>
@@ -612,7 +613,9 @@ const PlanAndBillingPage = () => {
                             </p>
                             <div className="mt-0.5 flex flex-wrap items-center gap-2">
                               <h2 className="text-xl font-bold">{plan.name}</h2>
-                              <SubscriptionStatus status={subscription.status} />
+                              <SubscriptionStatus
+                                status={subscription.status}
+                              />
                             </div>
                           </div>
                         </div>
@@ -634,7 +637,11 @@ const PlanAndBillingPage = () => {
                           </span>
                           {!subscription.isFree && (
                             <span className="text-sm text-muted-foreground">
-                              {" "}/ {subscription.billingInterval === "annual" ? "year" : "month"}
+                              {" "}
+                              /{" "}
+                              {subscription.billingInterval === "annual"
+                                ? "year"
+                                : "month"}
                             </span>
                           )}
                         </p>
@@ -761,9 +768,7 @@ const PlanAndBillingPage = () => {
                             </span>
                           </div>
                           <div className="mt-2 flex justify-between gap-4 text-xs">
-                            <span className="text-muted-foreground">
-                              Taxes
-                            </span>
+                            <span className="text-muted-foreground">Taxes</span>
                             <span className="font-semibold">
                               Calculated by Stripe
                             </span>
@@ -838,8 +843,8 @@ const PlanAndBillingPage = () => {
                   </div>
                   <div className="p-5">
                     <p className="text-sm leading-6 text-muted-foreground">
-                      Stripe securely manages card details. Argon never
-                      collects or stores full payment card information.
+                      Stripe securely manages card details. Argon never collects
+                      or stores full payment card information.
                     </p>
                     {subscription.customerEmail && (
                       <p className="mt-3 text-xs">
@@ -892,8 +897,8 @@ const PlanAndBillingPage = () => {
                       {subscription.isFree
                         ? "Canceling a free subscription removes its chatbot entitlements immediately. You can activate a plan again later."
                         : subscription.cancelAtPeriodEnd
-                        ? "This subscription is scheduled to cancel at the end of its current period. You can resume it before then."
-                        : "Cancellation is scheduled for the end of the current period, so access is not removed immediately."}
+                          ? "This subscription is scheduled to cancel at the end of its current period. You can resume it before then."
+                          : "Cancellation is scheduled for the end of the current period, so access is not removed immediately."}
                     </p>
                     <Button
                       className={cn(
@@ -907,8 +912,8 @@ const PlanAndBillingPage = () => {
                       {subscription.isFree
                         ? "Cancel free plan"
                         : subscription.cancelAtPeriodEnd
-                        ? "Resume subscription"
-                        : "Cancel at period end"}
+                          ? "Resume subscription"
+                          : "Cancel at period end"}
                     </Button>
                   </div>
                 </Card>
@@ -958,24 +963,24 @@ const PlanAndBillingPage = () => {
             subscription.isFree
               ? "Cancel free subscription?"
               : subscription.cancelAtPeriodEnd
-              ? "Resume subscription?"
-              : "Cancel subscription?"
+                ? "Resume subscription?"
+                : "Cancel subscription?"
           }
           description={
             subscription.isFree
               ? "This immediately removes the free plan entitlements from the chatbot."
               : subscription.cancelAtPeriodEnd
-              ? "Renewal will resume and the subscription will remain active."
-              : "Cancellation will be scheduled for " +
-                periodEndLabel +
-                ". The chatbot keeps its current entitlements until then."
+                ? "Renewal will resume and the subscription will remain active."
+                : "Cancellation will be scheduled for " +
+                  periodEndLabel +
+                  ". The chatbot keeps its current entitlements until then."
           }
           confirmText={
             subscription.isFree
               ? "Cancel free plan"
               : subscription.cancelAtPeriodEnd
-              ? "Resume subscription"
-              : "Schedule cancellation"
+                ? "Resume subscription"
+                : "Schedule cancellation"
           }
           confirmVariant={
             subscription.cancelAtPeriodEnd ? "default" : "destructive"

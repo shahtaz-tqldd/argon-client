@@ -106,6 +106,7 @@ export const apiSlice = createApi({
     "knowledge-details",
     "knowledge-usage",
     "knowledge-training-logs",
+    "lead-config",
     "subscription",
     "subscription-payments",
   ],

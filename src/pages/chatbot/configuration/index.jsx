@@ -22,6 +22,7 @@ import ChatbotWidgetTab from "./chatbot-widget";
 import ConfigEditorDialog from "./components/ConfigEditorDialog";
 import CoreDetailsTab from "./core-details";
 import KnowledgeSourceTab from "./knowledge-source";
+import { useChatbotTitle } from "@/hooks/useTitle";
 
 const tabs = [
   { value: "general", label: "Core Details", icon: Settings2 },
@@ -73,6 +74,7 @@ const getAiBehaviorPayload = (sectionKey, value) => {
 };
 
 const ConfigurationPage = () => {
+  useChatbotTitle("Configuration");
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     currentChatbot,
@@ -109,8 +111,7 @@ const ConfigurationPage = () => {
     details: {
       logo: currentChatbot?.logo || "",
       business_name: currentChatbot?.business_name || "",
-      chatbot_name:
-        currentChatbot?.chatbot_name || currentChatbot?.name || "",
+      chatbot_name: currentChatbot?.chatbot_name || currentChatbot?.name || "",
       description: currentChatbot?.description || "",
       language: currentChatbot?.language || "en",
       timezone: currentChatbot?.timezone || "UTC",

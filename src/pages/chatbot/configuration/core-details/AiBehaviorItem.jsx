@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Check, Pencil, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { Text } from "@/components/ui/typography";
+
+import { cn } from "@/lib/utils";
+import { Check, Pencil, X } from "lucide-react";
 
 const AiBehaviorItem = ({
   label,

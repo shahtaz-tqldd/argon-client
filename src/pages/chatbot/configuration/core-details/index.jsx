@@ -11,7 +11,6 @@ import {
   Lock,
   Pencil,
   RefreshCw,
-  Sparkles,
   Trash2,
   TriangleAlert,
   UserRoundPlus,
@@ -231,6 +230,20 @@ const CoreDetailsTab = ({
     Boolean(chatbotName) && deleteConfirmation === chatbotName;
   const features = [
     {
+      key: "ai-reply",
+      icon: Bot,
+      title: "AI Reply",
+      description: "Enable or disable AI reply in the chatbot",
+      enabled: Boolean(chatbot.ai_enabled),
+      disabled: isFeatureUpdating,
+      onToggle: (enabled) =>
+        setPendingToggle({
+          field: "ai_enabled",
+          label: "AI Reply",
+          enabled,
+        }),
+    },
+    {
       key: "human-handoff",
       icon: Headphones,
       title: "Human handoff",
@@ -378,37 +391,6 @@ const CoreDetailsTab = ({
                       {chatbot.workspace?.name || "Not set"}
                     </div>
                   </div>
-                  <div
-                    className={cn(
-                      "p-3 rounded-full border",
-                      aiSettings.aiEnabled
-                        ? "border-emerald-500/30 bg-emerald-500/10"
-                        : "border-red-500/30 bg-red-500/10",
-                    )}
-                  >
-                    <div className="flx gap-2">
-                      <span
-                        className={cn(
-                          "size-2 rounded-full",
-                          aiSettings.aiEnabled ? "bg-emerald-500" : "bg-red-500",
-                        )}
-                      ></span>
-                      <span className="text-sm font-bold mr-4">AI Reply</span>
-                      <ToggleControl
-                        checked={aiSettings.aiEnabled}
-                        bgcolor="bg-emerald-500"
-                        onChange={(enabled) =>
-                          setPendingToggle({
-                            field: "ai_enabled",
-                            label: "AI replies",
-                            enabled,
-                          })
-                        }
-                        disabled={isFeatureUpdating}
-                        label={`${aiSettings.aiEnabled ? "Disable" : "Enable"} AI replies`}
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 <p className="mt-3.5 leading-7 text-muted-foreground">
@@ -430,9 +412,8 @@ const CoreDetailsTab = ({
             </div>
           </Card>
           <Card className="p-0">
-            <div className="border-b px-6 py-5">
+            <div className="border-b px-6 py-5 flbx">
               <SectionTitle
-                icon={Sparkles}
                 title="AI behavior"
                 details="Control how your chatbot responds, communicates, and hands off conversations."
               />
@@ -455,7 +436,7 @@ const CoreDetailsTab = ({
             <div className="flex items-center justify-between gap-4 border-b bg-muted/15 px-6 py-5">
               <SectionTitle
                 title="Features"
-                details="Manage your chatbot’s capabilities and available upgrades."
+                details="Manage your chatbot's capabilities and available upgrades."
               />
             </div>
             <div className="divide-y">

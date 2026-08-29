@@ -8,7 +8,7 @@ import OverviewStats from "./components/overview-stats";
 import PlanUsage from "./components/plan-usage";
 import UnansweredAlerts from "./components/unanswered-alerts";
 
-import { Bot, CalendarDays, Sparkles } from "lucide-react";
+import { CalendarDays, Sparkles } from "lucide-react";
 import {
   analytics,
   chatbot,
@@ -19,9 +19,14 @@ import {
   unansweredQuestions,
 } from "./demo-data";
 import { useSelector } from "react-redux";
+import { useChatbotTitle } from "@/hooks/useTitle";
 
 const ChatbotOverviewPage = () => {
   const { user } = useSelector((state) => state?.auth);
+
+  // page title
+  useChatbotTitle("Overview");
+
   return (
     <Container>
       <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">

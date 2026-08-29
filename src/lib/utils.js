@@ -27,3 +27,12 @@ export const formatStatus = (status) =>
     .replace(/\b\w/g, (character) => character.toUpperCase());
 
 export const toArray = (value) => (Array.isArray(value) ? value : []);
+
+export const toSnakeCase = (value) =>
+  String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");

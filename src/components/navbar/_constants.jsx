@@ -28,7 +28,7 @@ export const getSidebarItems = (
 
   if (isLeadCollectActive) {
     items.push({
-      label: "Leads",
+      label: "Lead Captures",
       link: `/chatbot/${chatbotSlug}/leads`,
       icon: <UserRoundSearch size={18} />,
     });

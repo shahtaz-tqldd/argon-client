@@ -73,4 +73,25 @@ const StatusBadge = ({ children }) => {
   );
 };
 
-export { Badge, StatusBadge };
+const EmBadge = ({ children, variant = "primary", className = "" }) => {
+  const styles = {
+    primary: "bg-primary/10 text-slate-700",
+    secondary: "bg-primary/10 text-primary",
+    accent: "bg-gray-50 text-gray-600",
+    destructive: "bg-slate-100 text-slate-600",
+  };
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold",
+        styles[variant],
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+};
+
+export { Badge, StatusBadge, EmBadge };

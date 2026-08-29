@@ -11,13 +11,9 @@ import {
 const useCurrentChatbot = () => {
   const dispatch = useDispatch();
   const { chatbotSlug } = useParams();
-  const storedChatbot = useSelector(
-    (state) => state.chatbot.currentChatbot,
-  );
-  const query = useChatbotDetailsQuery(
-    { chatbotSlug },
-    { skip: !chatbotSlug },
-  );
+  const storedChatbot = useSelector((state) => state.chatbot.currentChatbot);
+  const query = useChatbotDetailsQuery({ chatbotSlug }, { skip: !chatbotSlug });
+
   const fetchedChatbot = query.data?.data;
 
   useEffect(() => {
