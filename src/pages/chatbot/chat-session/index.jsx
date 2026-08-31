@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import {
   AlertCircle,
   Archive,
-  ArrowLeft,
   AtSign,
   Ban,
   Bot,
@@ -33,7 +32,6 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -48,6 +46,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import useCurrentChatbot from "@/hooks/useCurrentChatbot";
+import { useChatSessionListQuery } from "@/features/chat-session/chatSessionApiSlice";
 
 const channelMeta = {
   Website: {
@@ -365,6 +365,9 @@ function ConversationList({
   query,
   setQuery,
 }) {
+  const { chatbotSlug } = useCurrentChatbot();
+  const { data } = useChatSessionListQuery({ chatbotSlug });
+  console.log(data);
   return (
     <aside className="flex w-[330px] shrink-0 flex-col border-r bg-card xl:w-[350px]">
       <div className="border-b px-4 pb-3 pt-5">

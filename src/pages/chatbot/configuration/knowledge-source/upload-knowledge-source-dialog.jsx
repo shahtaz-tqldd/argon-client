@@ -9,14 +9,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogFooter } from "@/components/ui/dialog";
 import { FloatingInput } from "@/components/ui/input";
 import { FloatingTextarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";

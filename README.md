@@ -24,3 +24,11 @@ This is the admin interface for controlling argon admin
  - Publish
  - Test your bot
 
+
+
+/ws/chat-sessions/<session_id>/?token=<JWT>
+{
+  "type": "message.send",
+  "content": "Hello, how can I help?",
+  "metadata": {}
+}
