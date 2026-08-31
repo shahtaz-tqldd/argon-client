@@ -37,7 +37,13 @@ const SectionTitle = ({ title, details, icon: Icon = null, lg = false }) => {
   );
 };
 
-const DialogHeaderTitle = ({ title, details, icon: Icon = null }) => {
+const DialogHeaderTitle = ({
+  title,
+  details,
+  icon: Icon = null,
+  header = null,
+}) => {
+  if (header) return header;
   return (
     <div className="flex flex-col items-start gap-3">
       {Icon && (

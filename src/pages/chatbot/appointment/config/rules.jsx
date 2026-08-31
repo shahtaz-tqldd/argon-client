@@ -2,12 +2,13 @@ import ContentDialog from "@/components/dialog/content-dialog";
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/ui/card";
 import { FloatingSelect, SelectItem } from "@/components/ui/select";
-import { Toggle } from "@/components/ui/toggle";
+import { FeatureToggle, Toggle } from "@/components/ui/toggle";
 import { CalendarClock, Check, Pencil } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
 const BookingRules = () => {
+  const [serviceEnabled, setServiceEnabled] = useState(true);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [rules, setRules] = useState({
     duration: "30 minutes",
@@ -33,6 +34,14 @@ const BookingRules = () => {
           </Button>
         }
       >
+        <FeatureToggle
+          enabled={serviceEnabled}
+          setEnabled={setServiceEnabled}
+          activeTitle="Booking is live"
+          inActiveTitle="Booking is paused"
+          activeText="Visitors can book available times through Atlas Support."
+          inActiveText="The chatbot will not offer appointment slots."
+        />
         <div className="divide-y">
           {[
             ["Default duration", rules.duration],

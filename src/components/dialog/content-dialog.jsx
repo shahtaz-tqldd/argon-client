@@ -35,6 +35,7 @@ const ContentDialog = ({
   desktopClassName,
   mobileClassName,
   icon = null,
+  header = null,
   footer,
 }) => {
   const isMobile = useMediaQuery();
@@ -72,7 +73,12 @@ const ContentDialog = ({
         )}
       >
         <div className="px-6 py-4 border-b">
-          <DialogHeaderTitle title={title} details={description} icon={icon} />
+          <DialogHeaderTitle
+            title={title}
+            details={description}
+            icon={icon}
+            header={header}
+          />
         </div>
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <DialogDescription className="sr-only">
@@ -82,9 +88,11 @@ const ContentDialog = ({
           {children}
         </div>
 
-        <DialogFooter className="border-t bg-muted/20 px-6 py-4">
-          {footer}
-        </DialogFooter>
+        {footer && (
+          <DialogFooter className="border-t bg-muted/20 px-6 py-4">
+            {footer}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
