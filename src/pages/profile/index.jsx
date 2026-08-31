@@ -14,6 +14,7 @@ import { getCloudinaryPreviewUrl } from "@/lib/image";
 import { getInitials } from "@/lib/utils";
 import PasswordUpdateDialog from "./components/password-update";
 import { SectionTitle } from "@/components/ui/section";
+import { StatusBadge } from "@/components/ui/badge";
 
 const ProfilePage = () => {
   const { user, isLoading: isProfileLoading, refetchProfile } = useAuth();
@@ -69,7 +70,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl pb-10 pt-3">
+    <div className="mx-auto w-full max-w-4xl">
       <header className="pr-14">
         <SectionTitle
           icon={User}
@@ -101,11 +102,7 @@ const ProfilePage = () => {
               {profile?.email}
             </p>
           </div>
-
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300">
-            <CheckCircle2 className="size-3.5" />
-            Active account
-          </div>
+          <StatusBadge>Active</StatusBadge>
         </div>
       </Card>
 

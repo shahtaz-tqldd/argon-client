@@ -55,9 +55,22 @@ const ContentDialog = ({
           <SheetDescription className="sr-only">
             {description || title}
           </SheetDescription>
-          <div className="hidden-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="border-b px-6 pb-4 pt-6">
+            <DialogHeaderTitle
+              title={title}
+              details={description}
+              icon={icon}
+              header={header}
+            />
+          </div>
+          <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
             {children}
           </div>
+          {footer && (
+            <div className="flex justify-end border-t bg-muted/20 px-6 py-4">
+              {footer}
+            </div>
+          )}
         </SheetContent>
       </Sheet>
     );

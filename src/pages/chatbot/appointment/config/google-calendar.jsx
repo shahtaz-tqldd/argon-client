@@ -29,18 +29,6 @@ const GoogleCalendar = () => {
         icon={CalendarDays}
         title="Google Calendar"
         description="Sync bookings, prevent conflicts, and add Meet links."
-        action={
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-              calendar.connected
-                ? "bg-emerald-500/10 text-emerald-600"
-                : "bg-muted text-muted-foreground",
-            )}
-          >
-            {calendar.connected ? "Connected" : "Not connected"}
-          </span>
-        }
       >
         <div className="flex items-center gap-4 rounded-2xl border border-blue-500/15 bg-blue-500/[0.04] p-4">
           <span className="flex size-11 items-center justify-center rounded-2xl bg-blue-600 text-xl font-bold text-white">

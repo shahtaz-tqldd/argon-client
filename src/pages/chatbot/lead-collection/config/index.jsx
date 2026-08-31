@@ -11,50 +11,32 @@ import {
 } from "@/features/lead_captures/leadCaptureApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
-import { toSnakeCase } from "@/lib/utils";
 
 import CollectionConfig from "./collection-config";
 import {
   getChangedValues,
   getCollectionSettingsPayload,
-  getFieldsPayload,
   getLeadCaptureConfig,
   hasChangedValues,
   normalizeCollectionSettings,
-  normalizeConfigFields,
-  STANDARD_FIELD_VALUES,
 } from "./config-utils";
 import FieldsConfig from "./fields-config";
 import HubspotConfig from "./hubspot";
 
-const LeadCaptureConfigContent = ({ chatbotSlug, config, isFetching }) => {
+const LeadCaptureConfigContent = ({ chatbotSlug, config }) => {
   const [updateLeadCaptureConfig, { isLoading: isUpdating }] =
     useUpdateLeadCaptureConfigMutation();
-  const [draftFields, setDraftFields] = useState(() =>
-    normalizeConfigFields(config),
-  );
-  const [savedFields, setSavedFields] = useState(() =>
-    normalizeConfigFields(config),
-  );
   const [draftSettings, setDraftSettings] = useState(() =>
     normalizeCollectionSettings(config),
   );
   const [savedSettings, setSavedSettings] = useState(() =>
     normalizeCollectionSettings(config),
   );
-  const [isEnabled, setIsEnabled] = useState(() =>
-    Boolean(config.is_enabled),
-  );
+  const [isEnabled, setIsEnabled] = useState(() => Boolean(config.is_enabled));
   const [pendingEnabled, setPendingEnabled] = useState(null);
 
-  const currentFieldsPayload = getFieldsPayload(draftFields);
-  const savedFieldsPayload = getFieldsPayload(savedFields);
   const currentSettingsPayload = getCollectionSettingsPayload(draftSettings);
   const savedSettingsPayload = getCollectionSettingsPayload(savedSettings);
-  const hasFieldChanges = hasChangedValues(
-    currentFieldsPayload,
-    savedFieldsPayload,
-  );
   const hasSettingsChanges = hasChangedValues(
     currentSettingsPayload,
     savedSettingsPayload,
@@ -77,49 +59,6 @@ const LeadCaptureConfigContent = ({ chatbotSlug, config, isFetching }) => {
       );
       return false;
     }
-  };
-
-  const validateFields = () => {
-    const customFields = draftFields.custom_fields;
-    const fieldValues = customFields.map((field) =>
-      toSnakeCase(field.label),
-    );
-
-    if (customFields.some((field) => !field.label.trim())) {
-      toast.error("Add a label for every custom field.");
-      return false;
-    }
-
-    if (fieldValues.some((fieldValue) => !fieldValue)) {
-      toast.error("Custom field labels must contain letters or numbers.");
-      return false;
-    }
-
-    if (
-      new Set(fieldValues).size !== fieldValues.length ||
-      fieldValues.some((fieldValue) => STANDARD_FIELD_VALUES.has(fieldValue))
-    ) {
-      toast.error("Use a unique label for every custom field.");
-      return false;
-    }
-
-    return true;
-  };
-
-  const saveFields = async () => {
-    if (!validateFields()) return;
-
-    const payload = getChangedValues(
-      currentFieldsPayload,
-      savedFieldsPayload,
-    );
-    if (!Object.keys(payload).length) return;
-
-    const updated = await updateConfig(
-      payload,
-      "Lead collection fields updated.",
-    );
-    if (updated) setSavedFields(draftFields);
   };
 
   const saveCollectionSettings = async () => {
@@ -161,17 +100,6 @@ const LeadCaptureConfigContent = ({ chatbotSlug, config, isFetching }) => {
     <>
       <div className="grid gap-5 xl:grid-cols-5">
         <div className="space-y-5 xl:col-span-3">
-          <FieldsConfig
-            fields={draftFields}
-            setFields={setDraftFields}
-            hasChanges={hasFieldChanges}
-            isFetching={isFetching}
-            isUpdating={isUpdating}
-            onSave={saveFields}
-          />
-        </div>
-
-        <div className="space-y-5 xl:col-span-2">
           <CollectionConfig
             settings={draftSettings}
             setSettings={setDraftSettings}
@@ -181,6 +109,10 @@ const LeadCaptureConfigContent = ({ chatbotSlug, config, isFetching }) => {
             isUpdating={isUpdating}
             onSave={saveCollectionSettings}
           />
+        </div>
+
+        <div className="space-y-5 xl:col-span-2">
+          <FieldsConfig chatbotSlug={chatbotSlug} config={config} />
           <HubspotConfig />
         </div>
       </div>
@@ -211,14 +143,10 @@ const LeadCaptureConfig = () => {
   const { chatbotSlug } = useCurrentChatbot();
   const {
     data: configResponse,
-    isFetching,
     isError,
     error,
     refetch,
-  } = useLeadCaptureConfigureQuery(
-    { chatbotSlug },
-    { skip: !chatbotSlug },
-  );
+  } = useLeadCaptureConfigureQuery({ chatbotSlug }, { skip: !chatbotSlug });
   const config = getLeadCaptureConfig(configResponse);
 
   if (!config) {
@@ -251,7 +179,6 @@ const LeadCaptureConfig = () => {
       key={config.id || chatbotSlug}
       chatbotSlug={chatbotSlug}
       config={config}
-      isFetching={isFetching}
     />
   );
 };

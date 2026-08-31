@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import {
   Database,
   Link2,
@@ -15,6 +14,7 @@ import { SectionTitle } from "@/components/ui/section";
 import TabMenu from "@/components/ui/tab";
 import { useUpdateChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
+import useUrlTab from "@/hooks/useUrlTab";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
 import ChannelsTab from "./channels";
@@ -33,7 +33,6 @@ const tabs = [
 ];
 
 const DEFAULT_TAB = "general";
-const tabValues = new Set(tabs.map((tab) => tab.value));
 
 const initialConfig = {
   appearance: {
@@ -76,7 +75,10 @@ const getAiBehaviorPayload = (sectionKey, value) => {
 
 const ConfigurationPage = () => {
   useChatbotTitle("Configuration");
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useUrlTab({
+    tabs,
+    defaultTab: DEFAULT_TAB,
+  });
   const {
     currentChatbot,
     isLoading: isChatbotLoading,
@@ -87,19 +89,6 @@ const ConfigurationPage = () => {
     useUpdateChatbotMutation();
   const [config, setConfig] = useState(initialConfig);
   const [editingSection, setEditingSection] = useState(null);
-  const tabFromUrl = searchParams.get("tab");
-  const activeTab = tabValues.has(tabFromUrl) ? tabFromUrl : DEFAULT_TAB;
-
-  const changeTab = (tab) => {
-    if (!tabValues.has(tab)) return;
-
-    setSearchParams((currentParams) => {
-      const nextParams = new URLSearchParams(currentParams);
-      nextParams.set("tab", tab);
-      return nextParams;
-    });
-  };
-
   const aiSettings = {
     aiEnabled: Boolean(currentChatbot?.ai_enabled),
     instructions: currentChatbot?.instructions || "",
@@ -198,7 +187,7 @@ const ConfigurationPage = () => {
         <TabMenu
           tabs={tabs}
           activeTab={activeTab}
-          setActiveTab={changeTab}
+          setActiveTab={setActiveTab}
           scrollable
           className="sticky top-0 z-10 bg-background/95 backdrop-blur"
         />

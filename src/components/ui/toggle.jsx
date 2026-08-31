@@ -29,6 +29,7 @@ const Toggle = ({ checked, onChange, disabled = false, label }) => {
 const FeatureToggle = ({
   enabled,
   setEnabled,
+  disabled = false,
   activeTitle,
   inActiveTitle,
   activeText,
@@ -61,7 +62,7 @@ const FeatureToggle = ({
           </p>
         </div>
       </div>
-      <Toggle checked={enabled} onChange={setEnabled} />
+      <Toggle checked={enabled} onChange={setEnabled} disabled={disabled} />
     </div>
   );
 };

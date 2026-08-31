@@ -5,7 +5,7 @@ export const appointmentBookingApiSlice = apiSlice.injectEndpoints({
     // config
     appointmentBookingConfig: builder.query({
       query: ({ chatbotSlug }) => ({
-        url: "/appointment-booking/config/",
+        url: "/appointment-bookings/config/",
         method: "GET",
         params: {
           chatbot_slug: chatbotSlug,
@@ -16,7 +16,7 @@ export const appointmentBookingApiSlice = apiSlice.injectEndpoints({
 
     updateAppointmentBookingConfig: builder.mutation({
       query: ({ chatbotSlug, payload }) => ({
-        url: "/appointment-booking/config/update/",
+        url: "/appointment-bookings/config/update/",
         method: "PATCH",
         params: {
           chatbot_slug: chatbotSlug,
@@ -29,7 +29,7 @@ export const appointmentBookingApiSlice = apiSlice.injectEndpoints({
     // schedules
     appointmentBookingSchedules: builder.query({
       query: ({ chatbotSlug }) => ({
-        url: "/appointment-booking/schedules/",
+        url: "/appointment-bookings/schedules/",
         method: "GET",
         params: {
           chatbot_slug: chatbotSlug,
@@ -40,7 +40,7 @@ export const appointmentBookingApiSlice = apiSlice.injectEndpoints({
 
     updateAppointmentBookingSchedules: builder.mutation({
       query: ({ chatbotSlug, payload }) => ({
-        url: "/appointment-booking/schedules/update/",
+        url: "/appointment-bookings/schedules/update/",
         method: "PATCH",
         params: {
           chatbot_slug: chatbotSlug,
@@ -53,7 +53,7 @@ export const appointmentBookingApiSlice = apiSlice.injectEndpoints({
     // appointments
     appointmentList: builder.query({
       query: ({ chatbotSlug, page = 1, pageSize = 20 }) => ({
-        url: "/appointment-booking/appointments/list/",
+        url: "/appointment-bookings/appointments/list/",
         method: "GET",
         params: {
           chatbot_slug: chatbotSlug,
@@ -68,7 +68,7 @@ export const appointmentBookingApiSlice = apiSlice.injectEndpoints({
 
     updateAppointment: builder.mutation({
       query: ({ chatbotSlug, appointmentId, payload }) => ({
-        url: "/appointment-booking/appointments/update/",
+        url: "/appointment-bookings/appointments/update/",
         method: "PATCH",
         params: {
           chatbot_slug: chatbotSlug,
@@ -83,7 +83,7 @@ export const appointmentBookingApiSlice = apiSlice.injectEndpoints({
 
     deleteAppointment: builder.mutation({
       query: ({ chatbotSlug, appointmentId }) => ({
-        url: "/appointment-booking/appointments/delete/",
+        url: "/appointment-bookings/appointments/delete/",
         method: "DELETE",
         params: {
           chatbot_slug: chatbotSlug,

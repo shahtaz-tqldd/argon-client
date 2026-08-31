@@ -24,12 +24,18 @@ import { cn } from "@/lib/utils";
 import { initialAppointments } from "../demo-data";
 import DetailsDialog from "./details";
 import AppointmentStats from "./stats";
+import { useAppointmentListQuery } from "@/features/appointment-booking/appointmentBookingApiSlice";
+import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 
 const AppointmentListTab = () => {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const { chatbotSlug } = useCurrentChatbot();
+  const { data } = useAppointmentListQuery({ chatbotSlug });
+  console.log(data);
 
   const [appointments, setAppointments] = useState(initialAppointments);
 

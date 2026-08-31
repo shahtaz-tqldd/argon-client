@@ -1,9 +1,9 @@
 import { Settings2, TrendingUp, UserRoundSearch } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
 
 import Container from "@/components/ui/container";
 import { SectionTitle } from "@/components/ui/section";
 import TabMenu from "@/components/ui/tab";
+import useUrlTab from "@/hooks/useUrlTab";
 
 import LeadAnalyticsTab from "./analytics";
 import LeadCaptureConfig from "./config";
@@ -16,22 +16,12 @@ const pageTabs = [
 ];
 
 const DEFAULT_TAB = "leads";
-const tabValues = new Set(pageTabs.map((tab) => tab.value));
 
 const LeadCollectionPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const activeTab = tabValues.has(tabFromUrl) ? tabFromUrl : DEFAULT_TAB;
-
-  const changeTab = (tab) => {
-    if (!tabValues.has(tab)) return;
-
-    setSearchParams((currentParams) => {
-      const nextParams = new URLSearchParams(currentParams);
-      nextParams.set("tab", tab);
-      return nextParams;
-    });
-  };
+  const [activeTab, setActiveTab] = useUrlTab({
+    tabs: pageTabs,
+    defaultTab: DEFAULT_TAB,
+  });
 
   return (
     <Container>
@@ -45,7 +35,7 @@ const LeadCollectionPage = () => {
       <TabMenu
         tabs={pageTabs}
         activeTab={activeTab}
-        setActiveTab={changeTab}
+        setActiveTab={setActiveTab}
         scrollable
         className="w-fit bg-background/95 backdrop-blur"
       />
