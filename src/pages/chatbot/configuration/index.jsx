@@ -23,6 +23,7 @@ import ConfigEditorDialog from "./components/ConfigEditorDialog";
 import CoreDetailsTab from "./core-details";
 import KnowledgeSourceTab from "./knowledge-source";
 import { useChatbotTitle } from "@/hooks/useTitle";
+import Container from "@/components/ui/container";
 
 const tabs = [
   { value: "general", label: "Core Details", icon: Settings2 },
@@ -186,7 +187,7 @@ const ConfigurationPage = () => {
   };
 
   return (
-    <section className="mx-auto max-w-7xl space-y-6 pb-8">
+    <Container>
       <SectionTitle
         icon={SlidersHorizontal}
         title="Configuration"
@@ -233,15 +234,18 @@ const ConfigurationPage = () => {
           onToggleSetting={toggleSetting}
         />
       )}
+
       {activeTab === "knowledge" && (
         <KnowledgeSourceTab
           chatbotSlug={currentChatbot?.slug}
           chatbotName={currentChatbot?.name}
         />
       )}
+
       {activeTab === "widget" && (
         <ChatbotWidgetTab chatbotSlug={currentChatbot?.slug} />
       )}
+
       {activeTab === "channels" && (
         <ChannelsTab config={config} edit={setEditingSection} />
       )}
@@ -256,7 +260,7 @@ const ConfigurationPage = () => {
           onSave={saveSection}
         />
       )}
-    </section>
+    </Container>
   );
 };
 

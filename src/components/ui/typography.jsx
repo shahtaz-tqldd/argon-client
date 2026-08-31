@@ -21,7 +21,7 @@ export function Text({ children, variant = "md", className }) {
   const sizeClasses = {
     lg: "text-base md:text-lg",
     md: "text-sm md:text-base",
-    sm: "text-xs md:text-sm",
+    sm: "text-xs md:text-sm leading-5 md:leading-6",
     xs: "text-xs md:text-xs",
   };
 

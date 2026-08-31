@@ -309,7 +309,6 @@ const PlanAndBillingPage = () => {
   const {
     data: subscriptionResponse,
     isLoading: isSubscriptionLoading,
-    isFetching: isSubscriptionFetching,
     isError: isSubscriptionError,
     error: subscriptionError,
     refetch: refetchSubscription,
@@ -526,29 +525,12 @@ const PlanAndBillingPage = () => {
 
   return (
     <Container>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <SectionTitle
-          icon={Landmark}
-          title="Plan & Billing"
-          details="Manage this chatbot's subscription, Stripe billing, and payment history."
-          lg
-        />
-        <Button
-          variant="outline"
-          disabled={isSubscriptionFetching || isPaymentsFetching}
-          onClick={() => {
-            refetchSubscription();
-            refetchPayments();
-          }}
-        >
-          <RefreshCw
-            className={cn(
-              (isSubscriptionFetching || isPaymentsFetching) && "animate-spin",
-            )}
-          />
-          Refresh
-        </Button>
-      </div>
+      <SectionTitle
+        icon={Landmark}
+        title="Plan & Billing"
+        details="Manage this chatbot's subscription, Stripe billing, and payment history."
+        lg
+      />
 
       {awaitingActivation && (
         <div className="flex items-start gap-3 rounded-2xl border border-sky-500/20 bg-sky-500/[0.06] p-4">

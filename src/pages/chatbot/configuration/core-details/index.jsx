@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import ConfirmDialog from "@/components/dialog/confirm-dialog";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Card from "@/components/ui/card";
+import Card, { SectionCard } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SectionTitle } from "@/components/ui/section";
 import { LANGUAGES } from "@/constants/language";
@@ -32,6 +32,7 @@ import { cn, formatStatus, getInitials } from "@/lib/utils";
 
 import AiBehaviorItem from "./AiBehaviorItem";
 import { ToggleControl } from "../components/shared";
+import { Text } from "@/components/ui/typography";
 
 const DetailTile = ({ icon, label, value, children }) => {
   const DetailIcon = icon;
@@ -207,7 +208,7 @@ const CoreDetailsTab = ({
         </span>
         <h2 className="mt-4 text-base font-bold">Unable to load chatbot</h2>
         <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-          We couldn’t load the current chatbot details. Check your connection
+          We couldn't load the current chatbot details. Check your connection
           and try again.
         </p>
         <Button className="mt-5" variant="outline" onClick={onRetry}>
@@ -349,12 +350,10 @@ const CoreDetailsTab = ({
     <div className="space-y-7">
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">
-          <Card className="p-0">
-            <div className="flex flex-col gap-4 border-b bg-muted/15 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-              <SectionTitle
-                title="Chatbot details"
-                details="The core information used across your chatbot and workspace."
-              />
+          <SectionCard
+            title="Chatbot details"
+            description="The core information used across your chatbot and workspace."
+            action={
               <Button
                 onClick={() => edit("details")}
                 variant="ghost"
@@ -363,9 +362,9 @@ const CoreDetailsTab = ({
               >
                 <Pencil />
               </Button>
-            </div>
-
-            <div className="flex flex-col gap-5 p-5 sm:flex-row">
+            }
+          >
+            <div className="flex flex-col gap-5 sm:flex-row">
               <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-2xl font-bold text-primary ring-1 ring-primary/10">
                 {chatbot.logo ? (
                   <img
@@ -410,78 +409,59 @@ const CoreDetailsTab = ({
                 </div>
               </div>
             </div>
-          </Card>
-          <Card className="p-0">
-            <div className="border-b px-6 py-5 flbx">
-              <SectionTitle
-                title="AI behavior"
-                details="Control how your chatbot responds, communicates, and hands off conversations."
+          </SectionCard>
+
+          <SectionCard
+            title="AI behavior"
+            description="Control how your chatbot responds, communicates, and hands off conversations."
+            childClassName="space-y-4"
+          >
+            {behaviorGroups.map((item) => (
+              <AiBehaviorItem
+                key={item.key}
+                {...item}
+                sectionKey={item.key}
+                isSaving={isFeatureUpdating}
+                onSave={(value) => onSaveAiBehavior(item.key, value)}
               />
-            </div>
-            <div className="space-y-4 p-4 sm:p-5 ">
-              {behaviorGroups.map((item) => (
-                <AiBehaviorItem
-                  key={item.key}
-                  {...item}
-                  sectionKey={item.key}
-                  isSaving={isFeatureUpdating}
-                  onSave={(value) => onSaveAiBehavior(item.key, value)}
-                />
-              ))}
-            </div>
-          </Card>
+            ))}
+          </SectionCard>
         </div>
         <div className="space-y-5 lg:col-span-2">
-          <Card className="p-0">
-            <div className="flex items-center justify-between gap-4 border-b bg-muted/15 px-6 py-5">
-              <SectionTitle
-                title="Features"
-                details="Manage your chatbot's capabilities and available upgrades."
+          <SectionCard
+            title="Features"
+            description="Manage your chatbot's capabilities and available upgrades."
+            childClassName="divide-y p-0"
+          >
+            {features.map((feature) => (
+              <FeatureCard
+                key={feature.key}
+                {...feature}
+                upgradePath={`/chatbot/${chatbot.slug}/plan-and-billing`}
               />
-            </div>
-            <div className="divide-y">
-              {features.map((feature) => (
-                <FeatureCard
-                  key={feature.key}
-                  {...feature}
-                  upgradePath={`/chatbot/${chatbot.slug}/plan-and-billing`}
-                />
-              ))}
-            </div>
-          </Card>
+            ))}
+          </SectionCard>
 
-          <Card className="border-destructive/30 p-0">
-            <div className="border-b border-destructive/20 bg-destructive/[0.04] px-6 py-5">
-              <div className="flex items-start gap-4">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-                  <TriangleAlert className="size-5" />
-                </span>
-                <div>
-                  <h2 className="font-semibold text-destructive">
-                    Danger zone
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Permanently delete this chatbot and its associated data.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="p-5">
-              <p className="text-sm leading-6 text-muted-foreground">
-                This action cannot be undone. All chatbot configuration and
-                related data will be permanently removed.
-              </p>
-              <Button
-                className="mt-8 text-red-500 bg-red-500/10 hover:bg-red-500/15"
-                variant="secondary"
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={isDeleting}
-              >
-                <Trash2 />
-                Delete chatbot
-              </Button>
-            </div>
-          </Card>
+          <SectionCard
+            title="Danger zone"
+            description="Permanently delete this chatbot and its associated data"
+            className="border-destructive/30 "
+            headerClassName="border-destructive/30 bg-red-500/5"
+          >
+            <Text variant="sm">
+              This action cannot be undone. All chatbot configuration and
+              related data will be permanently removed.
+            </Text>
+            <Button
+              className="mt-8 text-red-500 bg-red-500/10 hover:bg-red-500/15"
+              variant="secondary"
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={isDeleting}
+            >
+              <Trash2 />
+              Delete chatbot
+            </Button>
+          </SectionCard>
         </div>
       </div>
       <ConfirmDialog

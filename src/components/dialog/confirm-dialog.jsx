@@ -29,7 +29,7 @@ const ConfirmDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[468px]">
+      <DialogContent className="sm:max-w-[468px] rounded-3xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="mt-4">

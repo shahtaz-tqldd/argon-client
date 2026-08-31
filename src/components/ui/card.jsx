@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import React from "react";
+import { SectionTitle } from "./section";
 
 const Card = ({ children, className }) => {
   return (
@@ -11,6 +12,32 @@ const Card = ({ children, className }) => {
     >
       {children}
     </div>
+  );
+};
+
+export const SectionCard = ({
+  icon,
+  title,
+  description,
+  action,
+  children,
+  className = "",
+  childClassName = "",
+  headerClassName = "",
+}) => {
+  return (
+    <Card className={cn("p-0", className)}>
+      <div
+        className={cn(
+          "flex items-start justify-between gap-4 border-b p-5",
+          headerClassName,
+        )}
+      >
+        <SectionTitle icon={icon} title={title} details={description} />
+        {action}
+      </div>
+      <div className={cn("p-5", childClassName)}>{children}</div>
+    </Card>
   );
 };
 

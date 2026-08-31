@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import {
   useLeadCaptureConfigureQuery,
-  useUpdateLeadCaptureConfigQuery,
+  useUpdateLeadCaptureConfigMutation,
 } from "@/features/lead_captures/leadCaptureApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
@@ -29,7 +29,7 @@ import HubspotConfig from "./hubspot";
 
 const LeadCaptureConfigContent = ({ chatbotSlug, config, isFetching }) => {
   const [updateLeadCaptureConfig, { isLoading: isUpdating }] =
-    useUpdateLeadCaptureConfigQuery();
+    useUpdateLeadCaptureConfigMutation();
   const [draftFields, setDraftFields] = useState(() =>
     normalizeConfigFields(config),
   );

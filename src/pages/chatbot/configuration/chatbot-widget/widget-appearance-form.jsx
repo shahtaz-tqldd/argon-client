@@ -12,10 +12,10 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { FloatingInput, Input } from "@/components/ui/input";
-import { FloatingTextarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { SectionCard, ToggleControl } from "../components/shared";
+import { ToggleControl } from "../components/shared";
+import { SectionCard } from "@/components/ui/card";
 
 const THEME_OPTIONS = [
   { value: "light", label: "Light", icon: Sun },
@@ -305,7 +305,8 @@ const WidgetAppearanceForm = ({
             <div>
               <p className="text-sm font-semibold">Show Argon branding</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Display “Powered by <b>Argon Chatbot</b>” below the message input.
+                Display “Powered by <b>Argon Chatbot</b>” below the message
+                input.
               </p>
             </div>
             <ToggleControl

@@ -107,8 +107,21 @@ export const apiSlice = createApi({
     "knowledge-usage",
     "knowledge-training-logs",
     "lead-config",
+    "leads",
     "subscription",
     "subscription-payments",
+
+    // Appointment Booking
+    "appointment-booking-config",
+    "appointment-booking-schedules",
+    "appointments",
+
+    // Lead Capture
+    "lead-config",
+    "leads",
+    "lead-details",
+    "lead-notes",
+    "lead-note-details",
   ],
   keepUnusedDataFor: 300, // Don't keep any unused data
   refetchOnMountOrArgChange: false, // Always refetch when component mounts

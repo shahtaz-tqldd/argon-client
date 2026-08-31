@@ -3,7 +3,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
-import { SectionCard, ToggleControl } from "../components/shared";
+import { ToggleControl } from "../components/shared";
+import { SectionCard } from "@/components/ui/card";
 
 const WIDGET_SCRIPT_URL = "https://cdn.argon.chat/widget.js";
 
