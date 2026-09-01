@@ -1,53 +1,29 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
-  AlertCircle,
-  Archive,
-  AtSign,
   Ban,
-  Bot,
   Check,
-  ChevronDown,
   ChevronRight,
   CircleUserRound,
   Clock3,
   Facebook,
-  FileText,
   Globe2,
-  Info,
   Instagram,
   Mail,
   MapPin,
   MessageCircleMore,
-  MoreHorizontal,
-  Paperclip,
   Phone,
-  Search,
-  Send,
-  Smile,
-  Sparkles,
   Tag,
-  UserRound,
   UserRoundPlus,
-  UsersRound,
-  WandSparkles,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import ConversationList from "./conversation-list";
+import ChatPanel from "./chat-pannel";
+import { useChatMessageListQuery } from "@/features/chat-session/chatSessionApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
-import { useChatSessionListQuery } from "@/features/chat-session/chatSessionApiSlice";
 
 const channelMeta = {
   Website: {
@@ -76,7 +52,7 @@ const conversationsSeed = [
     initials: "MT",
     avatarTone:
       "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300",
-    lastMessage: "Yes, that’s the order. Can you update it?",
+    lastMessage: "Yes, that's the order. Can you update it?",
     timestamp: "2m",
     channel: "WhatsApp",
     status: "attention",
@@ -329,15 +305,6 @@ const conversationsSeed = [
   },
 ];
 
-const filters = [
-  { id: "all", label: "All" },
-  { id: "active", label: "Active" },
-  { id: "attention", label: "Needs attention" },
-  { id: "resolved", label: "Resolved" },
-];
-
-const team = ["Shahtaz", "Nadia Rahman", "Arif Hossain", "Unassigned"];
-
 function ChannelIcon({ channel, className }) {
   const meta = channelMeta[channel] || channelMeta.Website;
   const Icon = meta.icon;
@@ -351,592 +318,6 @@ function ChannelIcon({ channel, className }) {
     >
       <Icon className="size-3.5" />
     </span>
-  );
-}
-
-function ConversationList({
-  conversations,
-  selectedId,
-  onSelect,
-  filter,
-  setFilter,
-  channel,
-  setChannel,
-  query,
-  setQuery,
-}) {
-  const { chatbotSlug } = useCurrentChatbot();
-  const { data } = useChatSessionListQuery({ chatbotSlug });
-  console.log(data);
-  return (
-    <aside className="flex w-[330px] shrink-0 flex-col border-r bg-card xl:w-[350px]">
-      <div className="border-b px-4 pb-3 pt-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight">Inbox</h1>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                {
-                  conversationsSeed.filter((item) => item.status !== "resolved")
-                    .length
-                }
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">Atlas Support</p>
-          </div>
-          <Button size="icon-sm" variant="ghost" aria-label="Inbox options">
-            <MoreHorizontal />
-          </Button>
-        </div>
-
-        <label className="relative block">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="h-10 w-full rounded-xl border bg-muted/35 pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-3 focus:ring-primary/10"
-            placeholder="Search conversations"
-          />
-        </label>
-
-        <div className="custom-scrollbar -mx-1 mt-3 flex gap-1 overflow-x-auto px-1 pb-1">
-          {filters.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setFilter(item.id)}
-              className={cn(
-                "shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition",
-                filter === item.id
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              {item.label}
-              {item.id === "attention" && (
-                <span className="ml-1 text-amber-500">2</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="mt-2 flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">
-              <span className="flex items-center gap-2">
-                <Globe2 className="size-3.5" />
-                {channel === "all" ? "All channels" : channel}
-              </span>
-              <ChevronDown className="size-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuRadioGroup value={channel} onValueChange={setChannel}>
-              <DropdownMenuRadioItem value="all">
-                All channels
-              </DropdownMenuRadioItem>
-              {Object.keys(channelMeta).map((item) => (
-                <DropdownMenuRadioItem key={item} value={item}>
-                  {item}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-        {conversations.length ? (
-          conversations.map((conversation) => (
-            <button
-              key={conversation.id}
-              onClick={() => onSelect(conversation.id)}
-              className={cn(
-                "group relative flex w-full gap-3 border-b px-4 py-4 text-left transition",
-                selectedId === conversation.id
-                  ? "bg-primary/[0.07] before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-r-full before:bg-primary"
-                  : "hover:bg-muted/50",
-              )}
-            >
-              <div className="relative shrink-0">
-                <span
-                  className={cn(
-                    "flex size-10 items-center justify-center rounded-full text-xs font-bold",
-                    conversation.avatarTone,
-                  )}
-                >
-                  {conversation.initials}
-                </span>
-                <ChannelIcon
-                  channel={conversation.channel}
-                  className="absolute -bottom-1 -right-1 size-5 border-2 border-card [&_svg]:size-2.5"
-                />
-                {conversation.online && (
-                  <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 border-card bg-emerald-500" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start gap-2">
-                  <p
-                    className={cn(
-                      "min-w-0 flex-1 truncate text-sm",
-                      conversation.unread ? "font-bold" : "font-semibold",
-                    )}
-                  >
-                    {conversation.name}
-                  </p>
-                  <span
-                    className={cn(
-                      "mt-0.5 shrink-0 text-[11px]",
-                      conversation.unread
-                        ? "font-semibold text-primary"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {conversation.timestamp}
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <p
-                    className={cn(
-                      "min-w-0 flex-1 truncate text-xs",
-                      conversation.unread
-                        ? "font-medium text-foreground"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {conversation.lastMessage}
-                  </p>
-                  {conversation.unread > 0 && (
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                      {conversation.unread}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 flex items-center gap-1.5">
-                  {conversation.status === "attention" && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                      <AlertCircle className="size-3" />
-                      Needs attention
-                    </span>
-                  )}
-                  {conversation.status === "resolved" && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600">
-                      <Check className="size-3" />
-                      Resolved
-                    </span>
-                  )}
-                  {conversation.status === "active" && (
-                    <span className="text-[10px] font-medium text-muted-foreground">
-                      {conversation.owner === "AI"
-                        ? "AI handling"
-                        : `Assigned to ${conversation.owner}`}
-                    </span>
-                  )}
-                  <span className="ml-auto text-[10px] text-muted-foreground">
-                    {conversation.sessionId}
-                  </span>
-                </div>
-              </div>
-            </button>
-          ))
-        ) : (
-          <div className="flex h-56 flex-col items-center justify-center px-6 text-center">
-            <Search className="mb-3 size-7 text-muted-foreground/50" />
-            <p className="text-sm font-semibold">No conversations found</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Try another filter or search term.
-            </p>
-          </div>
-        )}
-      </div>
-    </aside>
-  );
-}
-
-function MessageBubble({ message, customer }) {
-  if (message.type === "event") {
-    return (
-      <div className="my-5 flex items-center gap-3 px-4">
-        <span className="h-px flex-1 bg-border" />
-        <div className="flex max-w-[80%] items-center gap-2 text-center text-[11px] text-muted-foreground">
-          <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
-            <Sparkles className="size-3" />
-          </span>
-          <span>
-            <strong className="font-semibold text-foreground">
-              {message.event}
-            </strong>
-            {message.detail ? ` · ${message.detail}` : ""} · {message.time}
-          </span>
-        </div>
-        <span className="h-px flex-1 bg-border" />
-      </div>
-    );
-  }
-
-  const isCustomer = message.type === "customer";
-  const isAi = message.type === "ai";
-  return (
-    <div
-      className={cn(
-        "flex gap-2.5",
-        isCustomer ? "justify-start" : "justify-end",
-      )}
-    >
-      {isCustomer && (
-        <span
-          className={cn(
-            "mt-5 flex size-7 shrink-0 items-center justify-center rounded-full text-[9px] font-bold",
-            customer.avatarTone,
-          )}
-        >
-          {customer.initials}
-        </span>
-      )}
-      <div className={cn("max-w-[72%]", !isCustomer && "items-end")}>
-        <div
-          className={cn(
-            "mb-1 flex items-center gap-1.5 text-[10px] text-muted-foreground",
-            !isCustomer && "justify-end",
-          )}
-        >
-          {isAi && (
-            <>
-              <Bot className="size-3" />
-              <span>Atlas AI</span>
-            </>
-          )}
-          {message.type === "human" && (
-            <>
-              <span>{message.name || "You"}</span>
-              <UserRound className="size-3" />
-            </>
-          )}
-          {isCustomer && <span>{customer.name}</span>}
-        </div>
-        <div
-          className={cn(
-            "rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed shadow-sm",
-            isCustomer
-              ? "rounded-tl-sm border bg-card"
-              : isAi
-                ? "rounded-tr-sm bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                : "rounded-tr-sm bg-primary text-primary-foreground",
-          )}
-        >
-          {message.text}
-        </div>
-        <p
-          className={cn(
-            "mt-1 text-[10px] text-muted-foreground",
-            !isCustomer && "text-right",
-          )}
-        >
-          {message.time}
-          {!isCustomer && " · Delivered"}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function ChatPanel({
-  conversation,
-  onTakeover,
-  onResolve,
-  onAssign,
-  onSend,
-  onToggleContext,
-}) {
-  const [mode, setMode] = useState("reply");
-  const [draft, setDraft] = useState("");
-
-  const submitMessage = () => {
-    const text = draft.trim();
-    if (!text) return;
-    onSend(text, mode);
-    setDraft("");
-  };
-
-  return (
-    <main className="flex min-w-[430px] flex-1 flex-col bg-background">
-      <header className="flex h-[76px] shrink-0 items-center justify-between gap-4 border-b px-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="relative">
-            <span
-              className={cn(
-                "flex size-10 items-center justify-center rounded-full text-xs font-bold",
-                conversation.avatarTone,
-              )}
-            >
-              {conversation.initials}
-            </span>
-            {conversation.online && (
-              <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-background bg-emerald-500" />
-            )}
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="truncate text-sm font-bold">
-                {conversation.name}
-              </h2>
-              {conversation.status === "attention" && (
-                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                  Needs attention
-                </span>
-              )}
-            </div>
-            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-              <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  conversation.online
-                    ? "bg-emerald-500"
-                    : "bg-muted-foreground/50",
-                )}
-              />
-              {conversation.online
-                ? "Online now"
-                : `Last seen ${conversation.lastSeen}`}{" "}
-              · {conversation.sessionId}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="hidden xl:flex">
-                <UsersRound />
-                {conversation.owner}
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel>Assign conversation</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={conversation.owner}
-                onValueChange={onAssign}
-              >
-                <DropdownMenuRadioItem value="AI">
-                  <Bot />
-                  Atlas AI
-                </DropdownMenuRadioItem>
-                {team.map((member) => (
-                  <DropdownMenuRadioItem key={member} value={member}>
-                    <UserRound />
-                    {member}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            onClick={onTakeover}
-            variant={conversation.owner === "AI" ? "default" : "outline"}
-            size="sm"
-          >
-            {conversation.owner === "AI" ? (
-              <>
-                <UserRoundPlus />
-                Take over
-              </>
-            ) : (
-              <>
-                <Bot />
-                Return to AI
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={onResolve}
-            variant="outline"
-            size="icon-sm"
-            aria-label={
-              conversation.status === "resolved"
-                ? "Reopen conversation"
-                : "Resolve conversation"
-            }
-            title={
-              conversation.status === "resolved"
-                ? "Reopen conversation"
-                : "Resolve conversation"
-            }
-          >
-            {conversation.status === "resolved" ? <Archive /> : <Check />}
-          </Button>
-          <Button
-            onClick={onToggleContext}
-            variant="ghost"
-            size="icon-sm"
-            className="xl:hidden"
-            aria-label="Show customer context"
-          >
-            <Info />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="More actions">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem>
-                <UserRoundPlus />
-                Assign teammate
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Archive />
-                {conversation.status === "resolved" ? "Reopen" : "Resolve"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">
-                <Ban />
-                Block visitor
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
-
-      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-muted/20 px-5 py-6">
-        <div className="mx-auto max-w-3xl space-y-4">
-          <div className="flex items-center gap-3 pb-1">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              Today
-            </span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-          {conversation.messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              customer={conversation}
-            />
-          ))}
-          {conversation.owner === "AI" &&
-            conversation.status !== "resolved" && (
-              <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
-                <span className="flex size-7 items-center justify-center rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
-                  <Bot className="size-3.5" />
-                </span>
-                <span className="rounded-full border bg-card px-3 py-1.5">
-                  Atlas AI is ready to respond
-                </span>
-              </div>
-            )}
-        </div>
-      </div>
-
-      <footer className="shrink-0 border-t bg-card p-4">
-        <div
-          className={cn(
-            "mx-auto max-w-3xl rounded-xl border bg-background shadow-sm transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10",
-            mode === "note" &&
-              "border-amber-300 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/5",
-          )}
-        >
-          <div className="flex items-center gap-1 border-b px-2 pt-1.5">
-            <button
-              onClick={() => setMode("reply")}
-              className={cn(
-                "border-b-2 px-3 py-2 text-xs font-semibold transition",
-                mode === "reply"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <span className="flex items-center gap-1.5">
-                <MessageCircleMore className="size-3.5" />
-                Reply
-              </span>
-            </button>
-            <button
-              onClick={() => setMode("note")}
-              className={cn(
-                "border-b-2 px-3 py-2 text-xs font-semibold transition",
-                mode === "note"
-                  ? "border-amber-500 text-amber-700 dark:text-amber-400"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <span className="flex items-center gap-1.5">
-                <FileText className="size-3.5" />
-                Internal note
-              </span>
-            </button>
-            <span className="ml-auto px-2 text-[10px] text-muted-foreground">
-              {mode === "reply"
-                ? `via ${conversation.channel}`
-                : "Only visible to your team"}
-            </span>
-          </div>
-          <textarea
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                submitMessage();
-              }
-            }}
-            className="min-h-20 w-full resize-none bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground"
-            placeholder={
-              mode === "reply"
-                ? `Reply to ${conversation.name.split(" ")[0]}…`
-                : "Leave a note for your team…"
-            }
-          />
-          <div className="flex items-center justify-between px-2 pb-2">
-            <div className="flex items-center">
-              <Button variant="ghost" size="icon-xs" aria-label="Attach file">
-                <Paperclip />
-              </Button>
-              <Button variant="ghost" size="icon-xs" aria-label="Insert emoji">
-                <Smile />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Mention teammate"
-              >
-                <AtSign />
-              </Button>
-              {mode === "reply" && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  className="text-violet-600"
-                  aria-label="Improve with AI"
-                >
-                  <WandSparkles />
-                </Button>
-              )}
-            </div>
-            <Button
-              onClick={submitMessage}
-              disabled={!draft.trim()}
-              size="sm"
-              className={cn(
-                mode === "note" && "bg-amber-500 hover:bg-amber-600",
-              )}
-            >
-              {mode === "reply" ? (
-                <>
-                  <Send />
-                  Send
-                </>
-              ) : (
-                <>
-                  <FileText />
-                  Add note
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </footer>
-    </main>
   );
 }
 
@@ -1156,29 +537,18 @@ function CustomerContext({ conversation, open, onClose, blocked, onBlock }) {
 
 const ChatSessionPage = () => {
   const [conversations, setConversations] = useState(conversationsSeed);
-  const [selectedId, setSelectedId] = useState(conversationsSeed[0].id);
+  const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState("all");
   const [channel, setChannel] = useState("all");
   const [query, setQuery] = useState("");
   const [contextOpen, setContextOpen] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const { chatbotSlug } = useCurrentChatbot();
 
-  const visibleConversations = useMemo(
-    () =>
-      conversations.filter((item) => {
-        const matchesFilter = filter === "all" || item.status === filter;
-        const matchesChannel = channel === "all" || item.channel === channel;
-        const normalizedQuery = query.trim().toLowerCase();
-        const matchesQuery =
-          !normalizedQuery ||
-          `${item.name} ${item.sessionId} ${item.lastMessage}`
-            .toLowerCase()
-            .includes(normalizedQuery);
-        return matchesFilter && matchesChannel && matchesQuery;
-      }),
-    [conversations, filter, channel, query],
-  );
-
+  const { data } = useChatMessageListQuery({
+    chatbotSlug,
+    sessionId: selectedId,
+  });
   const conversation =
     conversations.find((item) => item.id === selectedId) || conversations[0];
 
@@ -1273,7 +643,6 @@ const ChatSessionPage = () => {
   return (
     <section className="relative -m-8 flex h-[calc(100%+4rem)] min-h-[620px] overflow-hidden rounded-2xl bg-background">
       <ConversationList
-        conversations={visibleConversations}
         selectedId={selectedId}
         onSelect={(id) => {
           setSelectedId(id);
