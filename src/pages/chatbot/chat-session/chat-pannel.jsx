@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
+  AlertCircle,
   AtSign,
   Ban,
   Bot,
@@ -8,6 +9,7 @@ import {
   ChevronDown,
   FileText,
   Info,
+  LoaderCircle,
   MessageCircleMore,
   MoreHorizontal,
   Paperclip,
@@ -34,8 +36,68 @@ import {
 import { cn } from "@/lib/utils";
 
 const team = ["Shahtaz", "Nadia Rahman", "Arif Hossain", "Unassigned"];
+
+function dateKey(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+function dateLabel(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Previous messages";
+
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDifference = Math.round(
+    (startOfToday.getTime() - startOfDate.getTime()) / 86_400_000,
+  );
+  if (dayDifference === 0) return "Today";
+  if (dayDifference === 1) return "Yesterday";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "long",
+    day: "numeric",
+    year: date.getFullYear() === today.getFullYear() ? undefined : "numeric",
+  }).format(date);
+}
+
+function messageTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function groupMessages(messages) {
+  const sorted = [...messages].sort((first, second) => {
+    const firstTime = new Date(first.created_at || first.updated_at).getTime();
+    const secondTime = new Date(second.created_at || second.updated_at).getTime();
+    if (Number.isNaN(firstTime) || Number.isNaN(secondTime)) return 0;
+    return firstTime - secondTime;
+  });
+
+  return sorted.reduce((groups, message) => {
+    const createdAt = message.created_at || message.updated_at;
+    const key = dateKey(createdAt);
+    const lastGroup = groups.at(-1);
+    if (lastGroup?.key === key) {
+      lastGroup.messages.push(message);
+    } else {
+      groups.push({ key, label: dateLabel(createdAt), messages: [message] });
+    }
+    return groups;
+  }, []);
+}
+
 const ChatPanel = ({
   conversation,
+  messages = [],
+  isLoading = false,
+  isError = false,
+  onRetry,
   onTakeover,
   onResolve,
   onAssign,
@@ -44,10 +106,16 @@ const ChatPanel = ({
 }) => {
   const [mode, setMode] = useState("reply");
   const [draft, setDraft] = useState("");
+  const messagesEndRef = useRef(null);
+  const messageGroups = useMemo(() => groupMessages(messages), [messages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ block: "end" });
+  }, [messages]);
 
   const submitMessage = () => {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || !onSend) return;
     onSend(text, mode);
     setDraft("");
   };
@@ -110,6 +178,7 @@ const ChatPanel = ({
               <DropdownMenuRadioGroup
                 value={conversation.owner}
                 onValueChange={onAssign}
+                disabled={!onAssign}
               >
                 <DropdownMenuRadioItem value="AI">
                   <Bot />
@@ -126,6 +195,7 @@ const ChatPanel = ({
           </DropdownMenu>
           <Button
             onClick={onTakeover}
+            disabled={!onTakeover}
             variant={conversation.owner === "AI" ? "default" : "outline"}
             size="sm"
           >
@@ -143,6 +213,7 @@ const ChatPanel = ({
           </Button>
           <Button
             onClick={onResolve}
+            disabled={!onResolve}
             variant="outline"
             size="icon-sm"
             aria-label={
@@ -194,20 +265,42 @@ const ChatPanel = ({
 
       <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-muted/20 px-5 py-6">
         <div className="mx-auto max-w-3xl space-y-4">
-          <div className="flex items-center gap-3 pb-1">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              Today
-            </span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-          {conversation.messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              customer={conversation}
-            />
-          ))}
+          {isLoading ? (
+            <div className="flex min-h-64 items-center justify-center gap-2 text-xs text-muted-foreground">
+              <LoaderCircle className="size-4 animate-spin" />
+              Loading conversation…
+            </div>
+          ) : isError ? (
+            <div className="flex min-h-64 flex-col items-center justify-center text-center">
+              <AlertCircle className="size-7 text-destructive/70" />
+              <p className="mt-3 text-sm font-semibold">Couldn’t load this conversation</p>
+              <p className="mt-1 text-xs text-muted-foreground">Please try again.</p>
+              <Button className="mt-4" size="sm" variant="outline" onClick={onRetry}>
+                Try again
+              </Button>
+            </div>
+          ) : messageGroups.length === 0 ? (
+            <div className="flex min-h-64 flex-col items-center justify-center text-center text-muted-foreground">
+              <MessageCircleMore className="size-7 opacity-50" />
+              <p className="mt-3 text-sm font-semibold text-foreground">No messages yet</p>
+              <p className="mt-1 text-xs">New messages will appear here.</p>
+            </div>
+          ) : (
+            messageGroups.map((group, groupIndex) => (
+              <section key={`${group.key}-${groupIndex}`} className="space-y-4">
+                <div className="flex items-center gap-3 py-1">
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {group.label}
+                  </span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+                {group.messages.map((message) => (
+                  <MessageBubble key={message.id} message={message} customer={conversation} />
+                ))}
+              </section>
+            ))
+          )}
           {conversation.owner === "AI" &&
             conversation.status !== "resolved" && (
               <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
@@ -219,10 +312,11 @@ const ChatPanel = ({
                 </span>
               </div>
             )}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      <footer className="shrink-0 border-t bg-card p-4">
+      {onSend && <footer className="shrink-0 border-t bg-card p-4">
         <div
           className={cn(
             "mx-auto max-w-3xl rounded-xl border bg-background shadow-sm transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10",
@@ -329,13 +423,23 @@ const ChatPanel = ({
             </Button>
           </div>
         </div>
-      </footer>
+      </footer>}
     </main>
   );
 };
 
 function MessageBubble({ message, customer }) {
-  if (message.type === "event") {
+  const senderType = message.sender_type || message.type;
+  const isSystem = senderType === "system" || senderType === "event";
+  const content =
+    message.content ||
+    message.text ||
+    message.event ||
+    message.metadata?.message ||
+    "System update";
+  const time = messageTime(message.created_at || message.updated_at) || message.time;
+
+  if (isSystem) {
     return (
       <div className="my-5 flex items-center gap-3 px-4">
         <span className="h-px flex-1 bg-border" />
@@ -345,9 +449,10 @@ function MessageBubble({ message, customer }) {
           </span>
           <span>
             <strong className="font-semibold text-foreground">
-              {message.event}
+              {content}
             </strong>
-            {message.detail ? ` · ${message.detail}` : ""} · {message.time}
+            {message.detail ? ` · ${message.detail}` : ""}
+            {time ? ` · ${time}` : ""}
           </span>
         </div>
         <span className="h-px flex-1 bg-border" />
@@ -355,8 +460,15 @@ function MessageBubble({ message, customer }) {
     );
   }
 
-  const isCustomer = message.type === "customer";
-  const isAi = message.type === "ai";
+  const isCustomer = senderType === "visitor" || senderType === "customer";
+  const isAi = senderType === "ai";
+  const isAgent = senderType === "agent" || senderType === "human";
+  const senderName =
+    (typeof message.sender === "string" ? message.sender : message.sender?.name) ||
+    message.sender_name ||
+    message.metadata?.sender_name ||
+    message.name ||
+    "Agent";
   return (
     <div
       className={cn(
@@ -387,9 +499,9 @@ function MessageBubble({ message, customer }) {
               <span>Atlas AI</span>
             </>
           )}
-          {message.type === "human" && (
+          {isAgent && (
             <>
-              <span>{message.name || "You"}</span>
+              <span>{senderName}</span>
               <UserRound className="size-3" />
             </>
           )}
@@ -405,7 +517,23 @@ function MessageBubble({ message, customer }) {
                 : "rounded-tr-sm bg-primary text-primary-foreground",
           )}
         >
-          {message.text}
+          <p className="whitespace-pre-wrap break-words">{content}</p>
+          {message.attachments?.length > 0 && (
+            <div className="mt-2 space-y-1 border-t border-current/15 pt-2">
+              {message.attachments.map((attachment, index) => (
+                <a
+                  key={attachment.id || attachment.url || index}
+                  className="flex items-center gap-1.5 text-xs underline underline-offset-2"
+                  href={attachment.url || attachment.file_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Paperclip className="size-3" />
+                  {attachment.name || attachment.filename || `Attachment ${index + 1}`}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
         <p
           className={cn(
@@ -413,8 +541,8 @@ function MessageBubble({ message, customer }) {
             !isCustomer && "text-right",
           )}
         >
-          {message.time}
-          {!isCustomer && " · Delivered"}
+          {time}
+          {!isCustomer && message.status ? ` · ${message.status}` : ""}
         </p>
       </div>
     </div>

@@ -292,7 +292,7 @@ const ConversationList = ({
               <button
                 key={conversation.id}
                 type="button"
-                onClick={() => onSelect(conversation.id)}
+                onClick={() => onSelect(conversation)}
                 className={cn(
                   "group relative flex w-full gap-3 border-b px-4 py-4 text-left transition",
                   selectedId === conversation.id
