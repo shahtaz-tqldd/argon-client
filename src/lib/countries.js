@@ -44,3 +44,44 @@ export const COUNTRY_LIST = [
   { name: "Croatia", timezone: "UTC+1", flag: "🇭🇷" },
   { name: "Czech Republic", timezone: "UTC+1", flag: "🇨🇿" },
 ];
+
+// Countries currently supported by the conversation inbox. Keep this map small
+// until the API starts returning a consistent ISO country code for every session.
+export const COUNTRY_MAP = {
+  bangladesh: { name: "Bangladesh", code: "BD", flag: "🇧🇩" },
+  "united states": { name: "United States", code: "US", flag: "🇺🇸" },
+  "united kingdom": { name: "United Kingdom", code: "GB", flag: "🇬🇧" },
+  canada: { name: "Canada", code: "CA", flag: "🇨🇦" },
+  india: { name: "India", code: "IN", flag: "🇮🇳" },
+  australia: { name: "Australia", code: "AU", flag: "🇦🇺" },
+  germany: { name: "Germany", code: "DE", flag: "🇩🇪" },
+  france: { name: "France", code: "FR", flag: "🇫🇷" },
+  "united arab emirates": {
+    name: "United Arab Emirates",
+    code: "AE",
+    flag: "🇦🇪",
+  },
+  singapore: { name: "Singapore", code: "SG", flag: "🇸🇬" },
+};
+
+const COUNTRY_ALIASES = {
+  bd: "bangladesh",
+  us: "united states",
+  usa: "united states",
+  gb: "united kingdom",
+  uk: "united kingdom",
+  ca: "canada",
+  in: "india",
+  au: "australia",
+  de: "germany",
+  fr: "france",
+  ae: "united arab emirates",
+  uae: "united arab emirates",
+  sg: "singapore",
+};
+
+export function getCountryMeta(country) {
+  const normalizedCountry = String(country || "").trim().toLowerCase();
+  const countryKey = COUNTRY_ALIASES[normalizedCountry] || normalizedCountry;
+  return COUNTRY_MAP[countryKey] || null;
+}

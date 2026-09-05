@@ -73,19 +73,32 @@ const StatusBadge = ({ children }) => {
   );
 };
 
-const EmBadge = ({ children, variant = "primary", className = "" }) => {
+const EmBadge = ({
+  children,
+  variant = "primary",
+  size = "sm",
+  className = "",
+}) => {
   const styles = {
     primary: "bg-primary/10 text-slate-700",
     secondary: "bg-primary/10 text-primary",
     accent: "bg-gray-50 text-gray-600",
     destructive: "bg-slate-100 text-slate-600",
+    success: "bg-emerald-600 text-white",
+    "success-accent": "bg-emerald-600/10 text-emerald-600",
+  };
+
+  const sizes = {
+    xs: "py-1 px-2 text-[11px]",
+    sm: "px-2.5 py-1.5 text-xs",
   };
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold",
+        "inline-flex items-center gap-1 rounded-full font-semibold",
         styles[variant],
+        sizes[size],
         className,
       )}
     >

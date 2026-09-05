@@ -2,8 +2,10 @@ import { useLayoutEffect, useRef } from "react";
 import SideMenu from "@/components/navbar";
 import { Outlet, useLocation } from "react-router-dom";
 import NavHeader from "@/components/navbar/nav-header";
+import useDashboardSocket from "@/hooks/useDashboardSocket";
 
 const DashboardLayout = () => {
+  useDashboardSocket();
   const { pathname } = useLocation();
   const scrollContainerRef = useRef(null);
   const hiddenSidebarRoutes = ["/", "/onboarding", "/profile"];

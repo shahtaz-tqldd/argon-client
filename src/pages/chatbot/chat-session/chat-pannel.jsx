@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   AlertCircle,
+  ArrowRightLeft,
   AtSign,
   Ban,
   Bot,
   Check,
   ChevronDown,
-  FileText,
   Info,
   LoaderCircle,
   MessageCircleMore,
@@ -33,9 +33,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  useChatMessageListQuery,
+  useChatSessionDetailQuery,
+  useChatSessionMarkReadMutation,
+} from "@/features/chat-session/chatSessionApiSlice";
+import { useCapturedLeadDetailQuery } from "@/features/lead_captures/leadCaptureApiSlice";
+import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { cn } from "@/lib/utils";
+import { buildConversation } from "./chat-session-utils";
+import CustomerContext from "./customer-context";
 
-const team = ["Shahtaz", "Nadia Rahman", "Arif Hossain", "Unassigned"];
+function unwrapObject(payload) {
+  let value = payload;
+  while (value?.data && !Array.isArray(value.data)) value = value.data;
+  return value && !Array.isArray(value) ? value : {};
+}
+
+function unwrapMessages(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.results)) return payload.results;
+  if (Array.isArray(payload?.data?.results)) return payload.data.results;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
+}
 
 function dateKey(value) {
   const date = new Date(value);
@@ -93,35 +115,107 @@ function groupMessages(messages) {
 }
 
 const ChatPanel = ({
-  conversation,
-  messages = [],
-  isLoading = false,
-  isError = false,
-  onRetry,
+  conversationSummary,
+  contextOpen,
+  onCloseContext,
   onTakeover,
   onResolve,
-  onAssign,
+  onTransfer,
   onSend,
   onToggleContext,
+  teamMembers = [],
+  currentAgentId,
+  isMembersLoading = false,
+  isOwnershipUpdating = false,
+  pendingTransfer,
+  isTransferActionLoading = false,
+  onAcceptTransfer,
+  onDeclineTransfer,
+  isSending = false,
 }) => {
-  const [mode, setMode] = useState("reply");
   const [draft, setDraft] = useState("");
   const messagesEndRef = useRef(null);
+  const markedSessionRef = useRef(null);
+  const { chatbotSlug } = useCurrentChatbot();
+  const sessionId = conversationSummary.id;
+  const sessionQuery = useChatSessionDetailQuery(
+    { chatbotSlug, sessionId },
+    { skip: !chatbotSlug || !sessionId },
+  );
+  const messageQuery = useChatMessageListQuery(
+    { chatbotSlug, sessionId },
+    { skip: !chatbotSlug || !sessionId },
+  );
+  const [markSessionRead] = useChatSessionMarkReadMutation();
+  const sessionDetails = unwrapObject(sessionQuery.currentData);
+  const conversation = useMemo(
+    () => buildConversation(conversationSummary, sessionDetails),
+    [conversationSummary, sessionDetails],
+  );
+  const messages = useMemo(
+    () => unwrapMessages(messageQuery.currentData),
+    [messageQuery.currentData],
+  );
   const messageGroups = useMemo(() => groupMessages(messages), [messages]);
+  const latestVisitorMessageId = [...messages]
+    .reverse()
+    .find(
+      (message) =>
+        (message.sender_type || message.type) === "visitor" ||
+        (message.sender_type || message.type) === "customer",
+    )?.id;
+  const leadId =
+    conversation.lead_id ||
+    conversation.captured_lead_id ||
+    conversation.user_data?.lead_id ||
+    conversation.lead?.id;
+  const leadQuery = useCapturedLeadDetailQuery(
+    { chatbotSlug, leadId },
+    { skip: !chatbotSlug || !sessionId || !leadId },
+  );
+  const lead = unwrapObject(leadQuery.currentData);
+  const isLoading =
+    sessionQuery.isLoading ||
+    messageQuery.isLoading ||
+    (sessionQuery.isFetching && !sessionQuery.currentData) ||
+    (messageQuery.isFetching && !messageQuery.currentData);
+  const isError = sessionQuery.isError || messageQuery.isError;
+  const assignedAgentId = conversation.assigned_to?.id;
+  const isOwnedByCurrentAgent =
+    Boolean(assignedAgentId) && assignedAgentId === currentAgentId;
+  const canTakeOver =
+    !assignedAgentId && conversation.status !== "resolved";
+  const canRelease = isOwnedByCurrentAgent;
+
+  useEffect(() => {
+    if (!chatbotSlug || !sessionId) return;
+
+    const readKey = `${sessionId}:${latestVisitorMessageId || "opened"}`;
+    if (markedSessionRef.current === readKey) return;
+
+    markedSessionRef.current = readKey;
+    markSessionRead({ chatbotSlug, sessionId });
+  }, [chatbotSlug, latestVisitorMessageId, markSessionRead, sessionId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [messages]);
 
-  const submitMessage = () => {
+  const submitMessage = async () => {
     const text = draft.trim();
-    if (!text || !onSend) return;
-    onSend(text, mode);
-    setDraft("");
+    if (!text || !onSend || isSending) return;
+    const succeeded = await onSend(text);
+    if (succeeded !== false) setDraft("");
+  };
+
+  const retryConversation = () => {
+    sessionQuery.refetch();
+    messageQuery.refetch();
   };
 
   return (
-    <main className="flex min-w-[430px] flex-1 flex-col bg-background">
+    <>
+      <main className="flex min-w-[430px] flex-1 flex-col bg-background">
       <header className="flex h-[76px] shrink-0 items-center justify-between gap-4 border-b px-5">
         <div className="flex min-w-0 items-center gap-3">
           <div className="relative">
@@ -167,47 +261,89 @@ const ChatPanel = ({
         <div className="flex items-center gap-1.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="hidden xl:flex">
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden xl:flex"
+                disabled={
+                  !isOwnedByCurrentAgent ||
+                  isMembersLoading ||
+                  isOwnershipUpdating
+                }
+                title={
+                  isOwnedByCurrentAgent
+                    ? "Transfer this conversation"
+                    : "Only the current owner can transfer this conversation"
+                }
+              >
                 <UsersRound />
                 {conversation.owner}
                 <ChevronDown />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel>Assign conversation</DropdownMenuLabel>
+              <DropdownMenuLabel>Transfer conversation</DropdownMenuLabel>
               <DropdownMenuRadioGroup
-                value={conversation.owner}
-                onValueChange={onAssign}
-                disabled={!onAssign}
+                value={assignedAgentId || ""}
+                onValueChange={(agentId) => onTransfer?.(conversation, agentId)}
               >
-                <DropdownMenuRadioItem value="AI">
-                  <Bot />
-                  Atlas AI
-                </DropdownMenuRadioItem>
-                {team.map((member) => (
-                  <DropdownMenuRadioItem key={member} value={member}>
-                    <UserRound />
-                    {member}
-                  </DropdownMenuRadioItem>
-                ))}
+                {isMembersLoading && (
+                  <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground">
+                    <LoaderCircle className="size-3.5 animate-spin" />
+                    Loading teammates…
+                  </DropdownMenuLabel>
+                )}
+                {teamMembers
+                  .filter((member) => member.id !== currentAgentId)
+                  .map((member) => (
+                    <DropdownMenuRadioItem
+                      key={member.id}
+                      value={member.id}
+                      disabled={!onTransfer}
+                    >
+                      <UserRound />
+                      {member.name}
+                    </DropdownMenuRadioItem>
+                  ))}
+                {!isMembersLoading &&
+                  teamMembers.filter((member) => member.id !== currentAgentId)
+                    .length === 0 && (
+                  <DropdownMenuLabel className="font-normal text-muted-foreground">
+                    No teammates available
+                  </DropdownMenuLabel>
+                  )}
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
-            onClick={onTakeover}
-            disabled={!onTakeover}
-            variant={conversation.owner === "AI" ? "default" : "outline"}
+            onClick={() => onTakeover?.(conversation)}
+            disabled={
+              !onTakeover ||
+              isOwnershipUpdating ||
+              (!canTakeOver && !canRelease)
+            }
+            variant={canTakeOver ? "default" : "outline"}
             size="sm"
           >
-            {conversation.owner === "AI" ? (
+            {isOwnershipUpdating ? (
+              <>
+                <LoaderCircle className="animate-spin" />
+                Updating
+              </>
+            ) : canTakeOver ? (
               <>
                 <UserRoundPlus />
                 Take over
               </>
-            ) : (
+            ) : canRelease ? (
               <>
                 <Bot />
                 Return to AI
+              </>
+            ) : (
+              <>
+                <UserRound />
+                Assigned
               </>
             )}
           </Button>
@@ -263,6 +399,43 @@ const ChatPanel = ({
         </div>
       </header>
 
+      {pendingTransfer && (
+        <div className="flex shrink-0 items-center gap-3 border-b border-violet-500/20 bg-violet-500/[0.06] px-5 py-2.5">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400">
+            <ArrowRightLeft className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold">
+              {pendingTransfer.from_agent?.name || "A teammate"} wants to
+              transfer this conversation to you
+            </p>
+            {pendingTransfer.reason && (
+              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                {pendingTransfer.reason}
+              </p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={isTransferActionLoading}
+            onClick={() => onDeclineTransfer?.(pendingTransfer)}
+          >
+            Decline
+          </Button>
+          <Button
+            size="sm"
+            disabled={isTransferActionLoading}
+            onClick={() => onAcceptTransfer?.(pendingTransfer)}
+          >
+            {isTransferActionLoading && (
+              <LoaderCircle className="animate-spin" />
+            )}
+            Accept
+          </Button>
+        </div>
+      )}
+
       <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-muted/20 px-5 py-6">
         <div className="mx-auto max-w-3xl space-y-4">
           {isLoading ? (
@@ -275,7 +448,12 @@ const ChatPanel = ({
               <AlertCircle className="size-7 text-destructive/70" />
               <p className="mt-3 text-sm font-semibold">Couldn’t load this conversation</p>
               <p className="mt-1 text-xs text-muted-foreground">Please try again.</p>
-              <Button className="mt-4" size="sm" variant="outline" onClick={onRetry}>
+              <Button
+                className="mt-4"
+                size="sm"
+                variant="outline"
+                onClick={retryConversation}
+              >
                 Try again
               </Button>
             </div>
@@ -316,47 +494,22 @@ const ChatPanel = ({
         </div>
       </div>
 
-      {onSend && <footer className="shrink-0 border-t bg-card p-4">
-        <div
-          className={cn(
-            "mx-auto max-w-3xl rounded-xl border bg-background shadow-sm transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10",
-            mode === "note" &&
-              "border-amber-300 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/5",
-          )}
-        >
+      {onSend &&
+        isOwnedByCurrentAgent &&
+        conversation.status !== "resolved" && (
+        <footer className="shrink-0 border-t bg-card p-4">
+          <div className="mx-auto max-w-3xl rounded-xl border bg-background shadow-sm transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10">
           <div className="flex items-center gap-1 border-b px-2 pt-1.5">
             <button
-              onClick={() => setMode("reply")}
-              className={cn(
-                "border-b-2 px-3 py-2 text-xs font-semibold transition",
-                mode === "reply"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
+              className="border-b-2 border-primary px-3 py-2 text-xs font-semibold text-primary"
             >
               <span className="flex items-center gap-1.5">
                 <MessageCircleMore className="size-3.5" />
                 Reply
               </span>
             </button>
-            <button
-              onClick={() => setMode("note")}
-              className={cn(
-                "border-b-2 px-3 py-2 text-xs font-semibold transition",
-                mode === "note"
-                  ? "border-amber-500 text-amber-700 dark:text-amber-400"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <span className="flex items-center gap-1.5">
-                <FileText className="size-3.5" />
-                Internal note
-              </span>
-            </button>
             <span className="ml-auto px-2 text-[10px] text-muted-foreground">
-              {mode === "reply"
-                ? `via ${conversation.channel}`
-                : "Only visible to your team"}
+              via {conversation.channel}
             </span>
           </div>
           <textarea
@@ -365,15 +518,12 @@ const ChatPanel = ({
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
-                submitMessage();
+                void submitMessage();
               }
             }}
+            disabled={isSending}
             className="min-h-20 w-full resize-none bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground"
-            placeholder={
-              mode === "reply"
-                ? `Reply to ${conversation.name.split(" ")[0]}…`
-                : "Leave a note for your team…"
-            }
+            placeholder={`Reply to ${conversation.name.split(" ")[0]}…`}
           />
           <div className="flex items-center justify-between px-2 pb-2">
             <div className="flex items-center">
@@ -390,41 +540,47 @@ const ChatPanel = ({
               >
                 <AtSign />
               </Button>
-              {mode === "reply" && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  className="text-violet-600"
-                  aria-label="Improve with AI"
-                >
-                  <WandSparkles />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="text-violet-600"
+                aria-label="Improve with AI"
+              >
+                <WandSparkles />
+              </Button>
             </div>
             <Button
               onClick={submitMessage}
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || isSending}
               size="sm"
-              className={cn(
-                mode === "note" && "bg-amber-500 hover:bg-amber-600",
-              )}
             >
-              {mode === "reply" ? (
-                <>
-                  <Send />
-                  Send
-                </>
+              {isSending ? (
+                <LoaderCircle className="animate-spin" />
               ) : (
-                <>
-                  <FileText />
-                  Add note
-                </>
+                  <Send />
               )}
+              {isSending ? "Sending" : "Send"}
             </Button>
           </div>
-        </div>
-      </footer>}
-    </main>
+          </div>
+        </footer>
+        )}
+      </main>
+      {contextOpen && (
+        <button
+          className="absolute inset-0 z-20 bg-black/20 xl:hidden"
+          aria-label="Close customer context"
+          onClick={onCloseContext}
+        />
+      )}
+      <CustomerContext
+        conversation={conversation}
+        lead={lead}
+        isLeadLoading={leadQuery.isLoading}
+        open={contextOpen}
+        onClose={onCloseContext}
+      />
+    </>
   );
 };
 

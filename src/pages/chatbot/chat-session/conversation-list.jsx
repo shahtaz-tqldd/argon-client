@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useChatSessionListQuery } from "@/features/chat-session/chatSessionApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
+import { getCountryMeta } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
@@ -15,18 +16,20 @@ import {
   Check,
   ChevronDown,
   Facebook,
+  Globe,
   Globe2,
   Instagram,
   LoaderCircle,
   MessageCircleMore,
   MoreHorizontal,
   Search,
+  UserRound,
 } from "lucide-react";
 
 const channelMeta = {
   web_widget: {
     label: "Web widget",
-    icon: Globe2,
+    icon: Globe,
     className: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
   },
   facebook: {
@@ -107,6 +110,80 @@ function formatActivity(value) {
   return relativeTime.format(Math.round(difference / duration), unit);
 }
 
+function getLocation(session) {
+  const userData = session.user_data || {};
+  const countryValue =
+    userData.detected_country ||
+    userData.detected_country_code ||
+    session.detected_country ||
+    session.detected_country_code;
+
+  return {
+    country: getCountryMeta(countryValue),
+    label:
+      userData.detected_address ||
+      userData.location ||
+      [session.detected_city, countryValue].filter(Boolean).join(", ") ||
+      countryValue ||
+      "Location unavailable",
+  };
+}
+
+function getAssigneeName(session) {
+  if (!session.assigned_to) return null;
+  if (typeof session.assigned_to === "string") return session.assigned_to;
+  return session.assigned_to.name || session.assigned_to.full_name || null;
+}
+
+function SupportStatus({ conversation }) {
+  const assignee = getAssigneeName(conversation);
+
+  if (conversation.status === "resolved") {
+    return (
+      <span className="inline-flex min-w-0 items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+        <Check className="size-3 shrink-0" />
+        Resolved
+      </span>
+    );
+  }
+
+  if (conversation.requires_attention) {
+    return (
+      <span className="inline-flex min-w-0 items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-1 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+        <AlertCircle className="size-3 shrink-0" />
+        Needs attention
+      </span>
+    );
+  }
+
+  if (assignee) {
+    return (
+      <span className="inline-flex min-w-0 items-center gap-1 text-[10px] font-medium text-muted-foreground">
+        <UserRound className="size-3 shrink-0" />
+        <span className="truncate">Assigned to {assignee}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "inline-flex min-w-0 items-center gap-1 text-[10px] font-medium",
+        conversation.ai_enabled
+          ? "text-violet-600 dark:text-violet-400"
+          : "text-muted-foreground",
+      )}
+    >
+      {conversation.ai_enabled ? (
+        <Bot className="size-3 shrink-0" />
+      ) : (
+        <UserRound className="size-3 shrink-0" />
+      )}
+      {conversation.ai_enabled ? "AI handling" : "Waiting for teammate"}
+    </span>
+  );
+}
+
 function ChannelIcon({ channel, className }) {
   const meta = channelMeta[channel] || channelMeta.web_widget;
   const Icon = meta.icon;
@@ -139,7 +216,7 @@ const ConversationList = ({
     useChatSessionListQuery(
       {
         chatbotSlug,
-        status: filter !== "all" && filter !== "attention" ? filter : undefined,
+        status: filter === "resolved" ? filter : undefined,
         channel: channel !== "all" ? channel : undefined,
         search: query.trim() || undefined,
       },
@@ -147,16 +224,17 @@ const ConversationList = ({
     );
 
   const sessions = data?.data ?? [];
-  const conversations =
-    filter === "attention"
-      ? sessions.filter((session) => session.unread_message_count > 0)
-      : sessions;
+  const conversations = sessions.filter((session) => {
+    if (filter === "active") return session.is_recently_active;
+    if (filter === "attention") return session.requires_attention;
+    return true;
+  });
   const unreadCount = sessions.reduce(
     (total, session) => total + (session.unread_message_count || 0),
     0,
   );
   const attentionCount = sessions.filter(
-    (session) => session.unread_message_count > 0,
+    (session) => session.requires_attention,
   ).length;
   const chatbotName =
     currentChatbot?.chatbot_name || currentChatbot?.name || "Chat support";
@@ -284,7 +362,9 @@ const ConversationList = ({
           conversations.map((conversation) => {
             const name = getDisplayName(conversation);
             const unread = conversation.unread_message_count || 0;
-            const needsAttention = unread > 0;
+            const location = getLocation(conversation);
+            const isRecentlyActive = Boolean(conversation.is_recently_active);
+            const lastSender = conversation.last_message?.sender;
             const activityTitle = conversation.last_activity_at
               ? new Date(conversation.last_activity_at).toLocaleString()
               : undefined;
@@ -297,7 +377,9 @@ const ConversationList = ({
                   "group relative flex w-full gap-3 border-b px-4 py-4 text-left transition",
                   selectedId === conversation.id
                     ? "bg-primary/[0.07] before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-r-full before:bg-primary"
-                    : "hover:bg-muted/50",
+                    : isRecentlyActive
+                      ? "bg-emerald-500/[0.025] hover:bg-emerald-500/[0.06]"
+                      : "hover:bg-muted/50",
                 )}
               >
                 <div className="relative shrink-0">
@@ -313,6 +395,21 @@ const ConversationList = ({
                     channel={conversation.channel}
                     className="absolute top-7 -right-0.5 size-4 border border-card [&_svg]:size-4"
                   />
+                  <span
+                    className={cn(
+                      "absolute -left-0.5 -top-0.5 flex size-3 items-center justify-center rounded-full border-2 border-card",
+                      isRecentlyActive
+                        ? "bg-emerald-500"
+                        : "bg-muted-foreground/35",
+                    )}
+                    title={
+                      isRecentlyActive ? "Recently active" : "Not recently active"
+                    }
+                  >
+                    {isRecentlyActive && (
+                      <span className="absolute size-2 animate-ping rounded-full bg-emerald-400 opacity-60 motion-reduce:animate-none" />
+                    )}
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start gap-2">
@@ -336,6 +433,27 @@ const ConversationList = ({
                       {formatActivity(conversation.last_activity_at)}
                     </span>
                   </div>
+                  <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
+                    {location.country ? (
+                      <span
+                        className="text-sm leading-none"
+                        role="img"
+                        aria-label={`${location.country.name} flag`}
+                      >
+                        {location.country.flag}
+                      </span>
+                    ) : (
+                      <Globe2 className="size-3 shrink-0" />
+                    )}
+                    <span className="truncate" title={location.label}>
+                      {location.label}
+                    </span>
+                    {isRecentlyActive && (
+                      <span className="ml-auto shrink-0 font-semibold text-emerald-600 dark:text-emerald-400">
+                        Active now
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-1 flex items-center gap-2">
                     <p
                       className={cn(
@@ -345,6 +463,11 @@ const ConversationList = ({
                           : "text-muted-foreground",
                       )}
                     >
+                      {lastSender === "ai" && (
+                        <span className="font-semibold text-violet-600 dark:text-violet-400">
+                          AI ·{" "}
+                        </span>
+                      )}
                       {conversation.last_message?.content || "No messages yet"}
                     </p>
                     {unread > 0 && (
@@ -353,25 +476,15 @@ const ConversationList = ({
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    {conversation.status === "resolved" ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600">
-                        <Check className="size-3" />
-                        Resolved
-                      </span>
-                    ) : needsAttention ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                        <AlertCircle className="size-3" />
-                        Needs attention
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
-                        <Bot className="size-3" />
-                        {conversation.ai_enabled
-                          ? "AI handling"
-                          : "Team handling"}
-                      </span>
-                    )}
+                  <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+                    <SupportStatus conversation={conversation} />
+                    {conversation.ai_enabled &&
+                      conversation.requires_attention && (
+                        <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-violet-600 dark:text-violet-400">
+                          <Bot className="size-3" />
+                          AI on
+                        </span>
+                      )}
                   </div>
                 </div>
               </button>
