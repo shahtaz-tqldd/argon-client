@@ -365,7 +365,7 @@ const CardContainer = ({ title, description, children }) => {
     <div className="w-full max-w-4xl mx-auto">
       <div className="p-5 sm:p-8 border border-border rounded-2xl md:rounded-3xl bg-card shadow-sm md:shadow-xl md:text-card-foreground">
         <div className="mb-10">
-          <img src="/logo.webp" alt="Argon Chatbot" className="size-12" />
+          <img src="/logo.png" alt="Argon Chatbot" className="size-12" />
           <h2 className="mt-2 text-xl font-semibold text-foreground md:text-2xl">
             {title}
           </h2>

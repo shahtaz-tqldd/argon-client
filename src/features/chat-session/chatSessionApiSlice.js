@@ -62,6 +62,24 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
             ],
     }),
 
+    deleteChatSession: builder.mutation({
+      query: ({ chatbotSlug, sessionId }) => ({
+        url: "/chat-sessions/sessions/delete/",
+        method: "DELETE",
+        params: {
+          chatbot_slug: chatbotSlug,
+          session_id: sessionId,
+        },
+      }),
+      invalidatesTags: (_result, error, { chatbotSlug, sessionId }) =>
+        error
+          ? []
+          : [
+              { type: "chat-session-details", id: sessionId },
+              { type: "chat-sessions", id: chatbotSlug },
+            ],
+    }),
+
     // MESSAGES
     chatMessageList: builder.query({
       query: ({ chatbotSlug, sessionId, page = 1, pageSize = 50 }) => ({
@@ -234,17 +252,15 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
         { type: "chat-sessions", id: chatbotSlug },
       ],
     }),
-
   }),
 });
 
 export const {
   // sessions
   useChatSessionListQuery,
-  useLazyChatSessionListQuery,
   useChatSessionDetailQuery,
-  useLazyChatSessionDetailQuery,
   useChatSessionMarkReadMutation,
+  useDeleteChatSessionMutation,
 
   // messages
   useChatMessageListQuery,
@@ -262,5 +278,4 @@ export const {
   useCancelSessionTransferMutation,
   useResolveSessionMutation,
   useReopenSessionMutation,
-
 } = chatSessionApiSlice;

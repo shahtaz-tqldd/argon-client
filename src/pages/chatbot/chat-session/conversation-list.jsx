@@ -9,18 +9,15 @@ import {
 import { useChatSessionListQuery } from "@/features/chat-session/chatSessionApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getCountryMeta } from "@/lib/countries";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
   Bot,
   Check,
   ChevronDown,
-  Facebook,
   Globe,
   Globe2,
-  Instagram,
   LoaderCircle,
-  MessageCircleMore,
   MoreHorizontal,
   Search,
   UserRound,
@@ -28,24 +25,24 @@ import {
 
 const channelMeta = {
   web_widget: {
-    label: "Web widget",
-    icon: Globe,
-    className: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    label: "Website",
+    icon: <Globe size={12} />,
+    className: "text-slate-500",
   },
   facebook: {
-    label: "Facebook",
-    icon: Facebook,
-    className: "bg-blue-600/10 text-blue-600 dark:text-blue-400",
+    label: "Messenger",
+    icon: <img src="/ms.webp" className="size-3" />,
+    className: "text-blue-600 dark:text-blue-400",
   },
   instagram: {
     label: "Instagram",
-    icon: Instagram,
-    className: "bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400",
+    icon: <img src="/insta.webp" className="size-3" />,
+    className: "text-fuchsia-600 dark:text-fuchsia-400",
   },
   whatsapp: {
     label: "WhatsApp",
-    icon: MessageCircleMore,
-    className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    icon: <img src="/wp.webp" className="size-3" />,
+    className: "text-emerald-600 dark:text-emerald-400",
   },
 };
 
@@ -70,16 +67,6 @@ const relativeTime = new Intl.RelativeTimeFormat(undefined, {
 
 function getDisplayName(session) {
   return session.user_data?.name?.trim() || "Unknown visitor";
-}
-
-function getInitials(name) {
-  if (name === "Unknown visitor") return "UV";
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
 }
 
 function getAvatarTone(id = "") {
@@ -158,45 +145,38 @@ function SupportStatus({ conversation }) {
 
   if (assignee) {
     return (
-      <span className="inline-flex min-w-0 items-center gap-1 text-[10px] font-medium text-muted-foreground">
-        <UserRound className="size-3 shrink-0" />
-        <span className="truncate">Assigned to {assignee}</span>
-      </span>
+      <div className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+        <UserRound className="size-2.5 shrink-0" />
+        <span className="truncate">{assignee}</span>
+      </div>
     );
   }
 
-  return (
-    <span
-      className={cn(
-        "inline-flex min-w-0 items-center gap-1 text-[10px] font-medium",
-        conversation.ai_enabled
-          ? "text-violet-600 dark:text-violet-400"
-          : "text-muted-foreground",
-      )}
-    >
-      {conversation.ai_enabled ? (
-        <Bot className="size-3 shrink-0" />
-      ) : (
-        <UserRound className="size-3 shrink-0" />
-      )}
-      {conversation.ai_enabled ? "AI handling" : "Waiting for teammate"}
-    </span>
-  );
+  if (conversation.ai_enabled) {
+    return (
+      <div className="inline-flex items-center gap-1 text-xs text-primary font-medium">
+        <Check className="size-2.5 shrink-0" />
+        <span>AI Enabled</span>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function ChannelIcon({ channel, className }) {
   const meta = channelMeta[channel] || channelMeta.web_widget;
-  const Icon = meta.icon;
+
   return (
     <span
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-full",
+        "text-xs gap-1.5 flex shrink-0 items-center rounded-full bg-white p-0.5",
         meta.className,
         className,
       )}
       title={meta.label}
     >
-      <Icon className="size-3.5" />
+      {meta.icon}
     </span>
   );
 }
@@ -365,6 +345,8 @@ const ConversationList = ({
             const location = getLocation(conversation);
             const isRecentlyActive = Boolean(conversation.is_recently_active);
             const lastSender = conversation.last_message?.sender;
+            const assigneeFirstName =
+              getAssigneeName(conversation)?.split(" ")[0];
             const activityTitle = conversation.last_activity_at
               ? new Date(conversation.last_activity_at).toLocaleString()
               : undefined;
@@ -393,7 +375,7 @@ const ConversationList = ({
                   </span>
                   <ChannelIcon
                     channel={conversation.channel}
-                    className="absolute top-7 -right-0.5 size-4 border border-card [&_svg]:size-4"
+                    className="absolute top-7 right-0"
                   />
                   <span
                     className={cn(
@@ -403,7 +385,9 @@ const ConversationList = ({
                         : "bg-muted-foreground/35",
                     )}
                     title={
-                      isRecentlyActive ? "Recently active" : "Not recently active"
+                      isRecentlyActive
+                        ? "Recently active"
+                        : "Not recently active"
                     }
                   >
                     {isRecentlyActive && (
@@ -415,15 +399,24 @@ const ConversationList = ({
                   <div className="flex items-start gap-2">
                     <p
                       className={cn(
-                        "min-w-0 flex-1 truncate text-sm",
+                        "min-w-0 flex-1 truncate text-[13px]",
                         unread > 0 ? "font-bold" : "font-semibold",
                       )}
                     >
                       {name}
+                      {location.country ? (
+                        <span
+                          className="ml-2 text-sm leading-none"
+                          role="img"
+                          aria-label={`${location.country.name} flag`}
+                        >
+                          {location.country.flag}
+                        </span>
+                      ) : null}
                     </p>
                     <span
                       className={cn(
-                        "mt-0.5 shrink-0 text-[11px]",
+                        "shrink-0 text-[10px]",
                         unread > 0
                           ? "font-semibold text-primary"
                           : "text-muted-foreground",
@@ -433,40 +426,21 @@ const ConversationList = ({
                       {formatActivity(conversation.last_activity_at)}
                     </span>
                   </div>
-                  <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
-                    {location.country ? (
-                      <span
-                        className="text-sm leading-none"
-                        role="img"
-                        aria-label={`${location.country.name} flag`}
-                      >
-                        {location.country.flag}
-                      </span>
-                    ) : (
-                      <Globe2 className="size-3 shrink-0" />
-                    )}
-                    <span className="truncate" title={location.label}>
-                      {location.label}
-                    </span>
-                    {isRecentlyActive && (
-                      <span className="ml-auto shrink-0 font-semibold text-emerald-600 dark:text-emerald-400">
-                        Active now
-                      </span>
-                    )}
-                  </div>
                   <div className="mt-1 flex items-center gap-2">
                     <p
                       className={cn(
-                        "min-w-0 flex-1 truncate text-xs",
+                        "min-w-0 flex-1 truncate text-[12px]",
                         unread > 0
                           ? "font-medium text-foreground"
                           : "text-muted-foreground",
                       )}
                     >
-                      {lastSender === "ai" && (
-                        <span className="font-semibold text-violet-600 dark:text-violet-400">
-                          AI ·{" "}
-                        </span>
+                      {lastSender === "ai" ? (
+                        <span className="font-bold">Chatbot: </span>
+                      ) : lastSender === "agent" ? (
+                        <span className="font-bold">{assigneeFirstName}: </span>
+                      ) : (
+                        <span className="font-bold">User: </span>
                       )}
                       {conversation.last_message?.content || "No messages yet"}
                     </p>
@@ -476,7 +450,7 @@ const ConversationList = ({
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+                  <div className="mt-2 flex min-w-0 items-center gap-2">
                     <SupportStatus conversation={conversation} />
                     {conversation.ai_enabled &&
                       conversation.requires_attention && (

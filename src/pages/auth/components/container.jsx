@@ -18,7 +18,7 @@ const AuthContainer = ({
           )}
         >
           <div className="mb-10">
-            <img src="/logo.webp" alt="Argon Chatbot" className="size-12" />
+            <img src="/logo.png" alt="Argon Chatbot" className="size-12" />
             <h2 className="mt-2 text-xl font-semibold text-foreground md:text-2xl">
               {title}
             </h2>

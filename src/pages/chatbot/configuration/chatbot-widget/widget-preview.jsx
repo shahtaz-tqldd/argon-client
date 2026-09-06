@@ -130,7 +130,7 @@ const WidgetPreview = ({ settings, chatbot }) => {
                   />
                 ) : (
                   <img
-                    src="/logo.webp"
+                    src="/logo-dark.png"
                     alt="Chatbot"
                     className="object-contain"
                   />
@@ -172,7 +172,7 @@ const WidgetPreview = ({ settings, chatbot }) => {
                       />
                     ) : (
                       <img
-                        src="/logo.webp"
+                        src="/logo.png"
                         alt="Chatbot"
                         className="object-contain"
                       />
@@ -258,7 +258,7 @@ const WidgetPreview = ({ settings, chatbot }) => {
         <button
           type="button"
           className={cn(
-            "absolute bottom-5 flex items-center gap-2 rounded-full px-3 py-3 text-xs font-bold text-white shadow-lg",
+            "absolute bottom-5 flex items-center gap-2 rounded-full p-2 text-xs font-bold text-white shadow-lg",
             horizontalPosition,
           )}
           style={{ backgroundColor: settings.primaryColor }}
@@ -268,10 +268,14 @@ const WidgetPreview = ({ settings, chatbot }) => {
             <img
               src={chatbot.logo}
               alt="Chatbot launcher"
-              className="size-5 object-contain"
+              className="size-8 object-contain"
             />
           ) : (
-            <MessageCircle className="size-4" />
+            <img
+              src="/logo-dark.png"
+              alt="Chatbot launcher"
+              className="size-8 object-contain"
+            />
           )}
           {settings.launcherText && <span>{settings.launcherText}</span>}
         </button>

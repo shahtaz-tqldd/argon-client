@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import {
   useAcceptSessionTransferMutation,
+  useDeleteChatSessionMutation,
   useDeclineSessionTransferMutation,
   useIncomingSessionTransfersQuery,
   useReleaseSessionMutation,
@@ -55,6 +56,8 @@ const ChatSessionPage = () => {
   const [requestSessionTransfer, transferState] =
     useRequestSessionTransferMutation();
   const [sendChatMessage, sendMessageState] = useSendChatMessageMutation();
+  const [deleteChatSession, deleteSessionState] =
+    useDeleteChatSessionMutation();
   const { data: incomingTransferResponse } = useIncomingSessionTransfersQuery(
     { chatbotSlug, status: "pending" },
     { skip: !chatbotSlug },
@@ -177,6 +180,23 @@ const ChatSessionPage = () => {
     }
   };
 
+  const handleDeleteChat = async (conversation) => {
+    try {
+      const response = await deleteChatSession({
+        chatbotSlug,
+        sessionId: conversation.id,
+      }).unwrap();
+
+      setSelected(null);
+      setContextOpen(false);
+      toast.success(response?.message || "Chat deleted successfully.");
+      return true;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to delete this chat."));
+      return false;
+    }
+  };
+
   return (
     <section className="relative -m-8 flex h-[calc(100%+4rem)] min-h-[620px] overflow-hidden rounded-2xl bg-background">
       <ConversationList
@@ -214,6 +234,8 @@ const ChatSessionPage = () => {
           }
           onSend={handleSendMessage}
           isSending={sendMessageState.isLoading}
+          onDelete={handleDeleteChat}
+          isDeleting={deleteSessionState.isLoading}
           contextOpen={contextOpen}
           onToggleContext={() => setContextOpen(true)}
           onCloseContext={() => setContextOpen(false)}
