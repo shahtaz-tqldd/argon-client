@@ -551,7 +551,7 @@ const PlanAndBillingPage = () => {
         tabs={billingTabs}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        className="sticky top-0 z-10 w-fit bg-background/95 backdrop-blur"
+        className="w-fit bg-background/95 backdrop-blur"
       />
 
       {activeTab === "overview" && (
