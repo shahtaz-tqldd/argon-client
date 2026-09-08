@@ -9,12 +9,12 @@ import {
   useIncomingSessionTransfersQuery,
   useReleaseSessionMutation,
   useRequestSessionTransferMutation,
-  useSendChatMessageMutation,
   useTakeOverSessionMutation,
-} from "@/features/chat-session/chatSessionApiSlice";
+} from "@/features/chat/chatApiSlice";
 import { useChatbotMemberListQuery } from "@/features/chatbot/chatbotApiSlice";
 import useAuth from "@/hooks/useAuth";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
+import { sendDashboardMessage } from "@/hooks/useDashboardSocket";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
 import ChatPanel from "./chat-pannel";
@@ -55,7 +55,7 @@ const ChatSessionPage = () => {
   const [releaseSession, releaseState] = useReleaseSessionMutation();
   const [requestSessionTransfer, transferState] =
     useRequestSessionTransferMutation();
-  const [sendChatMessage, sendMessageState] = useSendChatMessageMutation();
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [deleteChatSession, deleteSessionState] =
     useDeleteChatSessionMutation();
   const { data: incomingTransferResponse } = useIncomingSessionTransfersQuery(
@@ -167,16 +167,15 @@ const ChatSessionPage = () => {
   const handleSendMessage = async (content) => {
     if (!sessionId) return false;
 
+    setIsSendingMessage(true);
     try {
-      await sendChatMessage({
-        chatbotSlug,
-        sessionId,
-        payload: { content },
-      }).unwrap();
+      await sendDashboardMessage(sessionId, content);
       return true;
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to send this message."));
+      toast.error(error?.message || "Unable to send this message.");
       return false;
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -233,7 +232,7 @@ const ChatSessionPage = () => {
             handleIncomingTransfer(transfer, "decline")
           }
           onSend={handleSendMessage}
-          isSending={sendMessageState.isLoading}
+          isSending={isSendingMessage}
           onDelete={handleDeleteChat}
           isDeleting={deleteSessionState.isLoading}
           contextOpen={contextOpen}

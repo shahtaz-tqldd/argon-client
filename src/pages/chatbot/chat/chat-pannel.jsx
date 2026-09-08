@@ -39,9 +39,10 @@ import {
   useChatMessageListQuery,
   useChatSessionDetailQuery,
   useChatSessionMarkReadMutation,
-} from "@/features/chat-session/chatSessionApiSlice";
+} from "@/features/chat/chatApiSlice";
 import { useCapturedLeadDetailQuery } from "@/features/lead_captures/leadCaptureApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
+import { subscribeDashboardSession } from "@/hooks/useDashboardSocket";
 import { cn } from "@/lib/utils";
 import { buildConversation } from "./chat-session-utils";
 import CustomerContext from "./customer-context";
@@ -210,6 +211,8 @@ const ChatPanel = ({
     markedSessionRef.current = readKey;
     markSessionRead({ chatbotSlug, sessionId });
   }, [chatbotSlug, latestVisitorMessageId, markSessionRead, sessionId]);
+
+  useEffect(() => subscribeDashboardSession(sessionId), [sessionId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });

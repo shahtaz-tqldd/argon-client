@@ -1,6 +1,6 @@
 import { apiSlice } from "../api/apiSlice";
 
-export const chatSessionApiSlice = apiSlice.injectEndpoints({
+export const chatApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // SESSIONS
     chatSessionList: builder.query({
@@ -13,7 +13,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
         assignedTo,
         search,
       }) => ({
-        url: "/chat-sessions/sessions/list/",
+        url: "/chat/sessions/list/",
         method: "GET",
         params: {
           chatbot_slug: chatbotSlug,
@@ -32,7 +32,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     chatSessionDetail: builder.query({
       query: ({ chatbotSlug, sessionId }) => ({
-        url: "/chat-sessions/sessions/details/",
+        url: "/chat/sessions/details/",
         method: "GET",
         params: {
           chatbot_slug: chatbotSlug,
@@ -46,7 +46,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     chatSessionMarkRead: builder.mutation({
       query: ({ chatbotSlug, sessionId }) => ({
-        url: "/chat-sessions/sessions/mark-read/",
+        url: "/chat/sessions/mark-read/",
         method: "PATCH",
         params: {
           chatbot_slug: chatbotSlug,
@@ -64,7 +64,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     deleteChatSession: builder.mutation({
       query: ({ chatbotSlug, sessionId }) => ({
-        url: "/chat-sessions/sessions/delete/",
+        url: "/chat/sessions/delete/",
         method: "DELETE",
         params: {
           chatbot_slug: chatbotSlug,
@@ -83,7 +83,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
     // MESSAGES
     chatMessageList: builder.query({
       query: ({ chatbotSlug, sessionId, page = 1, pageSize = 50 }) => ({
-        url: "/chat-sessions/messages/list/",
+        url: "/chat/messages/list/",
         method: "GET",
         params: {
           chatbot_slug: chatbotSlug,
@@ -97,27 +97,10 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
       ],
     }),
 
-    sendChatMessage: builder.mutation({
-      query: ({ chatbotSlug, sessionId, payload }) => ({
-        url: "/chat-sessions/messages/send/",
-        method: "POST",
-        params: {
-          chatbot_slug: chatbotSlug,
-          session_id: sessionId,
-        },
-        body: payload,
-      }),
-      invalidatesTags: (_result, _error, { chatbotSlug, sessionId }) => [
-        { type: "chat-messages", id: sessionId },
-        { type: "chat-session-details", id: sessionId },
-        { type: "chat-sessions", id: chatbotSlug },
-      ],
-    }),
-
     // TAKEOVERS
     takeOverSession: builder.mutation({
       query: ({ chatbotSlug, sessionId }) => ({
-        url: "/chat-sessions/takeovers/take-over/",
+        url: "/chat/takeovers/take-over/",
         method: "POST",
         params: {
           chatbot_slug: chatbotSlug,
@@ -132,7 +115,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     releaseSession: builder.mutation({
       query: ({ chatbotSlug, sessionId }) => ({
-        url: "/chat-sessions/takeovers/release/",
+        url: "/chat/takeovers/release/",
         method: "POST",
         params: {
           chatbot_slug: chatbotSlug,
@@ -148,7 +131,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
     // TRANSFERS
     requestSessionTransfer: builder.mutation({
       query: ({ chatbotSlug, sessionId, payload }) => ({
-        url: "/chat-sessions/transfers/request/",
+        url: "/chat/transfers/request/",
         method: "POST",
         params: {
           chatbot_slug: chatbotSlug,
@@ -165,7 +148,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     incomingSessionTransfers: builder.query({
       query: ({ chatbotSlug, status, page = 1, pageSize = 20 }) => ({
-        url: "/chat-sessions/transfers/incoming/",
+        url: "/chat/transfers/incoming/",
         method: "GET",
         params: {
           chatbot_slug: chatbotSlug,
@@ -181,7 +164,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     acceptSessionTransfer: builder.mutation({
       query: ({ chatbotSlug, transferId }) => ({
-        url: "/chat-sessions/transfers/accept/",
+        url: "/chat/transfers/accept/",
         method: "POST",
         params: { chatbot_slug: chatbotSlug, transfer_id: transferId },
       }),
@@ -201,7 +184,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     declineSessionTransfer: builder.mutation({
       query: ({ chatbotSlug, transferId }) => ({
-        url: "/chat-sessions/transfers/decline/",
+        url: "/chat/transfers/decline/",
         method: "POST",
         params: { chatbot_slug: chatbotSlug, transfer_id: transferId },
       }),
@@ -212,7 +195,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     cancelSessionTransfer: builder.mutation({
       query: ({ chatbotSlug, transferId }) => ({
-        url: "/chat-sessions/transfers/cancel/",
+        url: "/chat/transfers/cancel/",
         method: "POST",
         params: { chatbot_slug: chatbotSlug, transfer_id: transferId },
       }),
@@ -223,7 +206,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     resolveSession: builder.mutation({
       query: ({ chatbotSlug, sessionId, payload }) => ({
-        url: "/chat-sessions/takeovers/resolve/",
+        url: "/chat/takeovers/resolve/",
         method: "POST",
         params: {
           chatbot_slug: chatbotSlug,
@@ -239,7 +222,7 @@ export const chatSessionApiSlice = apiSlice.injectEndpoints({
 
     reopenSession: builder.mutation({
       query: ({ chatbotSlug, sessionId, payload }) => ({
-        url: "/chat-sessions/takeovers/reopen/",
+        url: "/chat/takeovers/reopen/",
         method: "POST",
         params: {
           chatbot_slug: chatbotSlug,
@@ -265,7 +248,6 @@ export const {
   // messages
   useChatMessageListQuery,
   useLazyChatMessageListQuery,
-  useSendChatMessageMutation,
 
   // takeovers
   useTakeOverSessionMutation,
@@ -278,4 +260,4 @@ export const {
   useCancelSessionTransferMutation,
   useResolveSessionMutation,
   useReopenSessionMutation,
-} = chatSessionApiSlice;
+} = chatApiSlice;

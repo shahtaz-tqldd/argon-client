@@ -26,9 +26,10 @@ This is the admin interface for controlling argon admin
 
 
 
-/ws/chat-sessions/<session_id>/?token=<JWT>
+/ws/dashboard/?token=<JWT>
 {
   "type": "message.send",
+  "session_id": "<session_id>",
   "content": "Hello, how can I help?",
   "metadata": {}
 }

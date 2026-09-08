@@ -3,8 +3,25 @@ import { useDispatch, useSelector, useStore } from "react-redux";
 
 import { apiSlice } from "@/features/api/apiSlice";
 
-const CHAT_SESSION_EVENT_PREFIX = "session.";
+const SESSION_TRANSITION_EVENTS = new Set([
+  "session.created",
+  "session.taken_over",
+  "session.released",
+  "session.resolved",
+  "session.closed",
+  "session.reopened",
+  "session.transfer_requested",
+  "session.transferred",
+  "session.transfer_declined",
+  "session.transfer_cancelled",
+]);
 const AI_EVENT_PREFIX = "ai.response.";
+const MESSAGE_ACK_TIMEOUT_MS = 15_000;
+
+let activeSocket;
+let dashboardReady = false;
+let pendingMessage;
+const sessionSubscriptions = new Map();
 
 function dashboardSocketUrl(accessToken) {
   const configuredBase =
@@ -12,10 +29,93 @@ function dashboardSocketUrl(accessToken) {
   if (!configuredBase) return null;
 
   const base = new URL(configuredBase, window.location.origin);
-  const url = new URL("/ws/notifications/", base.origin);
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  const url = new URL("/ws/dashboard/", base.origin);
+  if (url.protocol === "https:") url.protocol = "wss:";
+  if (url.protocol === "http:") url.protocol = "ws:";
   url.searchParams.set("token", accessToken);
   return url.toString();
+}
+
+function sendCommand(command) {
+  if (!dashboardReady || activeSocket?.readyState !== WebSocket.OPEN) {
+    throw new Error("Live connection is not ready. Please try again.");
+  }
+  activeSocket.send(JSON.stringify(command));
+}
+
+export function subscribeDashboardSession(sessionId) {
+  if (!sessionId) return () => {};
+
+  const currentCount = sessionSubscriptions.get(sessionId) || 0;
+  sessionSubscriptions.set(sessionId, currentCount + 1);
+  if (currentCount === 0 && dashboardReady) {
+    sendCommand({ type: "session.subscribe", session_id: sessionId });
+  }
+
+  return () => {
+    const nextCount = (sessionSubscriptions.get(sessionId) || 1) - 1;
+    if (nextCount > 0) {
+      sessionSubscriptions.set(sessionId, nextCount);
+      return;
+    }
+
+    sessionSubscriptions.delete(sessionId);
+    if (dashboardReady) {
+      sendCommand({ type: "session.unsubscribe", session_id: sessionId });
+    }
+  };
+}
+
+export function sendDashboardMessage(sessionId, content, metadata = {}) {
+  const normalizedContent = content?.trim();
+  if (!sessionId || !normalizedContent) {
+    return Promise.reject(new Error("A session and message are required."));
+  }
+  if (normalizedContent.length > 10_000) {
+    return Promise.reject(
+      new Error("Messages cannot be longer than 10,000 characters."),
+    );
+  }
+  if (pendingMessage) {
+    return Promise.reject(
+      new Error("Please wait for the previous message to be accepted."),
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+    try {
+      sendCommand({
+        type: "message.send",
+        session_id: sessionId,
+        content: normalizedContent,
+        metadata,
+      });
+    } catch (error) {
+      reject(error);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      if (pendingMessage?.sessionId !== sessionId) return;
+      pendingMessage = undefined;
+      reject(
+        new Error(
+          "The message was not acknowledged. Refresh the conversation before trying again.",
+        ),
+      );
+    }, MESSAGE_ACK_TIMEOUT_MS);
+
+    pendingMessage = { sessionId, resolve, reject, timeout };
+  });
+}
+
+function settlePendingMessage(error, event) {
+  if (!pendingMessage) return;
+  window.clearTimeout(pendingMessage.timeout);
+  const { resolve, reject } = pendingMessage;
+  pendingMessage = undefined;
+  if (error) reject(error);
+  else resolve(event);
 }
 
 function queryEntries(store, endpointName, predicate = () => true) {
@@ -34,6 +134,14 @@ function messageCollection(response) {
   if (Array.isArray(response?.results)) return response.results;
   if (Array.isArray(response?.data?.results)) return response.data.results;
   if (Array.isArray(response?.data?.data)) return response.data.data;
+  return null;
+}
+
+function notificationCollection(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.results)) return response.results;
+  if (Array.isArray(response?.data?.results)) return response.data.results;
   return null;
 }
 
@@ -66,6 +174,36 @@ function upsertMessage(dispatch, store, sessionId, message) {
           if (existingIndex === -1) messages.push(message);
           else messages[existingIndex] = message;
           messages.sort(compareMessages);
+        },
+      ),
+    );
+  });
+}
+
+function upsertNotification(dispatch, store, notification) {
+  queryEntries(store, "notificationList").forEach(({ originalArgs }) => {
+    dispatch(
+      apiSlice.util.updateQueryData(
+        "notificationList",
+        originalArgs,
+        (response) => {
+          const notifications = notificationCollection(response);
+          if (!notifications) return;
+
+          const existingIndex = notifications.findIndex(
+            (candidate) => candidate.id === notification.id,
+          );
+          if (existingIndex === -1) {
+            notifications.unshift(notification);
+            const pageSize = Number(originalArgs?.pageSize);
+            if (pageSize > 0) notifications.splice(pageSize);
+            if (response?.meta && !notification.is_read) {
+              response.meta.unread_count =
+                Number(response.meta.unread_count || 0) + 1;
+            }
+          } else {
+            notifications[existingIndex] = notification;
+          }
         },
       ),
     );
@@ -112,6 +250,13 @@ function refreshRealtimeData(dispatch) {
 }
 
 function routeDashboardEvent(event, dispatch, store) {
+  if (event?.type === "message.accepted" && event.session_id) {
+    if (pendingMessage?.sessionId === event.session_id) {
+      settlePendingMessage(null, event);
+    }
+    return;
+  }
+
   if (event?.type === "message.created" && event.session_id && event.data?.id) {
     upsertMessage(dispatch, store, event.session_id, event.data);
     updateConversationPreviews(dispatch, store, event.session_id, event.data);
@@ -119,8 +264,13 @@ function routeDashboardEvent(event, dispatch, store) {
     return;
   }
 
+  if (event?.type === "notification.created" && event.data?.id) {
+    upsertNotification(dispatch, store, event.data);
+    return;
+  }
+
   if (
-    event?.type?.startsWith(CHAT_SESSION_EVENT_PREFIX) ||
+    SESSION_TRANSITION_EVENTS.has(event?.type) ||
     event?.type?.startsWith(AI_EVENT_PREFIX)
   ) {
     dispatch(
@@ -133,8 +283,10 @@ function routeDashboardEvent(event, dispatch, store) {
     return;
   }
 
-  if (event?.event) {
-    dispatch(apiSlice.util.invalidateTags(["notifications"]));
+  if (event?.type === "error") {
+    settlePendingMessage(
+      new Error(event.message || "The live connection rejected the command."),
+    );
   }
 }
 
@@ -151,41 +303,103 @@ export default function useDashboardSocket() {
     if (!url) return undefined;
 
     let socket;
+    let heartbeatTimer;
     let reconnectTimer;
     let reconnectAttempt = 0;
+    let hasConnected = false;
     let disposed = false;
+
+    const clearHeartbeat = () => {
+      if (heartbeatTimer) window.clearInterval(heartbeatTimer);
+      heartbeatTimer = undefined;
+    };
 
     const scheduleReconnect = () => {
       if (disposed || reconnectTimer) return;
       const baseDelay = Math.min(1000 * 2 ** reconnectAttempt, 30_000);
-      const delay = baseDelay + Math.round(Math.random() * 500);
+      const jitter = Math.round(Math.random() * Math.min(baseDelay / 2, 1000));
       reconnectAttempt += 1;
       reconnectTimer = window.setTimeout(() => {
         reconnectTimer = undefined;
         connect();
-      }, delay);
+      }, baseDelay + jitter);
     };
 
     const connect = () => {
-      if (disposed || socket?.readyState === WebSocket.OPEN) return;
-      socket = new WebSocket(url);
+      if (
+        disposed ||
+        socket?.readyState === WebSocket.OPEN ||
+        socket?.readyState === WebSocket.CONNECTING
+      ) {
+        return;
+      }
 
-      socket.addEventListener("open", () => {
-        reconnectAttempt = 0;
-        refreshRealtimeData(dispatch);
-      });
+      const currentSocket = new WebSocket(url);
+      socket = currentSocket;
+      activeSocket = currentSocket;
+      dashboardReady = false;
 
-      socket.addEventListener("message", (rawEvent) => {
+      currentSocket.addEventListener("message", (rawEvent) => {
         try {
-          routeDashboardEvent(JSON.parse(rawEvent.data), dispatch, store);
+          const event = JSON.parse(String(rawEvent.data));
+          if (event?.type === "connection.ready") {
+            dashboardReady = true;
+            reconnectAttempt = 0;
+            clearHeartbeat();
+
+            const heartbeatSeconds = Number(
+              event.data?.heartbeat_interval_seconds,
+            );
+            if (heartbeatSeconds > 0) {
+              heartbeatTimer = window.setInterval(() => {
+                if (currentSocket.readyState === WebSocket.OPEN) {
+                  currentSocket.send(
+                    JSON.stringify({ type: "presence.heartbeat" }),
+                  );
+                }
+              }, heartbeatSeconds * 1000);
+            }
+
+            sessionSubscriptions.forEach((_count, sessionId) => {
+              sendCommand({ type: "session.subscribe", session_id: sessionId });
+            });
+            if (hasConnected) refreshRealtimeData(dispatch);
+            hasConnected = true;
+          }
+
+          routeDashboardEvent(event, dispatch, store);
         } catch {
           // Ignore malformed or non-JSON events without interrupting the socket.
         }
       });
 
-      socket.addEventListener("close", (closeEvent) => {
-        socket = undefined;
-        if (closeEvent.code !== 4401) scheduleReconnect();
+      currentSocket.addEventListener("close", (closeEvent) => {
+        clearHeartbeat();
+        if (activeSocket === currentSocket) {
+          activeSocket = undefined;
+          dashboardReady = false;
+        }
+        if (socket === currentSocket) socket = undefined;
+        settlePendingMessage(
+          new Error(
+            "The live connection closed. Refresh the conversation before retrying an unacknowledged message.",
+          ),
+        );
+
+        if (closeEvent.code === 4401) {
+          dispatch(
+            apiSlice.endpoints.selfDetails.initiate(undefined, {
+              forceRefetch: true,
+              subscribe: false,
+            }),
+          );
+          return;
+        }
+        if (closeEvent.code !== 1000) scheduleReconnect();
+      });
+
+      currentSocket.addEventListener("error", () => {
+        // The close event owns retry scheduling and pending-command cleanup.
       });
     };
 
@@ -199,7 +413,12 @@ export default function useDashboardSocket() {
     return () => {
       disposed = true;
       window.removeEventListener("online", reconnectWhenOnline);
+      clearHeartbeat();
       if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      if (activeSocket === socket) {
+        activeSocket = undefined;
+        dashboardReady = false;
+      }
       socket?.close(1000, "Dashboard unmounted");
     };
   }, [accessToken, dispatch, isAuthenticated, store]);

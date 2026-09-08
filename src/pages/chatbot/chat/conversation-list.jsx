@@ -6,7 +6,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useChatSessionListQuery } from "@/features/chat-session/chatSessionApiSlice";
+import { useChatSessionListQuery } from "@/features/chat/chatApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getCountryMeta } from "@/lib/countries";
 import { cn, getInitials } from "@/lib/utils";

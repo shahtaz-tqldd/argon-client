@@ -21,7 +21,7 @@ const OnboardingPage = lazy(() => import("@/pages/onboarding"));
 
 // chatbot
 const ChatbotOverview = lazy(() => import("@/pages/chatbot/overview"));
-const ChatSessionPage = lazy(() => import("@/pages/chatbot/chat-session"));
+const ChatSessionPage = lazy(() => import("@/pages/chatbot/chat"));
 const AppointmentBookingPage = lazy(
   () => import("@/pages/chatbot/appointment"),
 );
