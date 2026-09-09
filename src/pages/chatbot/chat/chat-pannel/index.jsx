@@ -4,14 +4,11 @@ import {
   AlertCircle,
   ArrowRightLeft,
   AtSign,
-  Ban,
-  Bot,
   Check,
   ChevronDown,
   Info,
   LoaderCircle,
   MessageCircleMore,
-  MoreHorizontal,
   Paperclip,
   Send,
   Smile,
@@ -19,8 +16,6 @@ import {
   UserRound,
   UserRoundPlus,
   UsersRound,
-  WandSparkles,
-  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,11 +23,9 @@ import ConfirmDialog from "@/components/dialog/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -43,9 +36,10 @@ import {
 import { useCapturedLeadDetailQuery } from "@/features/lead_captures/leadCaptureApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { subscribeDashboardSession } from "@/hooks/useDashboardSocket";
-import { cn } from "@/lib/utils";
-import { buildConversation } from "./chat-session-utils";
-import CustomerContext from "./customer-context";
+import { cn, getInitials } from "@/lib/utils";
+import { buildConversation } from "../lib";
+import CustomerContext from "../customer-context";
+import SessionDropdown from "./dropdown-menu";
 
 function unwrapObject(payload) {
   let value = payload;
@@ -104,6 +98,45 @@ function messageTime(value) {
   }).format(date);
 }
 
+function messageSequenceKey(message) {
+  const senderType = message.sender_type || message.type;
+  if (senderType === "system" || senderType === "event") return "";
+  if (senderType === "visitor" || senderType === "customer") return "customer";
+  if (senderType === "ai") return "ai";
+
+  if (senderType === "agent" || senderType === "human") {
+    const sender =
+      typeof message.sender === "object" && message.sender
+        ? message.sender
+        : {};
+    const identity =
+      sender.id ||
+      sender.user_id ||
+      sender.email ||
+      sender.name ||
+      message.sender_name ||
+      message.metadata?.sender_name ||
+      message.name ||
+      "agent";
+    return `agent:${identity}`;
+  }
+
+  return `sender:${senderType || "unknown"}`;
+}
+
+function messagesShareSequence(first, second) {
+  if (!first || !second) return false;
+  const firstKey = messageSequenceKey(first);
+  const secondKey = messageSequenceKey(second);
+  if (!firstKey || firstKey !== secondKey) return false;
+
+  const firstTime =
+    messageTime(first.created_at || first.updated_at) || first.time;
+  const secondTime =
+    messageTime(second.created_at || second.updated_at) || second.time;
+  return Boolean(firstTime) && firstTime === secondTime;
+}
+
 function groupMessages(messages) {
   const sorted = [...messages].sort((first, second) => {
     const firstTime = new Date(first.created_at || first.updated_at).getTime();
@@ -158,12 +191,16 @@ const ChatPanel = ({
     { chatbotSlug, sessionId },
     { skip: !chatbotSlug || !sessionId },
   );
+
   const messageQuery = useChatMessageListQuery(
     { chatbotSlug, sessionId },
     { skip: !chatbotSlug || !sessionId },
   );
   const [markSessionRead] = useChatSessionMarkReadMutation();
   const sessionDetails = unwrapObject(sessionQuery.currentData);
+  const chatbot = sessionDetails.chatbot || {};
+  const chatbotName = chatbot.chatbot_name || "Argon Chatbot";
+  const chatbotLogo = chatbot.logo || "/logo.png";
   const conversation = useMemo(
     () => buildConversation(conversationSummary, sessionDetails),
     [conversationSummary, sessionDetails],
@@ -339,56 +376,26 @@ const ChatPanel = ({
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              onClick={() => onTakeover?.(conversation)}
-              disabled={
-                !onTakeover ||
-                isOwnershipUpdating ||
-                (!canTakeOver && !canRelease)
-              }
-              variant={canTakeOver ? "default" : "outline"}
-              size="sm"
-            >
-              {isOwnershipUpdating ? (
-                <>
-                  <LoaderCircle className="animate-spin" />
-                  Updating
-                </>
-              ) : canTakeOver ? (
-                <>
-                  <UserRoundPlus />
-                  Take over
-                </>
-              ) : canRelease ? (
-                <>
-                  <Bot />
-                  Return to AI
-                </>
-              ) : (
-                <>
-                  <UserRound />
-                  Assigned
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={onResolve}
-              disabled={!onResolve}
-              variant="outline"
-              size="icon-sm"
-              aria-label={
-                conversation.status === "resolved"
-                  ? "Reopen conversation"
-                  : "Resolve conversation"
-              }
-              title={
-                conversation.status === "resolved"
-                  ? "Reopen conversation"
-                  : "Resolve conversation"
-              }
-            >
-              {conversation.status === "resolved" ? <Archive /> : <Check />}
-            </Button>
+            {(canTakeOver || isOwnershipUpdating) && (
+              <Button
+                onClick={() => onTakeover?.(conversation)}
+                disabled={!onTakeover || isOwnershipUpdating}
+                variant="default"
+                size="sm"
+              >
+                {isOwnershipUpdating ? (
+                  <>
+                    <LoaderCircle className="animate-spin" />
+                    Updating
+                  </>
+                ) : (
+                  <>
+                    <UserRoundPlus />
+                    Take over
+                  </>
+                )}
+              </Button>
+            )}
             <Button
               onClick={onToggleContext}
               variant="ghost"
@@ -398,40 +405,11 @@ const ChatPanel = ({
             >
               <Info />
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="More actions"
-                >
-                  <MoreHorizontal />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>
-                  <UserRoundPlus />
-                  Assign teammate
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Archive />
-                  {conversation.status === "resolved" ? "Reopen" : "Resolve"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive">
-                  <Ban />
-                  Block visitor
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  disabled={!onDelete || isDeleting}
-                  onSelect={() => setDeleteDialogOpen(true)}
-                >
-                  <Trash2 />
-                  Delete Chat
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <SessionDropdown
+              setDeleteDialogOpen={setDeleteDialogOpen}
+              onDelete={onDelete}
+              isDeleting={isDeleting}
+            />
           </div>
         </header>
 
@@ -507,10 +485,7 @@ const ChatPanel = ({
               </div>
             ) : (
               messageGroups.map((group, groupIndex) => (
-                <section
-                  key={`${group.key}-${groupIndex}`}
-                  className="space-y-4"
-                >
+                <section key={`${group.key}-${groupIndex}`}>
                   <div className="flex items-center gap-3 py-1">
                     <span className="h-px flex-1 bg-border" />
                     <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -518,13 +493,30 @@ const ChatPanel = ({
                     </span>
                     <span className="h-px flex-1 bg-border" />
                   </div>
-                  {group.messages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      customer={conversation}
-                    />
-                  ))}
+                  {group.messages.map((message, messageIndex) => {
+                    const previousMessage = group.messages[messageIndex - 1];
+                    const nextMessage = group.messages[messageIndex + 1];
+                    const continuesPrevious = messagesShareSequence(
+                      previousMessage,
+                      message,
+                    );
+                    const continuesNext = messagesShareSequence(
+                      message,
+                      nextMessage,
+                    );
+
+                    return (
+                      <MessageBubble
+                        key={message.id}
+                        message={message}
+                        customer={conversation}
+                        chatbotName={chatbotName}
+                        chatbotLogo={chatbotLogo}
+                        isSequenceStart={!continuesPrevious}
+                        isSequenceEnd={!continuesNext}
+                      />
+                    );
+                  })}
                 </section>
               ))
             )}
@@ -532,10 +524,22 @@ const ChatPanel = ({
               conversation.status !== "resolved" && (
                 <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
                   <span className="flex size-7 items-center justify-center rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
-                    <Bot className="size-3.5" />
+                    <img
+                      src={chatbotLogo}
+                      alt={`${chatbotName} logo`}
+                      className="size-full rounded-full object-cover"
+                      onError={(event) => {
+                        if (event.currentTarget.dataset.fallback === "true") {
+                          event.currentTarget.style.display = "none";
+                          return;
+                        }
+                        event.currentTarget.dataset.fallback = "true";
+                        event.currentTarget.src = "/logo.png";
+                      }}
+                    />
                   </span>
                   <span className="rounded-full border bg-card px-3 py-1.5">
-                    Atlas AI is ready to respond
+                    {chatbotName} is ready to respond
                   </span>
                 </div>
               )}
@@ -595,27 +599,70 @@ const ChatPanel = ({
                     >
                       <AtSign />
                     </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      className="text-violet-600"
-                      aria-label="Improve with AI"
+                      onClick={onResolve}
+                      disabled={!onResolve}
+                      variant="outline"
+                      size="icon-sm"
+                      aria-label={
+                        conversation.status === "resolved"
+                          ? "Reopen conversation"
+                          : "Resolve conversation"
+                      }
+                      title={
+                        conversation.status === "resolved"
+                          ? "Reopen conversation"
+                          : "Resolve conversation"
+                      }
                     >
-                      <WandSparkles />
+                      {conversation.status === "resolved" ? (
+                        <Archive />
+                      ) : (
+                        <Check />
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => onTakeover?.(conversation)}
+                      disabled={
+                        !onTakeover ||
+                        isOwnershipUpdating ||
+                        (!canTakeOver && !canRelease)
+                      }
+                      variant={canTakeOver ? "default" : "outline"}
+                      size="sm"
+                    >
+                      {isOwnershipUpdating ? (
+                        <>
+                          <LoaderCircle className="animate-spin" />
+                          Updating
+                        </>
+                      ) : canRelease ? (
+                        <>
+                          <Sparkles />
+                          Return to AI
+                        </>
+                      ) : (
+                        <>
+                          <UserRound />
+                          Assigned
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={submitMessage}
+                      disabled={!draft.trim() || isSending}
+                      size="sm"
+                    >
+                      {isSending ? (
+                        <LoaderCircle className="animate-spin" />
+                      ) : (
+                        <Send />
+                      )}
+                      {isSending ? "Sending" : "Send"}
                     </Button>
                   </div>
-                  <Button
-                    onClick={submitMessage}
-                    disabled={!draft.trim() || isSending}
-                    size="sm"
-                  >
-                    {isSending ? (
-                      <LoaderCircle className="animate-spin" />
-                    ) : (
-                      <Send />
-                    )}
-                    {isSending ? "Sending" : "Send"}
-                  </Button>
                 </div>
               </div>
             </footer>
@@ -650,7 +697,40 @@ const ChatPanel = ({
   );
 };
 
-function MessageBubble({ message, customer }) {
+function MessageAvatar({ src, name, fallbackSrc, alt }) {
+  return (
+    <span className="relative mb-4 flex size-7 shrink-0 self-end items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[9px] font-bold text-primary">
+      {getInitials(name)}
+      {(src || fallbackSrc) && (
+        <img
+          src={src || fallbackSrc}
+          alt={alt}
+          className="absolute inset-0 size-full object-cover"
+          onError={(event) => {
+            if (
+              fallbackSrc &&
+              event.currentTarget.dataset.fallback !== "true"
+            ) {
+              event.currentTarget.dataset.fallback = "true";
+              event.currentTarget.src = fallbackSrc;
+              return;
+            }
+            event.currentTarget.style.display = "none";
+          }}
+        />
+      )}
+    </span>
+  );
+}
+
+function MessageBubble({
+  message,
+  customer,
+  chatbotName,
+  chatbotLogo,
+  isSequenceStart = true,
+  isSequenceEnd = true,
+}) {
   const senderType = message.sender_type || message.type;
   const isSystem = senderType === "system" || senderType === "event";
   const content =
@@ -692,44 +772,45 @@ function MessageBubble({ message, customer }) {
     message.metadata?.sender_name ||
     message.name ||
     "Agent";
+  const senderAvatar =
+    (typeof message.sender === "object" && message.sender?.avatar) ||
+    message.sender_avatar ||
+    message.metadata?.sender_avatar ||
+    "";
   return (
     <div
       className={cn(
         "flex gap-2.5",
+        isSequenceStart ? "mt-4" : "mt-1",
         isCustomer ? "justify-start" : "justify-end",
       )}
     >
-      {isCustomer && (
+      {isCustomer && isSequenceEnd && (
         <span
           className={cn(
-            "mt-5 flex size-7 shrink-0 items-center justify-center rounded-full text-[9px] font-bold",
+            "mb-4 flex size-7 shrink-0 self-end items-center justify-center rounded-full text-[9px] font-bold",
             customer.avatarTone,
           )}
         >
           {customer.initials}
         </span>
       )}
+      {isCustomer && !isSequenceEnd && (
+        <span className="size-7 shrink-0" aria-hidden="true" />
+      )}
       <div className={cn("max-w-[72%]", !isCustomer && "items-end")}>
-        <div
-          className={cn(
-            "mb-1 flex items-center gap-1.5 text-[10px] text-muted-foreground",
-            !isCustomer && "justify-end",
-          )}
-        >
-          {isAi && (
-            <>
-              <Bot className="size-3" />
-              <span>Atlas AI</span>
-            </>
-          )}
-          {isAgent && (
-            <>
-              <span>{senderName}</span>
-              <UserRound className="size-3" />
-            </>
-          )}
-          {isCustomer && <span>{customer.name}</span>}
-        </div>
+        {isSequenceStart && (
+          <div
+            className={cn(
+              "mb-1 flex items-center gap-1.5 text-[10px] text-muted-foreground",
+              !isCustomer && "justify-end",
+            )}
+          >
+            {isAi && <span>{chatbotName}</span>}
+            {isAgent && <span>{senderName}</span>}
+            {isCustomer && <span>{customer.name}</span>}
+          </div>
+        )}
         <div
           className={cn(
             "rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed shadow-sm",
@@ -760,16 +841,36 @@ function MessageBubble({ message, customer }) {
             </div>
           )}
         </div>
-        <p
-          className={cn(
-            "mt-1 text-[10px] text-muted-foreground",
-            !isCustomer && "text-right",
-          )}
-        >
-          {time}
-          {!isCustomer && message.status ? ` · ${message.status}` : ""}
-        </p>
+        {isSequenceEnd && (
+          <p
+            className={cn(
+              "mt-1 text-[10px] text-muted-foreground",
+              !isCustomer && "text-right",
+            )}
+          >
+            {time}
+            {!isCustomer && message.status ? ` · ${message.status}` : ""}
+          </p>
+        )}
       </div>
+      {isAi && isSequenceEnd && (
+        <MessageAvatar
+          src={chatbotLogo}
+          fallbackSrc="/logo.png"
+          name={chatbotName}
+          alt={`${chatbotName} logo`}
+        />
+      )}
+      {isAgent && isSequenceEnd && (
+        <MessageAvatar
+          src={senderAvatar}
+          name={senderName}
+          alt={`${senderName} avatar`}
+        />
+      )}
+      {!isCustomer && (isAi || isAgent) && !isSequenceEnd && (
+        <span className="size-7 shrink-0" aria-hidden="true" />
+      )}
     </div>
   );
 }

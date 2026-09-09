@@ -1,3 +1,5 @@
+import { getInitials } from "@/lib/utils";
+
 const avatarTones = [
   "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300",
   "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
@@ -13,16 +15,6 @@ function displayName(session) {
     session?.visitor_name?.trim() ||
     "Unknown visitor"
   );
-}
-
-function initials(name) {
-  if (name === "Unknown visitor") return "UV";
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
 }
 
 function avatarTone(id = "") {
@@ -69,7 +61,7 @@ export function buildConversation(summary, details) {
     id: session.id,
     sessionId: session.session_id || session.id,
     name,
-    initials: initials(name),
+    initials: getInitials(name),
     avatarTone: avatarTone(session.id),
     channel: channelLabel(session.channel),
     status: session.status || "active",
