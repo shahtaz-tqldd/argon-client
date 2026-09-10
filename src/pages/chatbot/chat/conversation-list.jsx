@@ -344,9 +344,6 @@ const ConversationList = ({
             const unread = conversation.unread_message_count || 0;
             const location = getLocation(conversation);
             const isRecentlyActive = Boolean(conversation.is_recently_active);
-            const lastSender = conversation.last_message?.sender;
-            const assigneeFirstName =
-              getAssigneeName(conversation)?.split(" ")[0];
             const activityTitle = conversation.last_activity_at
               ? new Date(conversation.last_activity_at).toLocaleString()
               : undefined;
@@ -435,13 +432,10 @@ const ConversationList = ({
                           : "text-muted-foreground",
                       )}
                     >
-                      {lastSender === "ai" ? (
-                        <span className="font-bold">Chatbot: </span>
-                      ) : lastSender === "agent" ? (
-                        <span className="font-bold">{assigneeFirstName}: </span>
-                      ) : (
-                        <span className="font-bold">User: </span>
-                      )}
+                      <span className="font-bold">
+                        {conversation.last_message?.sender?.split(" ")[0]}
+                        {": "}
+                      </span>
                       {conversation.last_message?.content || "No messages yet"}
                     </p>
                     {unread > 0 && (

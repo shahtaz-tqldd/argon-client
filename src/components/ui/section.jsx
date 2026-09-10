@@ -72,9 +72,9 @@ const UserProfile = ({ person }) => {
   return (
     <div className="flex min-w-52 items-center gap-3">
       <div className="relative shrink-0">
-        {person.avatar && !isInvitation ? (
+        {person.avatar_url && !isInvitation ? (
           <img
-            src={person.avatar}
+            src={person.avatar_url}
             alt=""
             className="size-10 rounded-full object-cover"
           />

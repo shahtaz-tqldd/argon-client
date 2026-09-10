@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Archive,
-  AlertCircle,
   ArrowRightLeft,
   AtSign,
   Check,
@@ -29,135 +28,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  useChatMessageListQuery,
   useChatSessionDetailQuery,
-  useChatSessionMarkReadMutation,
 } from "@/features/chat/chatApiSlice";
 import { useCapturedLeadDetailQuery } from "@/features/lead_captures/leadCaptureApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { subscribeDashboardSession } from "@/hooks/useDashboardSocket";
-import { cn, getInitials } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { buildConversation } from "../lib";
 import CustomerContext from "../customer-context";
 import SessionDropdown from "./dropdown-menu";
+import MessageDisplay from "./message-display";
 
 function unwrapObject(payload) {
   let value = payload;
   while (value?.data && !Array.isArray(value.data)) value = value.data;
   return value && !Array.isArray(value) ? value : {};
-}
-
-function unwrapMessages(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.results)) return payload.results;
-  if (Array.isArray(payload?.data?.results)) return payload.data.results;
-  if (Array.isArray(payload?.data?.data)) return payload.data.data;
-  return [];
-}
-
-function dateKey(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "unknown";
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-}
-
-function dateLabel(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Previous messages";
-
-  const today = new Date();
-  const startOfToday = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
-  const startOfDate = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-  );
-  const dayDifference = Math.round(
-    (startOfToday.getTime() - startOfDate.getTime()) / 86_400_000,
-  );
-  if (dayDifference === 0) return "Today";
-  if (dayDifference === 1) return "Yesterday";
-  return new Intl.DateTimeFormat(undefined, {
-    month: "long",
-    day: "numeric",
-    year: date.getFullYear() === today.getFullYear() ? undefined : "numeric",
-  }).format(date);
-}
-
-function messageTime(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function messageSequenceKey(message) {
-  const senderType = message.sender_type || message.type;
-  if (senderType === "system" || senderType === "event") return "";
-  if (senderType === "visitor" || senderType === "customer") return "customer";
-  if (senderType === "ai") return "ai";
-
-  if (senderType === "agent" || senderType === "human") {
-    const sender =
-      typeof message.sender === "object" && message.sender
-        ? message.sender
-        : {};
-    const identity =
-      sender.id ||
-      sender.user_id ||
-      sender.email ||
-      sender.name ||
-      message.sender_name ||
-      message.metadata?.sender_name ||
-      message.name ||
-      "agent";
-    return `agent:${identity}`;
-  }
-
-  return `sender:${senderType || "unknown"}`;
-}
-
-function messagesShareSequence(first, second) {
-  if (!first || !second) return false;
-  const firstKey = messageSequenceKey(first);
-  const secondKey = messageSequenceKey(second);
-  if (!firstKey || firstKey !== secondKey) return false;
-
-  const firstTime =
-    messageTime(first.created_at || first.updated_at) || first.time;
-  const secondTime =
-    messageTime(second.created_at || second.updated_at) || second.time;
-  return Boolean(firstTime) && firstTime === secondTime;
-}
-
-function groupMessages(messages) {
-  const sorted = [...messages].sort((first, second) => {
-    const firstTime = new Date(first.created_at || first.updated_at).getTime();
-    const secondTime = new Date(
-      second.created_at || second.updated_at,
-    ).getTime();
-    if (Number.isNaN(firstTime) || Number.isNaN(secondTime)) return 0;
-    return firstTime - secondTime;
-  });
-
-  return sorted.reduce((groups, message) => {
-    const createdAt = message.created_at || message.updated_at;
-    const key = dateKey(createdAt);
-    const lastGroup = groups.at(-1);
-    if (lastGroup?.key === key) {
-      lastGroup.messages.push(message);
-    } else {
-      groups.push({ key, label: dateLabel(createdAt), messages: [message] });
-    }
-    return groups;
-  }, []);
 }
 
 const ChatPanel = ({
@@ -183,8 +68,6 @@ const ChatPanel = ({
 }) => {
   const [draft, setDraft] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const messagesEndRef = useRef(null);
-  const markedSessionRef = useRef(null);
   const { chatbotSlug } = useCurrentChatbot();
   const sessionId = conversationSummary.id;
   const sessionQuery = useChatSessionDetailQuery(
@@ -192,31 +75,14 @@ const ChatPanel = ({
     { skip: !chatbotSlug || !sessionId },
   );
 
-  const messageQuery = useChatMessageListQuery(
-    { chatbotSlug, sessionId },
-    { skip: !chatbotSlug || !sessionId },
-  );
-  const [markSessionRead] = useChatSessionMarkReadMutation();
   const sessionDetails = unwrapObject(sessionQuery.currentData);
   const chatbot = sessionDetails.chatbot || {};
   const chatbotName = chatbot.chatbot_name || "Argon Chatbot";
-  const chatbotLogo = chatbot.logo || "/logo.png";
+  const chatbotLogo = chatbot.logo;
   const conversation = useMemo(
     () => buildConversation(conversationSummary, sessionDetails),
     [conversationSummary, sessionDetails],
   );
-  const messages = useMemo(
-    () => unwrapMessages(messageQuery.currentData),
-    [messageQuery.currentData],
-  );
-  const messageGroups = useMemo(() => groupMessages(messages), [messages]);
-  const latestVisitorMessageId = [...messages]
-    .reverse()
-    .find(
-      (message) =>
-        (message.sender_type || message.type) === "visitor" ||
-        (message.sender_type || message.type) === "customer",
-    )?.id;
   const leadId =
     conversation.lead_id ||
     conversation.captured_lead_id ||
@@ -229,31 +95,15 @@ const ChatPanel = ({
   const lead = unwrapObject(leadQuery.currentData);
   const isLoading =
     sessionQuery.isLoading ||
-    messageQuery.isLoading ||
-    (sessionQuery.isFetching && !sessionQuery.currentData) ||
-    (messageQuery.isFetching && !messageQuery.currentData);
-  const isError = sessionQuery.isError || messageQuery.isError;
+    (sessionQuery.isFetching && !sessionQuery.currentData);
+  const isError = sessionQuery.isError;
   const assignedAgentId = conversation.assigned_to?.id;
   const isOwnedByCurrentAgent =
     Boolean(assignedAgentId) && assignedAgentId === currentAgentId;
   const canTakeOver = !assignedAgentId && conversation.status !== "resolved";
   const canRelease = isOwnedByCurrentAgent;
 
-  useEffect(() => {
-    if (!chatbotSlug || !sessionId) return;
-
-    const readKey = `${sessionId}:${latestVisitorMessageId || "opened"}`;
-    if (markedSessionRef.current === readKey) return;
-
-    markedSessionRef.current = readKey;
-    markSessionRead({ chatbotSlug, sessionId });
-  }, [chatbotSlug, latestVisitorMessageId, markSessionRead, sessionId]);
-
   useEffect(() => subscribeDashboardSession(sessionId), [sessionId]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ block: "end" });
-  }, [messages]);
 
   const submitMessage = async () => {
     const text = draft.trim();
@@ -264,7 +114,6 @@ const ChatPanel = ({
 
   const retryConversation = () => {
     sessionQuery.refetch();
-    messageQuery.refetch();
   };
 
   const handleDelete = async () => {
@@ -450,102 +299,17 @@ const ChatPanel = ({
           </div>
         )}
 
-        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-muted/20 px-5 py-6">
-          <div className="mx-auto max-w-3xl space-y-4">
-            {isLoading ? (
-              <div className="flex min-h-64 items-center justify-center gap-2 text-xs text-muted-foreground">
-                <LoaderCircle className="size-4 animate-spin" />
-                Loading conversation…
-              </div>
-            ) : isError ? (
-              <div className="flex min-h-64 flex-col items-center justify-center text-center">
-                <AlertCircle className="size-7 text-destructive/70" />
-                <p className="mt-3 text-sm font-semibold">
-                  Couldn’t load this conversation
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Please try again.
-                </p>
-                <Button
-                  className="mt-4"
-                  size="sm"
-                  variant="outline"
-                  onClick={retryConversation}
-                >
-                  Try again
-                </Button>
-              </div>
-            ) : messageGroups.length === 0 ? (
-              <div className="flex min-h-64 flex-col items-center justify-center text-center text-muted-foreground">
-                <MessageCircleMore className="size-7 opacity-50" />
-                <p className="mt-3 text-sm font-semibold text-foreground">
-                  No messages yet
-                </p>
-                <p className="mt-1 text-xs">New messages will appear here.</p>
-              </div>
-            ) : (
-              messageGroups.map((group, groupIndex) => (
-                <section key={`${group.key}-${groupIndex}`}>
-                  <div className="flex items-center gap-3 py-1">
-                    <span className="h-px flex-1 bg-border" />
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                      {group.label}
-                    </span>
-                    <span className="h-px flex-1 bg-border" />
-                  </div>
-                  {group.messages.map((message, messageIndex) => {
-                    const previousMessage = group.messages[messageIndex - 1];
-                    const nextMessage = group.messages[messageIndex + 1];
-                    const continuesPrevious = messagesShareSequence(
-                      previousMessage,
-                      message,
-                    );
-                    const continuesNext = messagesShareSequence(
-                      message,
-                      nextMessage,
-                    );
-
-                    return (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        customer={conversation}
-                        chatbotName={chatbotName}
-                        chatbotLogo={chatbotLogo}
-                        isSequenceStart={!continuesPrevious}
-                        isSequenceEnd={!continuesNext}
-                      />
-                    );
-                  })}
-                </section>
-              ))
-            )}
-            {conversation.owner === "AI" &&
-              conversation.status !== "resolved" && (
-                <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
-                    <img
-                      src={chatbotLogo}
-                      alt={`${chatbotName} logo`}
-                      className="size-full rounded-full object-cover"
-                      onError={(event) => {
-                        if (event.currentTarget.dataset.fallback === "true") {
-                          event.currentTarget.style.display = "none";
-                          return;
-                        }
-                        event.currentTarget.dataset.fallback = "true";
-                        event.currentTarget.src = "/logo.png";
-                      }}
-                    />
-                  </span>
-                  <span className="rounded-full border bg-card px-3 py-1.5">
-                    {chatbotName} is ready to respond
-                  </span>
-                </div>
-              )}
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
+        <MessageDisplay
+          key={sessionId}
+          chatbotSlug={chatbotSlug}
+          sessionId={sessionId}
+          conversation={conversation}
+          chatbotName={chatbotName}
+          chatbotLogo={chatbotLogo}
+          isConversationLoading={isLoading}
+          isConversationError={isError}
+          onRetryConversation={retryConversation}
+        />
 
         {onSend &&
           isOwnedByCurrentAgent &&
@@ -696,183 +460,5 @@ const ChatPanel = ({
     </>
   );
 };
-
-function MessageAvatar({ src, name, fallbackSrc, alt }) {
-  return (
-    <span className="relative mb-4 flex size-7 shrink-0 self-end items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[9px] font-bold text-primary">
-      {getInitials(name)}
-      {(src || fallbackSrc) && (
-        <img
-          src={src || fallbackSrc}
-          alt={alt}
-          className="absolute inset-0 size-full object-cover"
-          onError={(event) => {
-            if (
-              fallbackSrc &&
-              event.currentTarget.dataset.fallback !== "true"
-            ) {
-              event.currentTarget.dataset.fallback = "true";
-              event.currentTarget.src = fallbackSrc;
-              return;
-            }
-            event.currentTarget.style.display = "none";
-          }}
-        />
-      )}
-    </span>
-  );
-}
-
-function MessageBubble({
-  message,
-  customer,
-  chatbotName,
-  chatbotLogo,
-  isSequenceStart = true,
-  isSequenceEnd = true,
-}) {
-  const senderType = message.sender_type || message.type;
-  const isSystem = senderType === "system" || senderType === "event";
-  const content =
-    message.content ||
-    message.text ||
-    message.event ||
-    message.metadata?.message ||
-    "System update";
-  const time =
-    messageTime(message.created_at || message.updated_at) || message.time;
-
-  if (isSystem) {
-    return (
-      <div className="my-5 flex items-center gap-3 px-4">
-        <span className="h-px flex-1 bg-border" />
-        <div className="flex max-w-[80%] items-center gap-2 text-center text-[11px] text-muted-foreground">
-          <span className="flex size-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
-            <Sparkles className="size-3" />
-          </span>
-          <span>
-            <strong className="font-semibold text-foreground">{content}</strong>
-            {message.detail ? ` · ${message.detail}` : ""}
-            {time ? ` · ${time}` : ""}
-          </span>
-        </div>
-        <span className="h-px flex-1 bg-border" />
-      </div>
-    );
-  }
-
-  const isCustomer = senderType === "visitor" || senderType === "customer";
-  const isAi = senderType === "ai";
-  const isAgent = senderType === "agent" || senderType === "human";
-  const senderName =
-    (typeof message.sender === "string"
-      ? message.sender
-      : message.sender?.name) ||
-    message.sender_name ||
-    message.metadata?.sender_name ||
-    message.name ||
-    "Agent";
-  const senderAvatar =
-    (typeof message.sender === "object" && message.sender?.avatar) ||
-    message.sender_avatar ||
-    message.metadata?.sender_avatar ||
-    "";
-  return (
-    <div
-      className={cn(
-        "flex gap-2.5",
-        isSequenceStart ? "mt-4" : "mt-1",
-        isCustomer ? "justify-start" : "justify-end",
-      )}
-    >
-      {isCustomer && isSequenceEnd && (
-        <span
-          className={cn(
-            "mb-4 flex size-7 shrink-0 self-end items-center justify-center rounded-full text-[9px] font-bold",
-            customer.avatarTone,
-          )}
-        >
-          {customer.initials}
-        </span>
-      )}
-      {isCustomer && !isSequenceEnd && (
-        <span className="size-7 shrink-0" aria-hidden="true" />
-      )}
-      <div className={cn("max-w-[72%]", !isCustomer && "items-end")}>
-        {isSequenceStart && (
-          <div
-            className={cn(
-              "mb-1 flex items-center gap-1.5 text-[10px] text-muted-foreground",
-              !isCustomer && "justify-end",
-            )}
-          >
-            {isAi && <span>{chatbotName}</span>}
-            {isAgent && <span>{senderName}</span>}
-            {isCustomer && <span>{customer.name}</span>}
-          </div>
-        )}
-        <div
-          className={cn(
-            "rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed shadow-sm",
-            isCustomer
-              ? "rounded-tl-sm border bg-card"
-              : isAi
-                ? "rounded-tr-sm bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                : "rounded-tr-sm bg-primary text-primary-foreground",
-          )}
-        >
-          <p className="whitespace-pre-wrap break-words">{content}</p>
-          {message.attachments?.length > 0 && (
-            <div className="mt-2 space-y-1 border-t border-current/15 pt-2">
-              {message.attachments.map((attachment, index) => (
-                <a
-                  key={attachment.id || attachment.url || index}
-                  className="flex items-center gap-1.5 text-xs underline underline-offset-2"
-                  href={attachment.url || attachment.file_url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Paperclip className="size-3" />
-                  {attachment.name ||
-                    attachment.filename ||
-                    `Attachment ${index + 1}`}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-        {isSequenceEnd && (
-          <p
-            className={cn(
-              "mt-1 text-[10px] text-muted-foreground",
-              !isCustomer && "text-right",
-            )}
-          >
-            {time}
-            {!isCustomer && message.status ? ` · ${message.status}` : ""}
-          </p>
-        )}
-      </div>
-      {isAi && isSequenceEnd && (
-        <MessageAvatar
-          src={chatbotLogo}
-          fallbackSrc="/logo.png"
-          name={chatbotName}
-          alt={`${chatbotName} logo`}
-        />
-      )}
-      {isAgent && isSequenceEnd && (
-        <MessageAvatar
-          src={senderAvatar}
-          name={senderName}
-          alt={`${senderName} avatar`}
-        />
-      )}
-      {!isCustomer && (isAi || isAgent) && !isSequenceEnd && (
-        <span className="size-7 shrink-0" aria-hidden="true" />
-      )}
-    </div>
-  );
-}
 
 export default ChatPanel;

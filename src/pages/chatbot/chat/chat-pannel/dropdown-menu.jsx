@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Ban, MoreHorizontal, UserRoundPlus, Trash2 } from "lucide-react";
+import { Ban, MoreHorizontal, Trash2, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,10 +19,10 @@ const SessionDropdown = ({ setDeleteDialogOpen, isDeleting, onDelete }) => {
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="">
         <DropdownMenuItem>
-          <UserRoundPlus />
-          Assign teammate
+          <Download />
+          Download transcript
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive">
