@@ -6,25 +6,6 @@ export const chatbot = {
   description: "Customer support assistant · Updated 12 minutes ago",
 };
 
-export const kpiStats = [
-  {
-    label: "Total conversations",
-    value: 12480,
-    change: 18.2,
-    comparison: "vs. last month",
-    icon: MessagesSquare,
-    chart: [34, 45, 41, 58, 52, 67, 78, 72, 88, 96],
-  },
-  {
-    label: "Total messages",
-    value: 46892,
-    change: 12.6,
-    comparison: "vs. last month",
-    icon: MessageSquare,
-    chart: [28, 38, 36, 48, 57, 53, 70, 76, 82, 91],
-  },
-];
-
 export const plan = {
   name: "Growth",
   renewalDate: "Renews Sep 20, 2026",

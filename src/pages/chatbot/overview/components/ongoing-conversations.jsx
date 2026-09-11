@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { ScrollContainer } from "@/components/ui/section";
 
 const statusStyles = {
   "AI handling": "bg-primary/10 text-primary",
@@ -12,7 +13,10 @@ const statusStyles = {
 };
 
 const ConversationRow = ({ conversation }) => (
-  <Link to={`/inbox?chat_session=${conversation?.session_id}`} className="group flex flex-col gap-4 px-5 py-4 transition hover:bg-muted/30 sm:flex-row sm:items-center sm:px-6">
+  <Link
+    to={`/inbox?chat_session=${conversation?.session_id}`}
+    className="group flex flex-col gap-4 px-5 py-4 transition hover:bg-muted/30 sm:flex-row sm:items-center sm:px-6"
+  >
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <div className="relative shrink-0">
         <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
@@ -22,8 +26,15 @@ const ConversationRow = ({ conversation }) => (
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="truncate text-sm font-semibold text-foreground">{conversation.name}</p>
-          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", statusStyles[conversation.status])}>
+          <p className="truncate text-sm font-semibold text-foreground">
+            {conversation.name}
+          </p>
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+              statusStyles[conversation.status],
+            )}
+          >
             {conversation.status}
           </span>
         </div>
@@ -31,7 +42,9 @@ const ConversationRow = ({ conversation }) => (
           {conversation.lastMessage}
         </p>
         <p className="mt-2 truncate text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/70">{conversation.channel}</span>
+          <span className="font-medium text-foreground/70">
+            {conversation.channel}
+          </span>
           <span className="mx-1.5">·</span>
           <span className="w-7 text-right text-xs text-muted-foreground">
             {conversation.time} ago
@@ -47,9 +60,7 @@ const ConversationRow = ({ conversation }) => (
             {conversation.unread}
           </span>
         )}
-
       </div>
-
     </div>
   </Link>
 );
@@ -64,17 +75,26 @@ const OngoingConversations = ({ conversations }) => (
         </span>
         <div>
           <h2 className="font-bold text-foreground">Ongoing conversations</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{conversations.length} active right now</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {conversations.length} active right now
+          </p>
         </div>
       </div>
-      <Button variant="ghost" size="sm">View all</Button>
+      <Button variant="ghost" size="sm">
+        View all
+      </Button>
     </div>
 
-    <ul className="custom-scrollbar min-h-0 flex-1 divide-y divide-border overscroll-contain">
-      {conversations.map((conversation) => (
-        <ConversationRow key={conversation.id} conversation={conversation} />
-      ))}
-    </ul>
+    <ScrollContainer>
+      <ul className="min-h-0 flex-1 divide-y divide-border">
+        {conversations.map((conversation) => (
+          <ConversationRow key={conversation.id} conversation={conversation} />
+        ))}
+      </ul>
+    </ScrollContainer>
+    <div className="border-t py-1.5 px-6 text-center text-xs bg-slate-200 text-slate-700">
+      Respond to your inbox
+    </div>
   </Card>
 );
 

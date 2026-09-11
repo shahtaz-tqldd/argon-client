@@ -81,6 +81,7 @@ const EmBadge = ({
 }) => {
   const styles = {
     primary: "bg-primary/10 text-slate-700",
+    transparent: "bg-transparent text-slate-700",
     "primary-accent": "bg-primary/10 text-primary",
     secondary: "bg-primary/10 text-primary",
     accent: "bg-gray-50 text-gray-600",

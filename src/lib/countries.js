@@ -81,7 +81,9 @@ const COUNTRY_ALIASES = {
 };
 
 export function getCountryMeta(country) {
-  const normalizedCountry = String(country || "").trim().toLowerCase();
+  const normalizedCountry = String(country || "")
+    .trim()
+    .toLowerCase();
   const countryKey = COUNTRY_ALIASES[normalizedCountry] || normalizedCountry;
   return COUNTRY_MAP[countryKey] || null;
 }

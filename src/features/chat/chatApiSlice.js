@@ -235,6 +235,27 @@ export const chatApiSlice = apiSlice.injectEndpoints({
         { type: "chat-sessions", id: chatbotSlug },
       ],
     }),
+
+    // stats
+    chatSessionStats: builder.query({
+      query: ({ chatbotSlug }) => ({
+        url: "/chat/analytics/stats/",
+        method: "GET",
+        params: {
+          chatbot_slug: chatbotSlug,
+        },
+      }),
+    }),
+
+    chatSessionOverview: builder.query({
+      query: ({ chatbotSlug }) => ({
+        url: "/chat/analytics/overview/",
+        method: "GET",
+        params: {
+          chatbot_slug: chatbotSlug,
+        },
+      }),
+    }),
   }),
 });
 
@@ -260,4 +281,8 @@ export const {
   useCancelSessionTransferMutation,
   useResolveSessionMutation,
   useReopenSessionMutation,
+
+  // stats
+  useChatSessionOverviewQuery,
+  useChatSessionStatsQuery,
 } = chatApiSlice;

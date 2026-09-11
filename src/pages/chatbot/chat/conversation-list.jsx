@@ -6,6 +6,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollContainer, SectionTitle } from "@/components/ui/section";
 import { useChatSessionListQuery } from "@/features/chat/chatApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getCountryMeta } from "@/lib/countries";
@@ -223,19 +224,11 @@ const ConversationList = ({
     <aside className="flex w-[330px] shrink-0 flex-col border-r bg-card xl:w-[350px]">
       <div className="border-b px-4 pb-3 pt-5">
         <div className="mb-4 flex items-center justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight">Inbox</h1>
-              {unreadCount > 0 && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </div>
-            <p className="mt-1 truncate text-xs text-muted-foreground">
-              {chatbotName}
-            </p>
-          </div>
+          <SectionTitle
+            title="Inbox"
+            details={chatbotName}
+            tag={unreadCount > 0 && (unreadCount > 99 ? "99+" : unreadCount)}
+          />
           <Button size="icon-sm" variant="ghost" aria-label="Inbox options">
             <MoreHorizontal />
           </Button>
@@ -305,7 +298,8 @@ const ConversationList = ({
         </DropdownMenu>
       </div>
 
-      <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+      {/* <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto"> */}
+      <ScrollContainer>
         {isLoading ? (
           <div className="space-y-1 p-3" aria-label="Loading conversations">
             {[0, 1, 2, 3].map((item) => (
@@ -354,7 +348,7 @@ const ConversationList = ({
                 onClick={() => onSelect(conversation)}
                 className={cn(
                   "group relative flex w-full gap-3 border-b px-4 py-4 text-left transition",
-                  selectedId === conversation.id
+                  selectedId === String(conversation.id)
                     ? "bg-primary/[0.07] before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-r-full before:bg-primary"
                     : isRecentlyActive
                       ? "bg-emerald-500/[0.025] hover:bg-emerald-500/[0.06]"
@@ -467,7 +461,8 @@ const ConversationList = ({
             </p>
           </div>
         )}
-      </div>
+      </ScrollContainer>
+      {/* </div> */}
     </aside>
   );
 };

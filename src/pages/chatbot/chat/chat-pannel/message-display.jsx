@@ -13,6 +13,8 @@ import {
   Paperclip,
   Sparkles,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,10 +23,101 @@ import {
   useLazyChatMessageListQuery,
 } from "@/features/chat/chatApiSlice";
 import { cn, getInitials } from "@/lib/utils";
+import { ScrollContainer } from "@/components/ui/section";
 
 const MESSAGE_PAGE_SIZE = 50;
 const LOAD_MORE_THRESHOLD = 48;
 const STICK_TO_BOTTOM_THRESHOLD = 96;
+
+const markdownComponents = {
+  a: ({ children, ...props }) => (
+    <a
+      {...props}
+      className="underline underline-offset-2"
+      target="_blank"
+      rel="noreferrer"
+    >
+      {children}
+    </a>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="my-2 border-l-2 border-current/40 pl-3 opacity-90">
+      {children}
+    </blockquote>
+  ),
+  code: ({ children }) => (
+    <code className="rounded bg-black/15 px-1 py-0.5 font-mono text-[0.9em] dark:bg-black/10">
+      {children}
+    </code>
+  ),
+  h1: ({ children }) => (
+    <h1 className="mb-2 mt-3 text-base font-bold first:mt-0">{children}</h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="mb-2 mt-3 text-[15px] font-bold first:mt-0">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mb-1.5 mt-2.5 text-sm font-semibold first:mt-0">
+      {children}
+    </h3>
+  ),
+  li: ({ children }) => <li className="pl-0.5">{children}</li>,
+  ol: ({ children }) => (
+    <ol className="my-2 list-decimal space-y-1 pl-5 first:mt-0 last:mb-0">
+      {children}
+    </ol>
+  ),
+  p: ({ children }) => (
+    <p className="my-2 first:mt-0 last:mb-0">{children}</p>
+  ),
+  pre: ({ children }) => (
+    <pre className="my-2 overflow-x-auto rounded-lg bg-black/15 p-3 text-xs dark:bg-black/10">
+      {children}
+    </pre>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold">{children}</strong>
+  ),
+  table: ({ children }) => (
+    <table className="my-2 w-full border-collapse text-left text-xs">
+      {children}
+    </table>
+  ),
+  td: ({ children }) => (
+    <td className="border border-current/20 px-2 py-1.5">{children}</td>
+  ),
+  th: ({ children }) => (
+    <th className="border border-current/20 px-2 py-1.5 font-semibold">
+      {children}
+    </th>
+  ),
+  ul: ({ children }) => (
+    <ul className="my-2 list-disc space-y-1 pl-5 first:mt-0 last:mb-0">
+      {children}
+    </ul>
+  ),
+};
+
+function normalizeAiMarkdown(content) {
+  if (typeof content !== "string") return "";
+
+  return content
+    .replace(/\\r\\n|\\n|\\r/g, "\n")
+    .replace(/\r\n?/g, "\n")
+    .replace(/^(\s*)\\([*+-])(?=\s+)/gm, "$1$2");
+}
+
+function AiMessageContent({ content }) {
+  return (
+    <div className="break-words">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+        {normalizeAiMarkdown(content)}
+      </ReactMarkdown>
+    </div>
+  );
+}
 
 function unwrapMessages(payload) {
   if (Array.isArray(payload?.data)) return payload.data;
@@ -186,7 +279,7 @@ function MessageAvatar({ src, name, alt }) {
 function ChatbotAvatar({ src, alt }) {
   return src ? (
     <span className="mt-5 size-8 center shrink-0 overflow-hidden rounded-full bg-primary/10">
-      <img src={src} alt={alt} className="size-full object-contain" />
+      <img src={src} alt={alt} className="size-full object-contain p-1" />
     </span>
   ) : (
     <span className="mt-5 size-8 center shrink-0 overflow-hidden rounded-full bg-primary">
@@ -282,7 +375,11 @@ function MessageBubble({
             isSequenceStart && (isCustomer ? "rounded-tl-sm" : "rounded-tr-sm"),
           )}
         >
-          <p className="whitespace-pre-wrap break-words">{content}</p>
+          {isAi ? (
+            <AiMessageContent content={content} />
+          ) : (
+            <p className="whitespace-pre-wrap break-words">{content}</p>
+          )}
           {message.attachments?.length > 0 && (
             <div className="mt-2 space-y-1 border-t border-current/15 pt-2">
               {message.attachments.map((attachment, index) => (
@@ -481,10 +578,10 @@ const MessageDisplay = ({
   };
 
   return (
-    <div
+    <ScrollContainer
       ref={scrollContainerRef}
       onScroll={handleScroll}
-      className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-muted/20 px-5 py-6"
+      className="min-h-0 flex-1 px-5 py-6"
     >
       <div className="mx-auto max-w-3xl space-y-4">
         {isLoading ? (
@@ -570,11 +667,11 @@ const MessageDisplay = ({
         {conversation.owner === "AI" && conversation.status !== "resolved" && (
           <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
             {chatbotLogo ? (
-              <span className="flex size-7 items-center justify-center rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+              <span className="flex size-7 items-center justify-center rounded-full bg-primary/10">
                 <img
                   src={chatbotLogo}
                   alt={`${chatbotName} logo`}
-                  className="size-full rounded-full object-cover"
+                  className="p-1 size-full rounded-full object-cover"
                 />
               </span>
             ) : (
@@ -593,7 +690,7 @@ const MessageDisplay = ({
           </div>
         )}
       </div>
-    </div>
+    </ScrollContainer>
   );
 };
 

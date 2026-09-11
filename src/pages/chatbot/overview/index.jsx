@@ -14,7 +14,6 @@ import {
   chatbot,
   channels,
   conversations,
-  kpiStats,
   plan,
   unansweredQuestions,
 } from "./demo-data";
@@ -52,7 +51,7 @@ const ChatbotOverviewPage = () => {
 
       <div className="grid md:grid-cols-3 gap-5">
         <div className="md:col-span-2 space-y-5">
-          <OverviewStats stats={kpiStats} />
+          <OverviewStats />
           <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
             <UnansweredAlerts questions={unansweredQuestions} />
             <OngoingConversations conversations={conversations} />

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { MessageCircleMore } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import {
@@ -38,14 +39,23 @@ function EmptyConversation() {
 }
 
 const ChatSessionPage = () => {
-  const [selected, setSelected] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedSummary, setSelectedSummary] = useState(null);
   const [filter, setFilter] = useState("all");
   const [channel, setChannel] = useState("all");
   const [query, setQuery] = useState("");
   const [contextOpen, setContextOpen] = useState(false);
   const { chatbotSlug } = useCurrentChatbot();
   const { user } = useAuth();
-  const sessionId = selected?.id;
+  const sessionId = searchParams.get("session_id");
+  const selectedSummaryId =
+    selectedSummary?.id == null ? null : String(selectedSummary.id);
+  const selected =
+    selectedSummaryId === sessionId
+      ? selectedSummary
+      : sessionId
+        ? { id: sessionId }
+        : null;
   const { data: memberResponse, isLoading: isMembersLoading } =
     useChatbotMemberListQuery(
       { chatbotSlug, pageSize: 100 },
@@ -84,7 +94,9 @@ const ChatSessionPage = () => {
       member.email?.toLowerCase() === String(user?.email || "").toLowerCase(),
   )?.id;
   const isOwnershipUpdating =
-    takeoverState.isLoading || releaseState.isLoading || transferState.isLoading;
+    takeoverState.isLoading ||
+    releaseState.isLoading ||
+    transferState.isLoading;
   const incomingTransfers = Array.isArray(incomingTransferResponse?.data)
     ? incomingTransferResponse.data
     : [];
@@ -99,7 +111,10 @@ const ChatSessionPage = () => {
 
     try {
       const response = assignedAgentId
-        ? await releaseSession({ chatbotSlug, sessionId: conversation.id }).unwrap()
+        ? await releaseSession({
+            chatbotSlug,
+            sessionId: conversation.id,
+          }).unwrap()
         : await takeOverSession({
             chatbotSlug,
             sessionId: conversation.id,
@@ -179,6 +194,29 @@ const ChatSessionPage = () => {
     }
   };
 
+  const handleSelectConversation = (conversation) => {
+    setSelectedSummary(conversation);
+    setContextOpen(false);
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+      nextParams.set("session_id", conversation.id);
+      return nextParams;
+    });
+  };
+
+  const clearSelectedConversation = () => {
+    setSelectedSummary(null);
+    setContextOpen(false);
+    setSearchParams(
+      (currentParams) => {
+        const nextParams = new URLSearchParams(currentParams);
+        nextParams.delete("session_id");
+        return nextParams;
+      },
+      { replace: true },
+    );
+  };
+
   const handleDeleteChat = async (conversation) => {
     try {
       const response = await deleteChatSession({
@@ -186,8 +224,7 @@ const ChatSessionPage = () => {
         sessionId: conversation.id,
       }).unwrap();
 
-      setSelected(null);
-      setContextOpen(false);
+      clearSelectedConversation();
       toast.success(response?.message || "Chat deleted successfully.");
       return true;
     } catch (error) {
@@ -200,10 +237,7 @@ const ChatSessionPage = () => {
     <section className="relative -m-8 flex h-[calc(100%+4rem)] min-h-[620px] overflow-hidden rounded-2xl bg-background">
       <ConversationList
         selectedId={sessionId}
-        onSelect={(conversationSummary) => {
-          setSelected(conversationSummary);
-          setContextOpen(false);
-        }}
+        onSelect={handleSelectConversation}
         filter={filter}
         setFilter={setFilter}
         channel={channel}

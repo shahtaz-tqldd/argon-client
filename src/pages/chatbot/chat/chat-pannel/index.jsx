@@ -27,9 +27,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  useChatSessionDetailQuery,
-} from "@/features/chat/chatApiSlice";
+import { useChatSessionDetailQuery } from "@/features/chat/chatApiSlice";
 import { useCapturedLeadDetailQuery } from "@/features/lead_captures/leadCaptureApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { subscribeDashboardSession } from "@/hooks/useDashboardSocket";
@@ -225,6 +223,7 @@ const ChatPanel = ({
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
+
             {(canTakeOver || isOwnershipUpdating) && (
               <Button
                 onClick={() => onTakeover?.(conversation)}
@@ -254,6 +253,7 @@ const ChatPanel = ({
             >
               <Info />
             </Button>
+
             <SessionDropdown
               setDeleteDialogOpen={setDeleteDialogOpen}
               onDelete={onDelete}
@@ -323,9 +323,9 @@ const ChatPanel = ({
                       Reply
                     </span>
                   </button>
-                  <span className="ml-auto px-2 text-[10px] text-muted-foreground">
+                  {/* <span className="ml-auto px-2 text-[10px] text-muted-foreground">
                     via {conversation.channel}
-                  </span>
+                  </span> */}
                 </div>
                 <textarea
                   value={draft}
@@ -453,7 +453,6 @@ const ChatPanel = ({
       <CustomerContext
         conversation={conversation}
         lead={lead}
-        isLeadLoading={leadQuery.isLoading}
         open={contextOpen}
         onClose={onCloseContext}
       />
