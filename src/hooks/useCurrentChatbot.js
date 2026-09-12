@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 
-import { useChatbotDetailsQuery } from "@/features/chatbot/chatbotApiSlice";
+import { useChatbotBaseDetailsQuery } from "@/features/chatbot/chatbotApiSlice";
 import {
   currentChatbotCleared,
   currentChatbotFetched,
@@ -12,7 +12,10 @@ const useCurrentChatbot = () => {
   const dispatch = useDispatch();
   const { chatbotSlug } = useParams();
   const storedChatbot = useSelector((state) => state.chatbot.currentChatbot);
-  const query = useChatbotDetailsQuery({ chatbotSlug }, { skip: !chatbotSlug });
+  const query = useChatbotBaseDetailsQuery(
+    { chatbotSlug },
+    { skip: !chatbotSlug },
+  );
 
   const fetchedChatbot = query.data?.data;
 

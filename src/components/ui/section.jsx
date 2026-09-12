@@ -165,6 +165,7 @@ const ScrollContainer = React.forwardRef(function ScrollContainer(
     onMouseEnter,
     onMouseMove,
     onFocus,
+    allowScrollChaining = false,
     ...scrollProps
   },
   forwardedRef,
@@ -303,7 +304,8 @@ const ScrollContainer = React.forwardRef(function ScrollContainer(
         {...scrollProps}
         ref={setScrollRef}
         className={cn(
-          "h-full overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          "h-full overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          allowScrollChaining ? "overscroll-y-auto" : "overscroll-contain",
           className,
         )}
         onScroll={handleScroll}

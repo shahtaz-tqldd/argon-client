@@ -146,20 +146,14 @@ const CreateChatbotDialog = ({
   return (
     <ContentDialog
       open={open}
+      icon={Sparkles}
       onOpenChange={handleOpenChange}
       title="Create a new Chatbot Assistant"
       description={`Describe your ideal assistant and choose a plan for it in ${workspaceName}.`}
       desktopClassName="h-auto"
     >
       <form onSubmit={handleSubmit(submitChatbot)}>
-        <DialogHeader className="border-b border-border bg-muted/40 px-6 py-6">
-          <DialogHeaderTitle
-            title="Create a new Chatbot Assistant"
-            details={`Describe your ideal assistant and choose a plan for it in ${workspaceName}.`}
-          />
-        </DialogHeader>
-
-        <div className="space-y-6 px-6 py-6 max-h-[calc(100vh-15rem)] custom-scrollbar">
+        <div className="space-y-6 px-6 py-6 max-h-[calc(100vh-18rem)] custom-scrollbar">
           <section className="flex flex-col gap-5 sm:flex-row">
             <ChatbotLogoUploader
               control={control}
@@ -335,7 +329,6 @@ const CreateChatbotDialog = ({
 
           <section className="" aria-labelledby="chatbot-plan-heading">
             <SectionTitle
-              icon={Sparkles}
               title="Choose a plan"
               details="  Select the plan that best fits this chatbot"
             />

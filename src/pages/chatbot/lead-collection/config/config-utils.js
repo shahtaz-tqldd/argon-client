@@ -3,14 +3,12 @@ export const getLeadCaptureConfig = (response) =>
 
 export const normalizeCollectionSettings = (config) => ({
   auto_collect: Boolean(config?.auto_collect),
-  intro_message: config?.intro_message || "",
   require_consent: Boolean(config?.require_consent),
   consent_message: config?.require_consent ? config?.consent_message || "" : "",
 });
 
 export const getCollectionSettingsPayload = (settings) => ({
   auto_collect: settings.auto_collect,
-  intro_message: settings.intro_message.trim(),
   require_consent: settings.require_consent,
   consent_message: settings.require_consent
     ? settings.consent_message.trim()

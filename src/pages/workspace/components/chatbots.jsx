@@ -133,20 +133,21 @@ const ChatbotCard = ({ chatbot, colorIndex }) => {
         <div className="pointer-events-none absolute -right-10 -bottom-10 size-32 rounded-full bg-blue-100/50 blur-2xl dark:bg-blue-500/10" />
         <div className="relative flex items-start justify-between gap-3 p-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div
-              className={cn(
-                "flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-bold",
-                avatarColors[chatbotPaletteIndex],
-              )}
-            >
+            <div className={cn("center size-12 shrink-0 overflow-hidden")}>
               {chatbot.logo ? (
                 <img
                   src={chatbot.logo}
                   alt={`${chatbot.chatbot_name} logo`}
-                  className="h-full w-full object-cover"
+                  className="size-full object-contain"
                 />
               ) : (
-                getInitials(chatbot.chatbot_name)
+                <div className="bg-primary p-1.5 rounded-full">
+                  <img
+                    src={"/logo-dark.png"}
+                    alt={`${chatbot.chatbot_name} logo`}
+                    className="size-full"
+                  />
+                </div>
               )}
             </div>
             <div className="min-w-0">

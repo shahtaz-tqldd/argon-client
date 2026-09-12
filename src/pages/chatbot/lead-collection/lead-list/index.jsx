@@ -12,10 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCapturedLeadListQuery } from "@/features/lead_captures/leadCaptureApiSlice";
+import {
+  useCapturedLeadListQuery,
+  useLeadCaptureConfigureQuery,
+} from "@/features/lead_captures/leadCaptureApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
-import { getInitials } from "@/lib/utils";
 
 import LeadDetailsDialog, { Score, StatusBadge } from "./lead-details-dialog";
 import {
@@ -25,10 +27,7 @@ import {
   LEAD_STATUSES,
 } from "./lead-utils";
 
-const columns = [
-  { header: "Lead", accessorKey: "lead" },
-  { header: "Company", accessorKey: "company" },
-  { header: "Location", accessorKey: "location" },
+const metadataColumns = [
   { header: "Source", accessorKey: "source" },
   { header: "Score", accessorKey: "score" },
   { header: "Status", accessorKey: "status" },
@@ -36,30 +35,7 @@ const columns = [
   { header: "", accessorKey: "action" },
 ];
 
-function LeadIdentity({ lead }) {
-  return (
-    <div className="flex min-w-52 items-center gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-        {getInitials(lead.name || "Unknown lead")}
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {displayValue(lead.name)}
-        </p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {displayValue(lead.email)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-const baseCsvFields = [
-  ["Lead ID", (lead) => lead.id],
-  ["Name", (lead) => lead.name],
-  ["Email", (lead) => lead.email],
-  ["Phone", (lead) => lead.phone],
-  ["Address", (lead) => lead.address],
+const metadataCsvFields = [
   ["City", (lead) => lead.detected_city],
   ["Country", (lead) => lead.detected_country_code],
   ["Status", (lead) => lead.status],
@@ -73,18 +49,16 @@ const baseCsvFields = [
 const escapeCsvCell = (value) =>
   `"${String(value ?? "").replaceAll('"', '""')}"`;
 
-const downloadLeads = (leads) => {
+const downloadLeads = (leads, configuredFields) => {
   if (!leads.length) return;
 
-  const customFieldKeys = [
-    ...new Set(leads.flatMap((lead) => Object.keys(lead.custom_fields || {}))),
-  ];
   const csvFields = [
-    ...baseCsvFields,
-    ...customFieldKeys.map((key) => [
-      humanize(key),
-      (lead) => lead.custom_fields?.[key],
+    ["Lead ID", (lead) => lead.id],
+    ...configuredFields.map((field) => [
+      field.label,
+      (lead) => lead.collected_fields?.[field.value],
     ]),
+    ...metadataCsvFields,
   ];
   const csv = [
     csvFields.map(([label]) => escapeCsvCell(label)).join(","),
@@ -112,30 +86,69 @@ const LeadListTab = () => {
   const [dialogView, setDialogView] = useState("details");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const { data, isLoading, isFetching, isError, error, refetch } =
-    useCapturedLeadListQuery(
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch: refetchLeads,
+  } = useCapturedLeadListQuery(
       { chatbotSlug, page, pageSize },
       { skip: !chatbotSlug },
     );
+  const {
+    data: configResponse,
+    isLoading: isConfigLoading,
+    isFetching: isConfigFetching,
+    isError: isConfigError,
+    error: configError,
+    refetch: refetchConfig,
+  } = useLeadCaptureConfigureQuery(
+    { chatbotSlug },
+    { skip: !chatbotSlug },
+  );
 
   const leads = useMemo(
     () => (Array.isArray(data?.data) ? data.data : []),
     [data],
+  );
+  const configuredFields = useMemo(
+    () => {
+      const config = configResponse?.data ?? configResponse;
+
+      return (Array.isArray(config?.collectable_fields)
+        ? config.collectable_fields
+        : []
+      ).filter(
+        (field) =>
+          field?.mode !== "hidden" &&
+          typeof field?.value === "string" &&
+          field.value,
+      );
+    },
+    [configResponse],
+  );
+  const columns = useMemo(
+    () => [
+      ...configuredFields.map((field, index) => ({
+        header: field.label || humanize(field.value),
+        accessorKey: `collected_field_${index}`,
+      })),
+      ...metadataColumns,
+    ],
+    [configuredFields],
   );
   const normalizedQuery = query.trim().toLowerCase();
   const visibleLeads = useMemo(
     () =>
       leads.filter((lead) => {
         const searchableText = [
-          lead.name,
-          lead.email,
-          lead.phone,
-          lead.address,
           lead.detected_city,
           lead.detected_country_code,
           lead.source,
           lead.status,
-          ...Object.values(lead.custom_fields || {}),
+          ...Object.values(lead.collected_fields || {}),
         ]
           .filter(Boolean)
           .join(" ")
@@ -171,41 +184,24 @@ const LeadListTab = () => {
   };
 
   const rows = visibleLeads.map((lead) => {
-    const location = [lead.detected_city, lead.detected_country_code]
-      .filter(Boolean)
-      .join(", ");
+    const collectedFields = lead.collected_fields || {};
+    const normalizedLead = { ...lead, ...collectedFields };
 
     return {
       id: lead.id,
-      raw: lead,
-      raw_name: lead.name,
-      lead: <LeadIdentity lead={lead} />,
-      company: (
-        <div className="min-w-32">
-          <p className="text-xs font-semibold text-foreground">
-            {displayValue(lead.custom_fields?.company)}
-          </p>
-          {lead.custom_fields?.team_size && (
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Team {lead.custom_fields.team_size}
-            </p>
-          )}
-        </div>
-      ),
-      location: (
-        <div className="min-w-28">
-          <p className="text-xs font-medium text-foreground">
-            {displayValue(location)}
-          </p>
-          {lead.address && (
-            <p
-              className="mt-0.5 max-w-40 truncate text-[11px] text-muted-foreground"
-              title={lead.address}
-            >
-              {lead.address}
-            </p>
-          )}
-        </div>
+      raw: normalizedLead,
+      raw_name: collectedFields.name || collectedFields.email || lead.id,
+      ...Object.fromEntries(
+        configuredFields.map((field, index) => [
+          `collected_field_${index}`,
+          <span
+            key={field.value}
+            className="block max-w-56 truncate text-xs font-medium text-foreground"
+            title={displayValue(collectedFields[field.value])}
+          >
+            {displayValue(collectedFields[field.value])}
+          </span>,
+        ]),
       ),
       source: (
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
@@ -241,6 +237,11 @@ const LeadListTab = () => {
     setSelectedIds([]);
     setPage(1);
   };
+  const refetch = () => {
+    refetchLeads();
+    refetchConfig();
+  };
+  const tableError = error || configError;
 
   return (
     <>
@@ -289,7 +290,7 @@ const LeadListTab = () => {
                 Clear
               </Button>
             )}
-            {isError && (
+            {(isError || isConfigError) && (
               <Button size="sm" variant="outline" onClick={refetch}>
                 <RefreshCw />
                 Retry
@@ -299,7 +300,7 @@ const LeadListTab = () => {
               size="sm"
               variant="outline"
               disabled={!exportLeads.length}
-              onClick={() => downloadLeads(exportLeads)}
+              onClick={() => downloadLeads(exportLeads, configuredFields)}
             >
               <Download />
               {selectedIds.length ? `Export ${selectedIds.length}` : "Export page"}
@@ -308,7 +309,9 @@ const LeadListTab = () => {
         }
         data={rows}
         columns={columns}
-        isLoading={isLoading || isFetching}
+        isLoading={
+          isLoading || isFetching || isConfigLoading || isConfigFetching
+        }
         totalItems={
           hasActiveFilter
             ? visibleLeads.length
@@ -334,10 +337,12 @@ const LeadListTab = () => {
             action: (_, row) => openLeadDialog(row.raw, "notes"),
           },
         ]}
-        emptyTitle={isError ? "Unable to load leads" : "No leads found"}
+        emptyTitle={
+          isError || isConfigError ? "Unable to load leads" : "No leads found"
+        }
         emptyDescription={
-          isError
-            ? getApiErrorMessage(error, "Please try again later.")
+          isError || isConfigError
+            ? getApiErrorMessage(tableError, "Please try again later.")
             : hasActiveFilter
               ? "No leads on this page match your filters."
               : "New captured leads will appear here."

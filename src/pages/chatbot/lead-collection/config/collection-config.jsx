@@ -73,21 +73,6 @@ const CollectionConfig = ({
     </div>
 
     <div className="grid gap-4">
-      <FloatingTextarea
-        name="lead-intro-message"
-        label="Intro message (optional)"
-        value={settings.intro_message}
-        onChange={(event) =>
-          setSettings((current) => ({
-            ...current,
-            intro_message: event.target.value,
-          }))
-        }
-        disabled={isUpdating}
-        rows={2}
-        textareaClassName="min-h-12"
-      />
-
       {settings.require_consent && (
         <FloatingTextarea
           name="lead-consent-message"

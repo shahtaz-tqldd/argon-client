@@ -12,6 +12,18 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
       providesTags: ["chatbots"],
     }),
 
+    chatbotBaseDetails: builder.query({
+      query: ({ chatbotSlug }) => {
+        return {
+          url: `/chatbots/base/?chatbot=${chatbotSlug}`,
+          method: "GET",
+        };
+      },
+      providesTags: (_result, _error, { chatbotSlug }) => [
+        { type: "chatbot-base-details", id: chatbotSlug },
+      ],
+    }),
+
     chatbotDetails: builder.query({
       query: ({ chatbotSlug }) => {
         return {
@@ -133,6 +145,7 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
 export const {
   useChatbotListQuery,
   useChatbotDetailsQuery,
+  useChatbotBaseDetailsQuery,
   useChatbotWidgetDetailsQuery,
   useUpdateChatbotWidgetMutation,
   useCreateChatbotMutation,

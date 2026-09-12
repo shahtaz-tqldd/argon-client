@@ -137,10 +137,10 @@ function SupportStatus({ conversation }) {
 
   if (conversation.requires_attention) {
     return (
-      <span className="inline-flex min-w-0 items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-1 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-        <AlertCircle className="size-3 shrink-0" />
-        Needs attention
-      </span>
+      <div className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
+        <AlertCircle className="size-2.5 shrink-0" />
+        <span>Needs attention</span>
+      </div>
     );
   }
 
@@ -197,19 +197,17 @@ const ConversationList = ({
     useChatSessionListQuery(
       {
         chatbotSlug,
-        status: filter === "resolved" ? filter : undefined,
         channel: channel !== "all" ? channel : undefined,
         search: query.trim() || undefined,
+        is_recently_active: filter === "active" ? true : undefined,
+        requires_attention: filter === "attention" ? true : undefined,
+        is_resolved: filter === "resolved" ? true : undefined,
       },
       { skip: !chatbotSlug },
     );
 
   const sessions = data?.data ?? [];
-  const conversations = sessions.filter((session) => {
-    if (filter === "active") return session.is_recently_active;
-    if (filter === "attention") return session.requires_attention;
-    return true;
-  });
+  const conversations = sessions;
   const unreadCount = sessions.reduce(
     (total, session) => total + (session.unread_message_count || 0),
     0,
@@ -442,10 +440,10 @@ const ConversationList = ({
                     <SupportStatus conversation={conversation} />
                     {conversation.ai_enabled &&
                       conversation.requires_attention && (
-                        <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-violet-600 dark:text-violet-400">
-                          <Bot className="size-3" />
-                          AI on
-                        </span>
+                        <div className="inline-flex items-center gap-1 text-xs text-primary font-medium">
+                          <Check className="size-2.5 shrink-0" />
+                          <span>AI Enabled</span>
+                        </div>
                       )}
                   </div>
                 </div>

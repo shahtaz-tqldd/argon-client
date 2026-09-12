@@ -1,8 +1,8 @@
-import { CheckCircle2, MoreHorizontal } from "lucide-react";
-
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const channelIcons = {
+  website: `https://www.google.com/s2/favicons?domain=${"algostar.dev"}&sz=64`,
   facebook: "/ms.webp",
   whatsapp: "/wp.webp",
   instagram: "/insta.webp",
@@ -27,12 +27,12 @@ const ConnectedChannels = ({ channels }) => (
       </span>
     </div>
 
-    <ul className="divide-y divide-border px-5">
+    <ul className="divide-y divide-border">
       {channels.map((channel) => {
         const isConnected = channel.status === "connected";
 
         return (
-          <li key={channel.id} className="flex items-center gap-3 py-3.5">
+          <li key={channel.id} className="flex items-center gap-3 py-4 px-5">
             <img
               src={channelIcons[channel.id]}
               alt={channel.name}
@@ -55,20 +55,13 @@ const ConnectedChannels = ({ channels }) => (
                 Check connection
               </span>
             )}
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={`Manage ${channel.name}`}
-            >
-              <MoreHorizontal />
-            </Button>
           </li>
         );
       })}
     </ul>
 
     <div className="border-t border-border p-4">
-      <Button variant="outline" size="sm" className="w-full">
+      <Button variant="outline" size="" className="w-full">
         Manage channels
       </Button>
     </div>

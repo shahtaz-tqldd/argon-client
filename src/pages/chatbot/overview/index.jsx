@@ -9,22 +9,34 @@ import PlanUsage from "./components/plan-usage";
 import UnansweredAlerts from "./components/unanswered-alerts";
 
 import { CalendarDays, Sparkles } from "lucide-react";
-import {
-  analytics,
-  chatbot,
-  channels,
-  conversations,
-  plan,
-  unansweredQuestions,
-} from "./demo-data";
+import { analytics, channels } from "./demo-data";
 import { useSelector } from "react-redux";
 import { useChatbotTitle } from "@/hooks/useTitle";
+import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 
 const ChatbotOverviewPage = () => {
   const { user } = useSelector((state) => state?.auth);
+  const { currentChatbot, chatbotSlug } = useCurrentChatbot();
 
   // page title
   useChatbotTitle("Overview");
+
+  const plan = {
+    name: currentChatbot.current_subscription_plan?.name,
+    is_free: currentChatbot.current_subscription_plan?.is_free,
+    renewalDate: currentChatbot.current_subscription_plan?.current_period_end,
+    billing_interval:
+      currentChatbot.current_subscription_plan?.billing_interval,
+    status: currentChatbot.current_subscription_plan?.status,
+    usage: [
+      {
+        label: "AI messages",
+        current: currentChatbot.capacity?.current_ai_message_count,
+        limit: currentChatbot.capacity?.ai_message_limit,
+        tone: "primary",
+      },
+    ],
+  };
 
   return (
     <Container>
@@ -38,7 +50,7 @@ const ChatbotOverviewPage = () => {
             Hey {user?.name}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Welcome to {chatbot.chatbot_name} management platform
+            Welcome to {currentChatbot.chatbot_name} management platform
           </p>
         </div>
 
@@ -53,8 +65,8 @@ const ChatbotOverviewPage = () => {
         <div className="md:col-span-2 space-y-5">
           <OverviewStats />
           <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
-            <UnansweredAlerts questions={unansweredQuestions} />
-            <OngoingConversations conversations={conversations} />
+            <UnansweredAlerts chatbotSlug={chatbotSlug} />
+            <OngoingConversations chatbotSlug={chatbotSlug} />
           </div>
         </div>
         <Card className="col-span-1 h-fit p-0">

@@ -370,8 +370,8 @@ function MessageBubble({
             isCustomer
               ? "bg-primary/10"
               : isAi
-                ? "bg-primary text-white dark:bg-slate-100 dark:text-slate-900"
-                : "bg-slate-700 text-white",
+                ? "bg-primary text-white"
+                : "bg-slate-700 dark:bg-slate-100 text-white",
             isSequenceStart && (isCustomer ? "rounded-tl-sm" : "rounded-tr-sm"),
           )}
         >

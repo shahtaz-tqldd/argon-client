@@ -43,7 +43,7 @@ const UsageMeter = ({ item }) => {
           </span>
         </div>
         <span className="text-xs font-semibold text-muted-foreground">
-          {item.display}
+          {item.current}/{item.limit}
         </span>
       </div>
       <div
@@ -78,12 +78,17 @@ const PlanUsage = ({ plan }) => (
             Current plan
           </p>
           <div className="mt-0.5">
-            <h2 id="plan-usage-title" className="text-lg font-bold text-foreground">{plan.name}</h2>
+            <h2
+              id="plan-usage-title"
+              className="text-lg font-bold text-foreground"
+            >
+              {plan.name}
+            </h2>
             <p className="text-xs text-muted-foreground">{plan.renewalDate}</p>
           </div>
         </div>
       </div>
-      <Button size="sm">Upgrade plan</Button>
+      {plan.is_free && <Button size="sm">Upgrade plan</Button>}
     </div>
 
     <div className="space-y-5 p-5 sm:p-6">

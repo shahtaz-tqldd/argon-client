@@ -1,35 +1,3 @@
-import { MessageSquare, MessagesSquare } from "lucide-react";
-
-export const chatbot = {
-  name: "Atlas Support",
-  status: "active",
-  description: "Customer support assistant · Updated 12 minutes ago",
-};
-
-export const plan = {
-  name: "Growth",
-  renewalDate: "Renews Sep 20, 2026",
-  chatbotUsage: { current: 3, limit: 5 },
-  usage: [
-    {
-      label: "AI messages",
-      current: 1420,
-      limit: 2000,
-      display: "1,420 / 2,000",
-      tone: "primary",
-    },
-  ],
-};
-
-export const leadSummary = {
-  isActive: true,
-  total: 286,
-  thisMonth: 74,
-  qualified: 42,
-  conversionRate: 18.4,
-  recentTrend: [20, 35, 29, 47, 51, 43, 64, 72],
-};
-
 export const analytics = {
   totalThisPeriod: 3572,
   change: 14.8,
@@ -50,60 +18,14 @@ export const analytics = {
   },
 };
 
-export const conversations = [
-  {
-    id: "conv-1042",
-    name: "Maya Thompson",
-    initials: "MT",
-    lastMessage: "That fixed it, thank you so much!",
-    time: "2m",
-    channel: "WhatsApp",
-    status: "AI handling",
-    unread: 2,
-  },
-  {
-    id: "conv-1043",
-    name: "Daniel Kim",
-    initials: "DK",
-    lastMessage: "Can I change the delivery address?",
-    time: "7m",
-    channel: "Web chat",
-    status: "Needs attention",
-    unread: 1,
-  },
-  {
-    id: "conv-1044",
-    name: "Daniel Kim",
-    initials: "DK",
-    lastMessage: "Can I change the delivery address?",
-    time: "7m",
-    channel: "Web chat",
-    status: "Needs attention",
-    unread: 1,
-  },
-  {
-    id: "conv-1045",
-    name: "Daniel Kim",
-    initials: "DK",
-    lastMessage: "Can I change the delivery address?",
-    time: "7m",
-    channel: "Web chat",
-    status: "Needs attention",
-    unread: 1,
-  },
-  {
-    id: "conv-1046",
-    name: "Sofia Martins",
-    initials: "SM",
-    lastMessage: "What plans include team access?",
-    time: "16m",
-    channel: "Instagram",
-    status: "AI handling",
-    unread: 0,
-  },
-];
-
 export const channels = [
+  {
+    id: "website",
+    name: "Website",
+    account: "algostar.dev",
+    status: "connected",
+    color: "bg-blue-600",
+  },
   {
     id: "facebook",
     name: "Facebook",
@@ -124,29 +46,5 @@ export const channels = [
     account: "@atlas.support",
     status: "attention",
     color: "bg-gradient-to-br from-fuchsia-500 to-amber-400",
-  },
-];
-
-export const unansweredQuestions = [
-  {
-    id: "question-1",
-    question: "Can I transfer my account to another region?",
-    time: "8 minutes ago",
-    source: "Web chat",
-    unread: true,
-  },
-  {
-    id: "question-2",
-    question: "Do you support SAML with custom role mapping?",
-    time: "32 minutes ago",
-    source: "WhatsApp",
-    unread: true,
-  },
-  {
-    id: "question-3",
-    question: "How are refunds handled for annual plans?",
-    time: "2 hours ago",
-    source: "Facebook",
-    unread: false,
   },
 ];
