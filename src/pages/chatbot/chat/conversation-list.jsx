@@ -424,10 +424,12 @@ const ConversationList = ({
                           : "text-muted-foreground",
                       )}
                     >
-                      <span className="font-bold">
-                        {conversation.last_message?.sender?.split(" ")[0]}
-                        {": "}
-                      </span>
+                      {conversation.last_message?.sender && (
+                        <span className="font-bold">
+                          {conversation.last_message?.sender?.split(" ")[0]}
+                          {": "}
+                        </span>
+                      )}
                       {conversation.last_message?.content || "No messages yet"}
                     </p>
                     {unread > 0 && (

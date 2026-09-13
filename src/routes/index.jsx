@@ -38,6 +38,9 @@ const StripeReturnPage = lazy(() => import("@/pages/checkout/stripe-return"));
 // others
 const SearchPage = lazy(() => import("@/pages/search"));
 const AppFeaturesPage = lazy(() => import("@/pages/app-features"));
+const AcceptInvitationPage = lazy(
+  () => import("@/pages/app-features/invitation-accept"),
+);
 
 const withSuspense = (element) => (
   <Suspense fallback={null}>{element}</Suspense>
@@ -141,5 +144,9 @@ export const routes = createBrowserRouter([
   {
     path: "/workspace-invitation",
     element: withSuspense(<WorkspaceInvitation />),
+  },
+  {
+    path: "/invitation",
+    element: withSuspense(<AcceptInvitationPage />),
   },
 ]);

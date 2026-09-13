@@ -2,6 +2,11 @@ import { useEffect } from "react";
 import { useDispatch, useSelector, useStore } from "react-redux";
 
 import { apiSlice } from "@/features/api/apiSlice";
+import {
+  chatbotMemberPresenceChanged,
+  chatbotPresenceCleared,
+  chatbotPresenceSnapshotReceived,
+} from "@/features/chatbot/presenceSlice";
 
 const SESSION_TRANSITION_EVENTS = new Set([
   "session.created",
@@ -250,6 +255,27 @@ function refreshRealtimeData(dispatch) {
 }
 
 function routeDashboardEvent(event, dispatch, store) {
+  if (event?.type === "presence.snapshot" && event.data?.chatbot_id) {
+    dispatch(chatbotPresenceSnapshotReceived(event.data));
+    return;
+  }
+
+  if (
+    (event?.type === "member.online" || event?.type === "member.offline") &&
+    event.data?.chatbot_id &&
+    event.data?.member_id
+  ) {
+    dispatch(
+      chatbotMemberPresenceChanged({
+        chatbotId: event.data.chatbot_id,
+        memberId: event.data.member_id,
+        version: event.data.version,
+        isOnline: event.type === "member.online",
+      }),
+    );
+    return;
+  }
+
   if (event?.type === "message.accepted" && event.session_id) {
     if (pendingMessage?.sessionId === event.session_id) {
       settlePendingMessage(null, event);
@@ -376,6 +402,7 @@ export default function useDashboardSocket() {
       currentSocket.addEventListener("close", (closeEvent) => {
         clearHeartbeat();
         if (activeSocket === currentSocket) {
+          dispatch(chatbotPresenceCleared());
           activeSocket = undefined;
           dashboardReady = false;
         }
@@ -412,6 +439,7 @@ export default function useDashboardSocket() {
 
     return () => {
       disposed = true;
+      dispatch(chatbotPresenceCleared());
       window.removeEventListener("online", reconnectWhenOnline);
       clearHeartbeat();
       if (reconnectTimer) window.clearTimeout(reconnectTimer);

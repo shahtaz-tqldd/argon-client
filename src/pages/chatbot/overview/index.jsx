@@ -13,6 +13,7 @@ import { analytics, channels } from "./demo-data";
 import { useSelector } from "react-redux";
 import { useChatbotTitle } from "@/hooks/useTitle";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
+import ActiveChatbotMembers from "@/components/chatbot/active-chatbot-members";
 
 const ChatbotOverviewPage = () => {
   const { user } = useSelector((state) => state?.auth);
@@ -22,17 +23,17 @@ const ChatbotOverviewPage = () => {
   useChatbotTitle("Overview");
 
   const plan = {
-    name: currentChatbot.current_subscription_plan?.name,
-    is_free: currentChatbot.current_subscription_plan?.is_free,
-    renewalDate: currentChatbot.current_subscription_plan?.current_period_end,
+    name: currentChatbot?.current_subscription_plan?.name,
+    is_free: currentChatbot?.current_subscription_plan?.is_free,
+    renewalDate: currentChatbot?.current_subscription_plan?.current_period_end,
     billing_interval:
-      currentChatbot.current_subscription_plan?.billing_interval,
-    status: currentChatbot.current_subscription_plan?.status,
+      currentChatbot?.current_subscription_plan?.billing_interval,
+    status: currentChatbot?.current_subscription_plan?.status,
     usage: [
       {
         label: "AI messages",
-        current: currentChatbot.capacity?.current_ai_message_count,
-        limit: currentChatbot.capacity?.ai_message_limit,
+        current: currentChatbot?.capacity?.current_ai_message_count,
+        limit: currentChatbot?.capacity?.ai_message_limit,
         tone: "primary",
       },
     ],
@@ -50,7 +51,7 @@ const ChatbotOverviewPage = () => {
             Hey {user?.name}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Welcome to {currentChatbot.chatbot_name} management platform
+            Welcome to {currentChatbot?.chatbot_name} management platform
           </p>
         </div>
 
@@ -69,10 +70,21 @@ const ChatbotOverviewPage = () => {
             <OngoingConversations chatbotSlug={chatbotSlug} />
           </div>
         </div>
-        <Card className="col-span-1 h-fit p-0">
-          <PlanUsage plan={plan} />
-          <ConnectedChannels channels={channels} />
-        </Card>
+        <div className="col-span-1 space-y-5">
+          <ActiveChatbotMembers
+            chatbotId={
+              currentChatbot?.id ||
+              currentChatbot?.uuid ||
+              currentChatbot?.chatbot_id ||
+              currentChatbot?.chatbot_uuid
+            }
+            chatbotSlug={chatbotSlug}
+          />
+          <Card className="h-fit p-0">
+            <PlanUsage plan={plan} />
+            <ConnectedChannels channels={channels} />
+          </Card>
+        </div>
       </div>
       <ConversationAnalytics analytics={analytics} />
     </Container>
