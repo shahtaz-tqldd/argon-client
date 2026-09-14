@@ -101,77 +101,7 @@ const ConversationLineChart = ({ data }) => {
   );
 };
 
-const VisitorBreakdown = ({ visitors }) => (
-  <div className="flex h-full flex-col rounded-2xl border border-border bg-muted/20 p-5">
-    <div className="flex items-center gap-2">
-      <Users className="size-4 text-primary" />
-      <h3 className="text-sm font-semibold text-foreground">
-        New vs returning
-      </h3>
-    </div>
-
-    <div className="flex flex-1 items-center justify-center py-6">
-      <div className="relative size-40">
-        <svg
-          viewBox="0 0 120 120"
-          className="size-full -rotate-90"
-          aria-hidden="true"
-        >
-          <circle
-            cx="60"
-            cy="60"
-            r="45"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="13"
-            className="text-muted"
-          />
-          <circle
-            cx="60"
-            cy="60"
-            r="45"
-            fill="none"
-            stroke="var(--primary)"
-            strokeWidth="13"
-            strokeLinecap="round"
-            pathLength="100"
-            strokeDasharray={`${visitors.new} ${100 - visitors.new}`}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-foreground">
-            {visitors.new}%
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            new visitors
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div className="space-y-3">
-      <div className="flex items-center justify-between text-sm">
-        <span className="flex items-center gap-2 text-muted-foreground">
-          <span className="size-2.5 rounded-full bg-primary" /> New visitors
-        </span>
-        <span className="font-semibold text-foreground">
-          {visitors.newCount.toLocaleString()}
-        </span>
-      </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="flex items-center gap-2 text-muted-foreground">
-          <span className="size-2.5 rounded-full bg-muted-foreground/30" />{" "}
-          Returning
-        </span>
-        <span className="font-semibold text-foreground">
-          {visitors.returningCount.toLocaleString()}
-        </span>
-      </div>
-    </div>
-  </div>
-);
-
-const ConversationAnalytics = ({ analytics }) => {
+const ConversationAnalytics = () => {
   const { chatbotSlug } = useCurrentChatbot();
   const { data, isLoading, isError } = useChatSessionOverviewQuery(
     { chatbotSlug },
@@ -203,7 +133,7 @@ const ConversationAnalytics = ({ analytics }) => {
         </div>
       </div>
 
-      <div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_280px] sm:p-6">
+      <div className="p-5 sm:p-6">
         <div className="min-w-0">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-foreground">
@@ -231,7 +161,6 @@ const ConversationAnalytics = ({ analytics }) => {
             </div>
           )}
         </div>
-        <VisitorBreakdown visitors={analytics.visitors} />
       </div>
     </Card>
   );

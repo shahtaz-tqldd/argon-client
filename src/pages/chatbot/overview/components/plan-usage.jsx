@@ -2,6 +2,7 @@ import { Bot, Brain, Crown, HardDrive, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Card from "@/components/ui/card";
 
 const usageStyles = {
   primary: {
@@ -67,36 +68,40 @@ const UsageMeter = ({ item }) => {
 };
 
 const PlanUsage = ({ plan }) => (
-  <section aria-labelledby="plan-usage-title" className="bg-primary/[0.025]">
-    <div className="flex flex-col gap-4 border-b border-primary/15 bg-gradient-to-r from-primary/[0.1] via-primary/[0.04] to-transparent p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
-          <Crown className="size-5" />
-        </span>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            Current plan
-          </p>
-          <div className="mt-0.5">
-            <h2
-              id="plan-usage-title"
-              className="text-lg font-bold text-foreground"
-            >
-              {plan.name}
-            </h2>
-            <p className="text-xs text-muted-foreground">{plan.renewalDate}</p>
+  <Card className="p-0">
+    <section aria-labelledby="plan-usage-title" className="bg-primary/[0.025]">
+      <div className="flex flex-col gap-4 border-b border-primary/15 bg-gradient-to-r from-primary/[0.1] via-primary/[0.04] to-transparent p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex items-center gap-3">
+          <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
+            <Crown className="size-5" />
+          </span>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              Current plan
+            </p>
+            <div className="mt-0.5">
+              <h2
+                id="plan-usage-title"
+                className="text-lg font-bold text-foreground"
+              >
+                {plan.name}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {plan.renewalDate}
+              </p>
+            </div>
           </div>
         </div>
+        {plan.is_free && <Button size="sm">Upgrade plan</Button>}
       </div>
-      {plan.is_free && <Button size="sm">Upgrade plan</Button>}
-    </div>
 
-    <div className="space-y-5 p-5 sm:p-6">
-      {plan.usage.map((item) => (
-        <UsageMeter key={item.label} item={item} />
-      ))}
-    </div>
-  </section>
+      <div className="space-y-5 p-5 sm:p-6">
+        {plan.usage.map((item) => (
+          <UsageMeter key={item.label} item={item} />
+        ))}
+      </div>
+    </section>
+  </Card>
 );
 
 export default PlanUsage;

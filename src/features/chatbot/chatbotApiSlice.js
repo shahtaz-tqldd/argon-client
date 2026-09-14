@@ -134,7 +134,7 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
 
     removeChatbotMember: builder.mutation({
       query: ({ chatbotSlug, memberEmail }) => ({
-        url: `/chatbots/team/remove-member?chatbot=${chatbotSlug}&member_email=${memberEmail}`,
+        url: `/chatbots/team/remove-member/?chatbot=${chatbotSlug}&member_email=${memberEmail}`,
         method: "DELETE",
       }),
       invalidatesTags: ["chatbot-team"],

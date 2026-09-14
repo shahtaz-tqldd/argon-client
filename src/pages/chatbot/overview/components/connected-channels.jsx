@@ -1,5 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Card from "@/components/ui/card";
+import { CHAT_CHANNELS } from "@/constants/channels";
 
 const channelIcons = {
   website: `https://www.google.com/s2/favicons?domain=${"algostar.dev"}&sz=64`,
@@ -8,11 +10,8 @@ const channelIcons = {
   instagram: "/insta.webp",
 };
 
-const ConnectedChannels = ({ channels }) => (
-  <section
-    aria-labelledby="connected-channels-title"
-    className="border-t border-border bg-card"
-  >
+const ConnectedChannels = () => (
+  <Card className="p-0">
     <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/20 p-5">
       <div>
         <h2 id="connected-channels-title" className="font-bold text-foreground">
@@ -23,12 +22,13 @@ const ConnectedChannels = ({ channels }) => (
         </p>
       </div>
       <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-        {channels.filter(({ status }) => status === "connected").length} live
+        {CHAT_CHANNELS.filter(({ status }) => status === "connected").length}{" "}
+        live
       </span>
     </div>
 
     <ul className="divide-y divide-border">
-      {channels.map((channel) => {
+      {CHAT_CHANNELS.map((channel) => {
         const isConnected = channel.status === "connected";
 
         return (
@@ -65,7 +65,7 @@ const ConnectedChannels = ({ channels }) => (
         Manage channels
       </Button>
     </div>
-  </section>
+  </Card>
 );
 
 export default ConnectedChannels;

@@ -10,7 +10,6 @@ const ForgotPasswordPage = lazy(() => import("@/pages/auth/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/auth/reset-password"));
 const VerifyOTPPage = lazy(() => import("@/pages/auth/verify-otp"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
-const ChatbotInvitation = lazy(() => import("@/pages/auth/chatbot-invitation"));
 const WorkspaceInvitation = lazy(
   () => import("@/pages/auth/workspace-invitation"),
 );
@@ -38,9 +37,7 @@ const StripeReturnPage = lazy(() => import("@/pages/checkout/stripe-return"));
 // others
 const SearchPage = lazy(() => import("@/pages/search"));
 const AppFeaturesPage = lazy(() => import("@/pages/app-features"));
-const AcceptInvitationPage = lazy(
-  () => import("@/pages/app-features/invitation-accept"),
-);
+const InvitationPage = lazy(() => import("./invitation-route"));
 
 const withSuspense = (element) => (
   <Suspense fallback={null}>{element}</Suspense>
@@ -138,15 +135,11 @@ export const routes = createBrowserRouter([
     element: withSuspense(<ResetPasswordPage />),
   },
   {
-    path: "/chatbot-invitation",
-    element: withSuspense(<ChatbotInvitation />),
+    path: "/invitation",
+    element: withSuspense(<InvitationPage />),
   },
   {
     path: "/workspace-invitation",
     element: withSuspense(<WorkspaceInvitation />),
-  },
-  {
-    path: "/invitation",
-    element: withSuspense(<AcceptInvitationPage />),
   },
 ]);

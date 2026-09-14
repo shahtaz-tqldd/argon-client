@@ -1,24 +1,4 @@
-export const analytics = {
-  totalThisPeriod: 3572,
-  change: 14.8,
-  conversationsOverTime: [
-    { label: "Aug 14", value: 312 },
-    { label: "Aug 15", value: 378 },
-    { label: "Aug 16", value: 346 },
-    { label: "Aug 17", value: 462 },
-    { label: "Aug 18", value: 428 },
-    { label: "Aug 19", value: 536 },
-    { label: "Aug 20", value: 590 },
-  ],
-  visitors: {
-    new: 64,
-    returning: 36,
-    newCount: 2286,
-    returningCount: 1286,
-  },
-};
-
-export const channels = [
+export const CHAT_CHANNELS = [
   {
     id: "website",
     name: "Website",

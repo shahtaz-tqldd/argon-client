@@ -44,7 +44,6 @@ const ActiveChatbotMembers = ({ chatbotId, chatbotSlug }) => {
         <div className="flex items-center justify-between gap-4 border-b border-emerald-500/10 bg-emerald-500/[0.04] px-5 py-4">
           <div>
             <div className="flex items-center gap-2">
-              <Radio className="size-4 text-emerald-500" />
               <h2 id="active-members-title" className="font-semibold">
                 Active members
               </h2>

@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import Card from "@/components/ui/card";
 import ConnectedChannels from "./components/connected-channels";
 import Container from "@/components/ui/container";
 import ConversationAnalytics from "./components/conversation-analytics";
@@ -9,7 +8,6 @@ import PlanUsage from "./components/plan-usage";
 import UnansweredAlerts from "./components/unanswered-alerts";
 
 import { CalendarDays, Sparkles } from "lucide-react";
-import { analytics, channels } from "./demo-data";
 import { useSelector } from "react-redux";
 import { useChatbotTitle } from "@/hooks/useTitle";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
@@ -69,24 +67,17 @@ const ChatbotOverviewPage = () => {
             <UnansweredAlerts chatbotSlug={chatbotSlug} />
             <OngoingConversations chatbotSlug={chatbotSlug} />
           </div>
+          <ConversationAnalytics />
         </div>
         <div className="col-span-1 space-y-5">
           <ActiveChatbotMembers
-            chatbotId={
-              currentChatbot?.id ||
-              currentChatbot?.uuid ||
-              currentChatbot?.chatbot_id ||
-              currentChatbot?.chatbot_uuid
-            }
+            chatbotId={currentChatbot?.id}
             chatbotSlug={chatbotSlug}
           />
-          <Card className="h-fit p-0">
-            <PlanUsage plan={plan} />
-            <ConnectedChannels channels={channels} />
-          </Card>
+          <ConnectedChannels />
+          <PlanUsage plan={plan} />
         </div>
       </div>
-      <ConversationAnalytics analytics={analytics} />
     </Container>
   );
 };
