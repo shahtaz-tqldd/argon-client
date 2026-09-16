@@ -36,18 +36,30 @@ export function setCookieWithToken(token) {
 
 // Function to get a cookie by key
 export function getCookieValue(key) {
-  const name = key + "=";
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const cookieArray = decodedCookie.split(";");
+  const name = `${encodeURIComponent(key)}=`;
+  const cookieArray = document.cookie.split(";");
 
   for (let i = 0; i < cookieArray.length; i++) {
-    let cookie = cookieArray[i].trim();
+    const cookie = cookieArray[i].trim();
     if (cookie.indexOf(name) === 0) {
-      return cookie.substring(name.length, cookie.length);
+      const value = cookie.substring(name.length, cookie.length);
+
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        return value;
+      }
     }
   }
 
   return null;
+}
+
+export function setCookieValue(key, value, { maxAge, path = "/" } = {}) {
+  const maxAgeAttribute = Number.isFinite(maxAge) ? `; max-age=${maxAge}` : "";
+  const secureAttribute = import.meta.env.PROD ? "; Secure" : "";
+
+  document.cookie = `${encodeURIComponent(key)}=${encodeURIComponent(value)}; path=${path}${maxAgeAttribute}; SameSite=Lax${secureAttribute}`;
 }
 
 // Function to remove cookies
