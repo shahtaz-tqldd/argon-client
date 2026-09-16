@@ -13,11 +13,14 @@ import {
   useTakeOverSessionMutation,
 } from "@/features/chat/chatApiSlice";
 import { useChatbotMemberListQuery } from "@/features/chatbot/chatbotApiSlice";
+
+// hooks and lib
 import useAuth from "@/hooks/useAuth";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { sendDashboardMessage } from "@/hooks/useDashboardSocket";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
+// components
 import ChatPanel from "./chat-pannel";
 import ConversationList from "./conversation-list";
 
@@ -45,7 +48,7 @@ const ChatSessionPage = () => {
   const [channel, setChannel] = useState("all");
   const [query, setQuery] = useState("");
   const [contextOpen, setContextOpen] = useState(false);
-  const { chatbotSlug } = useCurrentChatbot();
+  const { chatbotSlug, chatbotId } = useCurrentChatbot();
   const { user } = useAuth();
   const sessionId = searchParams.get("session_id");
   const selectedSummaryId =
@@ -251,6 +254,8 @@ const ChatSessionPage = () => {
       ) : (
         <ChatPanel
           conversationSummary={selected}
+          chatbotSlug={chatbotSlug}
+          chatbotId={chatbotId}
           teamMembers={teamMembers}
           currentAgentId={currentAgentId}
           isMembersLoading={isMembersLoading}

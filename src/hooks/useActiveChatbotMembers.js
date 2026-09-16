@@ -58,17 +58,22 @@ export default function useActiveChatbotMembers({
     if (presenceEntries.length === 1) return presenceEntries[0];
     return EMPTY_PRESENCE;
   }, [chatbotId, presenceByChatbotId, query.data]);
-  const activeMembers = useMemo(
+  const membersWithActiveStatus = useMemo(
     () =>
-      members.filter(
-        (member) => presence.onlineMemberIds[String(member.id)],
-      ),
+      members.map((member) => ({
+        ...member,
+        isActive: Boolean(presence.onlineMemberIds[String(member.id)]),
+      })),
     [members, presence.onlineMemberIds],
+  );
+  const activeMembers = useMemo(
+    () => membersWithActiveStatus.filter((member) => member.isActive),
+    [membersWithActiveStatus],
   );
 
   return {
     ...query,
-    members,
+    members: membersWithActiveStatus,
     activeMembers,
     onlineMemberIds: Object.keys(presence.onlineMemberIds),
     isPresenceReady:

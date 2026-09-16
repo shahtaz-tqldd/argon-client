@@ -35,9 +35,12 @@ const useCurrentChatbot = () => {
     fetchedChatbot ||
     (storedChatbot?.slug === chatbotSlug ? storedChatbot : null);
 
+  const chatbotId = currentChatbot?.id;
+
   return {
     ...query,
     chatbotSlug,
+    chatbotId,
     currentChatbot,
   };
 };

@@ -12,7 +12,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SectionTitle } from "@/components/ui/section";
 import TabMenu from "@/components/ui/tab";
-import { useUpdateChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
+import {
+  useChatbotDetailsQuery,
+  useUpdateChatbotMutation,
+} from "@/features/chatbot/chatbotApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import useUrlTab from "@/hooks/useUrlTab";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
@@ -79,12 +82,17 @@ const ConfigurationPage = () => {
     tabs,
     defaultTab: DEFAULT_TAB,
   });
+  const { chatbotSlug } = useCurrentChatbot();
+
   const {
-    currentChatbot,
+    data,
     isLoading: isChatbotLoading,
     isError: isChatbotError,
     refetch: refetchChatbot,
-  } = useCurrentChatbot();
+  } = useChatbotDetailsQuery({ chatbotSlug });
+
+  const currentChatbot = data?.data;
+
   const [updateChatbot, { isLoading: isUpdatingChatbot }] =
     useUpdateChatbotMutation();
   const [config, setConfig] = useState(initialConfig);

@@ -1,8 +1,9 @@
-import { BarChart3, Users } from "lucide-react";
+import { BarChart3, CalendarDays, Users } from "lucide-react";
 
 import Card from "@/components/ui/card";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { useChatSessionOverviewQuery } from "@/features/chat/chatApiSlice";
+import { Button } from "@/components/ui/button";
 
 const CHART_WIDTH = 720;
 const CHART_HEIGHT = 230;
@@ -131,6 +132,9 @@ const ConversationAnalytics = () => {
             </p>
           </div>
         </div>
+        <Button size="sm" variant="outline">
+          <CalendarDays /> Last 30 days
+        </Button>
       </div>
 
       <div className="p-5 sm:p-6">

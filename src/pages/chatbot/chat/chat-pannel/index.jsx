@@ -29,9 +29,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useChatSessionDetailQuery } from "@/features/chat/chatApiSlice";
 import { useCapturedLeadDetailQuery } from "@/features/lead_captures/leadCaptureApiSlice";
-import useCurrentChatbot from "@/hooks/useCurrentChatbot";
+import useActiveChatbotMembers from "@/hooks/useActiveChatbotMembers";
 import { subscribeDashboardSession } from "@/hooks/useDashboardSocket";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { buildConversation } from "../lib";
 import CustomerContext from "../customer-context";
 import SessionDropdown from "./dropdown-menu";
@@ -43,7 +43,32 @@ function unwrapObject(payload) {
   return value && !Array.isArray(value) ? value : {};
 }
 
+const TransferMemberAvatar = ({ member }) => (
+  <span className="relative block size-8 shrink-0">
+    <span className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+      {member.avatar ? (
+        <img
+          src={member.avatar}
+          alt={`${member.name} avatar`}
+          className="size-full object-cover"
+        />
+      ) : (
+        getInitials(member.name)
+      )}
+    </span>
+    <span
+      aria-hidden="true"
+      className={cn(
+        "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-popover",
+        member.isActive ? "bg-emerald-500" : "bg-muted-foreground/40",
+      )}
+    />
+  </span>
+);
+
 const ChatPanel = ({
+  chatbotId,
+  chatbotSlug,
   conversationSummary,
   contextOpen,
   onCloseContext,
@@ -53,9 +78,7 @@ const ChatPanel = ({
   onSend,
   onDelete,
   onToggleContext,
-  teamMembers = [],
   currentAgentId,
-  isMembersLoading = false,
   isOwnershipUpdating = false,
   pendingTransfer,
   isTransferActionLoading = false,
@@ -66,7 +89,6 @@ const ChatPanel = ({
 }) => {
   const [draft, setDraft] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const { chatbotSlug } = useCurrentChatbot();
   const sessionId = conversationSummary.id;
   const sessionQuery = useChatSessionDetailQuery(
     { chatbotSlug, sessionId },
@@ -120,6 +142,27 @@ const ChatPanel = ({
     if (succeeded !== false) setDeleteDialogOpen(false);
   };
 
+  // ACTIVE MEMBERS
+  const {
+    members,
+    isLoading: activeMemberLoading,
+    isFetching,
+    isError: activeMemberError,
+    isPresenceReady,
+    refetch,
+  } = useActiveChatbotMembers({ chatbotId, chatbotSlug });
+  const transferMembers = useMemo(
+    () =>
+      members.filter(
+        (member) => String(member.id) !== String(currentAgentId),
+      ),
+    [currentAgentId, members],
+  );
+  const isTransferMembersLoading =
+    activeMemberLoading ||
+    (!activeMemberError && !isPresenceReady) ||
+    (isFetching && !members.length);
+
   return (
     <>
       <main className="flex min-w-[430px] flex-1 flex-col bg-background">
@@ -171,11 +214,7 @@ const ChatPanel = ({
                   variant="outline"
                   size="sm"
                   className="hidden xl:flex"
-                  disabled={
-                    !isOwnedByCurrentAgent ||
-                    isMembersLoading ||
-                    isOwnershipUpdating
-                  }
+                  disabled={isTransferMembersLoading || isOwnershipUpdating}
                   title={
                     isOwnedByCurrentAgent
                       ? "Transfer this conversation"
@@ -187,35 +226,64 @@ const ChatPanel = ({
                   <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuContent align="end" className="w-72">
                 <DropdownMenuLabel>Transfer conversation</DropdownMenuLabel>
                 <DropdownMenuRadioGroup
-                  value={assignedAgentId || ""}
+                  value={assignedAgentId ? String(assignedAgentId) : ""}
                   onValueChange={(agentId) =>
                     onTransfer?.(conversation, agentId)
                   }
                 >
-                  {isMembersLoading && (
+                  {isTransferMembersLoading && (
                     <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground">
                       <LoaderCircle className="size-3.5 animate-spin" />
                       Loading teammates…
                     </DropdownMenuLabel>
                   )}
-                  {teamMembers
-                    .filter((member) => member.id !== currentAgentId)
-                    .map((member) => (
+                  {!isTransferMembersLoading &&
+                    transferMembers.map((member) => (
                       <DropdownMenuRadioItem
                         key={member.id}
-                        value={member.id}
+                        value={String(member.id)}
                         disabled={!onTransfer}
+                        className="py-2"
                       >
-                        <UserRound />
-                        {member.name}
+                        <TransferMemberAvatar member={member} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-semibold">
+                            {member.name}
+                          </span>
+                          <span className="block truncate text-[10px] font-normal text-muted-foreground">
+                            {member.email}
+                          </span>
+                        </span>
+                        <span
+                          className={cn(
+                            "text-[10px] font-semibold",
+                            member.isActive
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {member.isActive ? "Active" : "Inactive"}
+                        </span>
                       </DropdownMenuRadioItem>
                     ))}
-                  {!isMembersLoading &&
-                    teamMembers.filter((member) => member.id !== currentAgentId)
-                      .length === 0 && (
+                  {!isTransferMembersLoading && activeMemberError && (
+                    <DropdownMenuLabel className="font-normal text-muted-foreground">
+                      Couldn’t load teammates.
+                      <button
+                        type="button"
+                        className="ml-1 font-semibold text-primary hover:underline"
+                        onClick={() => refetch()}
+                      >
+                        Try again
+                      </button>
+                    </DropdownMenuLabel>
+                  )}
+                  {!isTransferMembersLoading &&
+                    !activeMemberError &&
+                    transferMembers.length === 0 && (
                       <DropdownMenuLabel className="font-normal text-muted-foreground">
                         No teammates available
                       </DropdownMenuLabel>

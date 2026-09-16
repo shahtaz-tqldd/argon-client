@@ -2,15 +2,16 @@ import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import { CHAT_CHANNELS } from "@/constants/channels";
+import { StatusBadge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
-const channelIcons = {
-  website: `https://www.google.com/s2/favicons?domain=${"algostar.dev"}&sz=64`,
-  facebook: "/ms.webp",
-  whatsapp: "/wp.webp",
-  instagram: "/insta.webp",
-};
+// const channelIcons = {
+//   facebook: "/ms.webp",
+//   whatsapp: "/wp.webp",
+//   instagram: "/insta.webp",
+// };
 
-const ConnectedChannels = () => (
+const ConnectedChannels = ({ urls, chatbotSlug }) => (
   <Card className="p-0">
     <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/20 p-5">
       <div>
@@ -22,13 +23,36 @@ const ConnectedChannels = () => (
         </p>
       </div>
       <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-        {CHAT_CHANNELS.filter(({ status }) => status === "connected").length}{" "}
-        live
+        {urls.filter(({ item }) => item?.is_active).length} live
       </span>
     </div>
 
     <ul className="divide-y divide-border">
-      {CHAT_CHANNELS.map((channel) => {
+      {urls?.map((item, idx) => {
+        const name = "Website";
+        const isActive = item.is_active;
+        const url = item.url;
+        const favicon = `https://www.google.com/s2/favicons?domain=${url}&sz=64`;
+        return (
+          <li key={idx} className="flex items-center gap-3 py-4 px-5">
+            <img
+              src={favicon}
+              alt={url}
+              className="size-10 bg-primary/5 dark:bg-primary/20 rounded-xl p-2 object-contain"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">{name}</p>
+              <p className="truncate text-xs text-muted-foreground">{url}</p>
+            </div>
+            {isActive ? (
+              <StatusBadge>connected</StatusBadge>
+            ) : (
+              <StatusBadge>disabled</StatusBadge>
+            )}
+          </li>
+        );
+      })}
+      {/* {CHAT_CHANNELS.map((channel) => {
         const isConnected = channel.status === "connected";
 
         return (
@@ -57,13 +81,15 @@ const ConnectedChannels = () => (
             )}
           </li>
         );
-      })}
+      })} */}
     </ul>
 
     <div className="border-t border-border p-4">
-      <Button variant="outline" size="" className="w-full">
-        Manage channels
-      </Button>
+      <Link to={`/chatbot/${chatbotSlug}/configuration?tab=channels`}>
+        <Button variant="outline" size="" className="w-full">
+          Manage channels
+        </Button>
+      </Link>
     </div>
   </Card>
 );

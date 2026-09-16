@@ -1,4 +1,4 @@
-import { AlertCircle, LoaderCircle, Radio, Users } from "lucide-react";
+import { AlertCircle, LoaderCircle, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
@@ -19,14 +19,17 @@ const MemberAvatar = ({ member }) => (
       )}
     </span>
     <span
-      aria-label="Online"
-      className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-[3px] border-card bg-emerald-500"
+      aria-label={member.isActive ? "Active" : "Inactive"}
+      className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-[3px] border-card ${
+        member.isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
+      }`}
     />
   </span>
 );
 
 const ActiveChatbotMembers = ({ chatbotId, chatbotSlug }) => {
   const {
+    members,
     activeMembers,
     isLoading,
     isFetching,
@@ -36,27 +39,27 @@ const ActiveChatbotMembers = ({ chatbotId, chatbotSlug }) => {
   } = useActiveChatbotMembers({ chatbotId, chatbotSlug });
   const isPending =
     !isError &&
-    (isLoading || !isPresenceReady || (isFetching && !activeMembers.length));
+    (isLoading || !isPresenceReady || (isFetching && !members.length));
 
   return (
     <Card className="p-0">
-      <section aria-labelledby="active-members-title">
+      <section aria-labelledby="chatbot-members-title">
         <div className="flex items-center justify-between gap-4 border-b border-emerald-500/10 bg-emerald-500/[0.04] px-5 py-4">
           <div>
             <div className="flex items-center gap-2">
-              <h2 id="active-members-title" className="font-semibold">
-                Active members
+              <h2 id="chatbot-members-title" className="font-semibold">
+                Chatbot members
               </h2>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               {isPresenceReady
-                ? `${activeMembers.length} online right now`
+                ? `${activeMembers.length} of ${members.length} active right now`
                 : "Connecting to live presence…"}
             </p>
           </div>
           {isPresenceReady && (
             <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              {activeMembers.length} online
+              {activeMembers.length} active
             </span>
           )}
         </div>
@@ -81,9 +84,9 @@ const ActiveChatbotMembers = ({ chatbotId, chatbotSlug }) => {
               Try again
             </Button>
           </div>
-        ) : activeMembers.length ? (
+        ) : members.length ? (
           <ul className="max-h-80 divide-y divide-border overflow-y-auto">
-            {activeMembers.map((member) => (
+            {members.map((member) => (
               <li
                 key={member.id}
                 className="flex items-center gap-3 px-5 py-3.5"
@@ -97,8 +100,14 @@ const ActiveChatbotMembers = ({ chatbotId, chatbotSlug }) => {
                     {member.email}
                   </p>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  Online
+                <span
+                  className={`text-[11px] font-semibold ${
+                    member.isActive
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {member.isActive ? "Active" : "Inactive"}
                 </span>
               </li>
             ))}
@@ -106,7 +115,7 @@ const ActiveChatbotMembers = ({ chatbotId, chatbotSlug }) => {
         ) : (
           <div className="flex min-h-28 flex-col items-center justify-center px-5 py-5 text-center text-muted-foreground">
             <Users className="size-6 opacity-50" />
-            <p className="mt-2 text-xs">No team members are online right now</p>
+            <p className="mt-2 text-xs">No chatbot members found</p>
           </div>
         )}
       </section>

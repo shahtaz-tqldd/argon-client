@@ -279,14 +279,14 @@ export const {
   // takeovers
   useTakeOverSessionMutation,
   useReleaseSessionMutation,
+  useResolveSessionMutation,
+
+  // transfer
   useRequestSessionTransferMutation,
   useIncomingSessionTransfersQuery,
-  useLazyIncomingSessionTransfersQuery,
   useAcceptSessionTransferMutation,
   useDeclineSessionTransferMutation,
   useCancelSessionTransferMutation,
-  useResolveSessionMutation,
-  useReopenSessionMutation,
 
   // stats
   useChatSessionOverviewQuery,

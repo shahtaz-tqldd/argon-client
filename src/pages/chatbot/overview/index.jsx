@@ -1,4 +1,6 @@
-import { Button } from "@/components/ui/button";
+import { useSelector } from "react-redux";
+
+import ActiveChatbotMembers from "@/components/chatbot/active-chatbot-members";
 import ConnectedChannels from "./components/connected-channels";
 import Container from "@/components/ui/container";
 import ConversationAnalytics from "./components/conversation-analytics";
@@ -7,11 +9,10 @@ import OverviewStats from "./components/overview-stats";
 import PlanUsage from "./components/plan-usage";
 import UnansweredAlerts from "./components/unanswered-alerts";
 
-import { CalendarDays, Sparkles } from "lucide-react";
-import { useSelector } from "react-redux";
+import { Sparkles } from "lucide-react";
+
 import { useChatbotTitle } from "@/hooks/useTitle";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
-import ActiveChatbotMembers from "@/components/chatbot/active-chatbot-members";
 
 const ChatbotOverviewPage = () => {
   const { user } = useSelector((state) => state?.auth);
@@ -52,12 +53,6 @@ const ChatbotOverviewPage = () => {
             Welcome to {currentChatbot?.chatbot_name} management platform
           </p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline">
-            <CalendarDays /> Last 30 days
-          </Button>
-        </div>
       </header>
 
       <div className="grid md:grid-cols-3 gap-5">
@@ -74,7 +69,10 @@ const ChatbotOverviewPage = () => {
             chatbotId={currentChatbot?.id}
             chatbotSlug={chatbotSlug}
           />
-          <ConnectedChannels />
+          <ConnectedChannels
+            urls={currentChatbot?.allowed_urls}
+            chatbotSlug={chatbotSlug}
+          />
           <PlanUsage plan={plan} />
         </div>
       </div>
