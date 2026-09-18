@@ -168,6 +168,20 @@ export const chatApiSlice = apiSlice.injectEndpoints({
       ],
     }),
 
+    sessionTransferRequest: builder.query({
+      query: ({ chatbotSlug, sessionId }) => ({
+        url: "/chat/transfers/session/",
+        method: "GET",
+        params: {
+          chatbot_slug: chatbotSlug,
+          session_id: sessionId,
+        },
+      }),
+      providesTags: (_result, _error, { chatbotSlug }) => [
+        { type: "chat-session-transfers", id: chatbotSlug },
+      ],
+    }),
+
     acceptSessionTransfer: builder.mutation({
       query: ({ chatbotSlug, transferId }) => ({
         url: "/chat/transfers/accept/",
@@ -283,6 +297,7 @@ export const {
 
   // transfer
   useRequestSessionTransferMutation,
+  useSessionTransferRequestQuery,
   useIncomingSessionTransfersQuery,
   useAcceptSessionTransferMutation,
   useDeclineSessionTransferMutation,

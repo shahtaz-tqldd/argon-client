@@ -66,7 +66,7 @@ export function buildConversation(summary, details) {
     channel: channelLabel(session.channel),
     status: session.status || "active",
     assignedTo: session.assigned_to || null,
-    owner: assigned || (session.ai_enabled === false ? "Unassigned" : "AI"),
+    owner: assigned,
     online: Boolean(
       session.is_recently_active || session.is_online || session.online,
     ),

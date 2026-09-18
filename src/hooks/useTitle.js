@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import useCurrentChatbot from "./useCurrentChatbot";
+import { setPageTitle } from "@/lib/document-title";
 
 const useTitle = (title) => {
   useEffect(() => {
-    document.title = title;
+    setPageTitle(title);
   }, [title]);
 };
 
@@ -12,9 +13,11 @@ export const useChatbotTitle = (title) => {
   const chatbotName = currentChatbot?.chatbot_name;
 
   useEffect(() => {
-    document.title = chatbotName
-      ? `Argon Chatbot — ${chatbotName} | ${title}`
-      : `Argon Chatbot — ${title}`;
+    setPageTitle(
+      chatbotName
+        ? `Argon Chatbot — ${chatbotName} | ${title}`
+        : `Argon Chatbot — ${title}`,
+    );
   }, [chatbotName, title]);
 };
 

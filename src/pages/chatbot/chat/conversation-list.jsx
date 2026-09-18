@@ -13,7 +13,6 @@ import { getCountryMeta } from "@/lib/countries";
 import { cn, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
-  Bot,
   Check,
   ChevronDown,
   Globe,
@@ -21,6 +20,7 @@ import {
   LoaderCircle,
   MoreHorizontal,
   Search,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 
@@ -156,7 +156,7 @@ function SupportStatus({ conversation }) {
   if (conversation.ai_enabled) {
     return (
       <div className="inline-flex items-center gap-1 text-xs text-primary font-medium">
-        <Check className="size-2.5 shrink-0" />
+        <Sparkles className="size-2.5 shrink-0" />
         <span>AI Enabled</span>
       </div>
     );
@@ -443,7 +443,7 @@ const ConversationList = ({
                     {conversation.ai_enabled &&
                       conversation.requires_attention && (
                         <div className="inline-flex items-center gap-1 text-xs text-primary font-medium">
-                          <Check className="size-2.5 shrink-0" />
+                          <Sparkles className="size-2.5 shrink-0" />
                           <span>AI Enabled</span>
                         </div>
                       )}

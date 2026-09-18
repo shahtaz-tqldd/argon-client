@@ -22,9 +22,9 @@ import ConfirmDialog from "@/components/dialog/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useChatSessionDetailQuery } from "@/features/chat/chatApiSlice";
@@ -44,25 +44,16 @@ function unwrapObject(payload) {
 }
 
 const TransferMemberAvatar = ({ member }) => (
-  <span className="relative block size-8 shrink-0">
-    <span className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-      {member.avatar ? (
-        <img
-          src={member.avatar}
-          alt={`${member.name} avatar`}
-          className="size-full object-cover"
-        />
-      ) : (
-        getInitials(member.name)
-      )}
-    </span>
-    <span
-      aria-hidden="true"
-      className={cn(
-        "absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-popover",
-        member.isActive ? "bg-emerald-500" : "bg-muted-foreground/40",
-      )}
-    />
+  <span className="center size-5 overflow-hidden rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+    {member.avatar ? (
+      <img
+        src={member.avatar}
+        alt={`${member.name} avatar`}
+        className="size-full object-cover"
+      />
+    ) : (
+      getInitials(member.name)
+    )}
   </span>
 );
 
@@ -79,8 +70,10 @@ const ChatPanel = ({
   onDelete,
   onToggleContext,
   currentAgentId,
+  isMembersLoading = false,
   isOwnershipUpdating = false,
   pendingTransfer,
+  isTransferStatusLoading = false,
   isTransferActionLoading = false,
   onAcceptTransfer,
   onDeclineTransfer,
@@ -119,7 +112,9 @@ const ChatPanel = ({
   const isError = sessionQuery.isError;
   const assignedAgentId = conversation.assigned_to?.id;
   const isOwnedByCurrentAgent =
-    Boolean(assignedAgentId) && assignedAgentId === currentAgentId;
+    Boolean(assignedAgentId) &&
+    String(assignedAgentId) === String(currentAgentId);
+  const canTransferConversation = !assignedAgentId || isOwnedByCurrentAgent;
   const canTakeOver = !assignedAgentId && conversation.status !== "resolved";
   const canRelease = isOwnedByCurrentAgent;
 
@@ -153,11 +148,51 @@ const ChatPanel = ({
   } = useActiveChatbotMembers({ chatbotId, chatbotSlug });
   const transferMembers = useMemo(
     () =>
-      members.filter(
-        (member) => String(member.id) !== String(currentAgentId),
-      ),
+      members.filter((member) => String(member.id) !== String(currentAgentId)),
     [currentAgentId, members],
   );
+  const assignedMember = useMemo(() => {
+    if (!assignedAgentId) return null;
+
+    const member = members.find(
+      (candidate) => String(candidate.id) === String(assignedAgentId),
+    );
+    if (member) return member;
+
+    const assigned = conversation.assigned_to || {};
+    return {
+      id: assignedAgentId,
+      name:
+        assigned.name?.trim() ||
+        assigned.full_name?.trim() ||
+        assigned.email ||
+        conversation.owner ||
+        "Team member",
+      email: assigned.email || "",
+      avatar: assigned.avatar_url || assigned.avatar || "",
+      isActive: false,
+    };
+  }, [assignedAgentId, conversation.assigned_to, conversation.owner, members]);
+  const pendingTransferMember = useMemo(() => {
+    const recipient = pendingTransfer?.to_agent;
+    if (!recipient) return null;
+
+    const member = members.find(
+      (candidate) => String(candidate.id) === String(recipient.id),
+    );
+    if (member) return member;
+
+    return {
+      id: recipient.id,
+      name: recipient.name?.trim() || recipient.email || "Team member",
+      email: recipient.email || "",
+      avatar: recipient.avatar_url || recipient.avatar || "",
+      isActive: false,
+    };
+  }, [members, pendingTransfer]);
+  const isPendingTransferRecipient =
+    Boolean(pendingTransferMember?.id) &&
+    String(pendingTransferMember.id) === String(currentAgentId);
   const isTransferMembersLoading =
     activeMemberLoading ||
     (!activeMemberError && !isPresenceReady) ||
@@ -208,32 +243,51 @@ const ChatPanel = ({
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden xl:flex"
-                  disabled={isTransferMembersLoading || isOwnershipUpdating}
-                  title={
-                    isOwnedByCurrentAgent
-                      ? "Transfer this conversation"
-                      : "Only the current owner can transfer this conversation"
-                  }
-                >
-                  <UsersRound />
-                  {conversation.owner}
-                  <ChevronDown />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72">
-                <DropdownMenuLabel>Transfer conversation</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={assignedAgentId ? String(assignedAgentId) : ""}
-                  onValueChange={(agentId) =>
-                    onTransfer?.(conversation, agentId)
-                  }
-                >
+            {isTransferStatusLoading ? (
+              <div className="hidden items-center gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground xl:flex">
+                <LoaderCircle className="size-3.5 animate-spin" />
+                Checking transfer…
+              </div>
+            ) : pendingTransferMember ? (
+              <div
+                title={`Transfer requested to ${pendingTransferMember.name}`}
+                className="min-w-0 max-w-52 rounded-full border p-2"
+              >
+                <div className="flx gap-2">
+                  <TransferMemberAvatar member={pendingTransferMember} />
+                  <span className="min-w-0">
+                    <span className="block text-[9px] text-muted-foreground">
+                      Transfer requested to
+                    </span>
+                    <span className="block truncate text-xs font-semibold">
+                      {pendingTransferMember.name}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            ) : assignedAgentId && isMembersLoading ? (
+              <div className="hidden items-center gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground xl:flex">
+                <LoaderCircle className="size-3.5 animate-spin" />
+                Checking owner…
+              </div>
+            ) : canTransferConversation ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hidden xl:flex"
+                    disabled={isTransferMembersLoading || isOwnershipUpdating}
+                    title="Transfer this conversation"
+                  >
+                    <UsersRound />
+                    {isOwnedByCurrentAgent ? "Transfer" : "Assign"}
+                    <ChevronDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-fit max-w-80">
+                  <DropdownMenuLabel>Transfer conversation</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   {isTransferMembersLoading && (
                     <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground">
                       <LoaderCircle className="size-3.5 animate-spin" />
@@ -242,36 +296,43 @@ const ChatPanel = ({
                   )}
                   {!isTransferMembersLoading &&
                     transferMembers.map((member) => (
-                      <DropdownMenuRadioItem
+                      <DropdownMenuItem
                         key={member.id}
-                        value={String(member.id)}
                         disabled={!onTransfer}
                         className="py-2"
+                        onSelect={() => onTransfer?.(conversation, member.id)}
                       >
                         <TransferMemberAvatar member={member} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-xs font-semibold">
                             {member.name}
                           </span>
-                          <span className="block truncate text-[10px] font-normal text-muted-foreground">
-                            {member.email}
+                        </span>
+                        <div className="ml-4 flex items-center gap-1">
+                          <span
+                            className={cn(
+                              "size-1.5 rounded-full",
+                              member.isActive
+                                ? "bg-emerald-500 dark:bg-emerald-400"
+                                : "bg-slate-300",
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "text-[10px] font-semibold",
+                              member.isActive
+                                ? "text-emerald-500 dark:text-emerald-400"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            {member.isActive ? "Active" : "Inactive"}
                           </span>
-                        </span>
-                        <span
-                          className={cn(
-                            "text-[10px] font-semibold",
-                            member.isActive
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : "text-muted-foreground",
-                          )}
-                        >
-                          {member.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </DropdownMenuRadioItem>
+                        </div>
+                      </DropdownMenuItem>
                     ))}
                   {!isTransferMembersLoading && activeMemberError && (
                     <DropdownMenuLabel className="font-normal text-muted-foreground">
-                      Couldn’t load teammates.
+                      Couldn't load teammates.
                       <button
                         type="button"
                         className="ml-1 font-semibold text-primary hover:underline"
@@ -288,30 +349,44 @@ const ChatPanel = ({
                         No teammates available
                       </DropdownMenuLabel>
                     )}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {(canTakeOver || isOwnershipUpdating) && (
-              <Button
-                onClick={() => onTakeover?.(conversation)}
-                disabled={!onTakeover || isOwnershipUpdating}
-                variant="default"
-                size="sm"
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : assignedMember ? (
+              <div
+                title={`Currently taken over by ${assignedMember.name}`}
+                className="min-w-0 max-w-44 border rounded-full p-2"
               >
-                {isOwnershipUpdating ? (
-                  <>
-                    <LoaderCircle className="animate-spin" />
-                    Updating
-                  </>
-                ) : (
-                  <>
-                    <UserRoundPlus />
-                    Take over
-                  </>
-                )}
-              </Button>
-            )}
+                <div className="flx gap-2">
+                  <TransferMemberAvatar member={assignedMember} />
+                  <span className="block truncate text-xs font-semibold">
+                    {assignedMember.name}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            {!isTransferStatusLoading &&
+              !pendingTransfer &&
+              (canTakeOver || isOwnershipUpdating) && (
+                <Button
+                  onClick={() => onTakeover?.(conversation)}
+                  disabled={!onTakeover || isOwnershipUpdating}
+                  variant="default"
+                  size="sm"
+                >
+                  {isOwnershipUpdating ? (
+                    <>
+                      <LoaderCircle className="animate-spin" />
+                      Updating
+                    </>
+                  ) : (
+                    <>
+                      <UserRoundPlus />
+                      Take over
+                    </>
+                  )}
+                </Button>
+              )}
             <Button
               onClick={onToggleContext}
               variant="ghost"
@@ -337,8 +412,9 @@ const ChatPanel = ({
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold">
-                {pendingTransfer.from_agent?.name || "A teammate"} wants to
-                transfer this conversation to you
+                {isPendingTransferRecipient
+                  ? `${pendingTransfer.from_agent?.name || "A teammate"} wants to transfer this conversation to you`
+                  : `Transfer requested to ${pendingTransfer.to_agent?.name || "a teammate"}`}
               </p>
               {pendingTransfer.reason && (
                 <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
@@ -346,24 +422,28 @@ const ChatPanel = ({
                 </p>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={isTransferActionLoading}
-              onClick={() => onDeclineTransfer?.(pendingTransfer)}
-            >
-              Decline
-            </Button>
-            <Button
-              size="sm"
-              disabled={isTransferActionLoading}
-              onClick={() => onAcceptTransfer?.(pendingTransfer)}
-            >
-              {isTransferActionLoading && (
-                <LoaderCircle className="animate-spin" />
-              )}
-              Accept
-            </Button>
+            {isPendingTransferRecipient && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={isTransferActionLoading}
+                  onClick={() => onDeclineTransfer?.(pendingTransfer)}
+                >
+                  Decline
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={isTransferActionLoading}
+                  onClick={() => onAcceptTransfer?.(pendingTransfer)}
+                >
+                  {isTransferActionLoading && (
+                    <LoaderCircle className="animate-spin" />
+                  )}
+                  Accept
+                </Button>
+              </>
+            )}
           </div>
         )}
 

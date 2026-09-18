@@ -7,6 +7,10 @@ import {
   chatbotPresenceCleared,
   chatbotPresenceSnapshotReceived,
 } from "@/features/chatbot/presenceSlice";
+import {
+  enableNotificationSound,
+  playNotificationSound,
+} from "@/lib/notification-feedback";
 
 const SESSION_TRANSITION_EVENTS = new Set([
   "session.created",
@@ -292,6 +296,7 @@ function routeDashboardEvent(event, dispatch, store) {
 
   if (event?.type === "notification.created" && event.data?.id) {
     upsertNotification(dispatch, store, event.data);
+    if (!event.data.is_read) playNotificationSound();
     return;
   }
 
@@ -334,6 +339,7 @@ export default function useDashboardSocket() {
     let reconnectAttempt = 0;
     let hasConnected = false;
     let disposed = false;
+    const disableNotificationSound = enableNotificationSound();
 
     const clearHeartbeat = () => {
       if (heartbeatTimer) window.clearInterval(heartbeatTimer);
@@ -439,6 +445,7 @@ export default function useDashboardSocket() {
 
     return () => {
       disposed = true;
+      disableNotificationSound();
       dispatch(chatbotPresenceCleared());
       window.removeEventListener("online", reconnectWhenOnline);
       clearHeartbeat();

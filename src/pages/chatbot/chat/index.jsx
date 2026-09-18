@@ -7,7 +7,7 @@ import {
   useAcceptSessionTransferMutation,
   useDeleteChatSessionMutation,
   useDeclineSessionTransferMutation,
-  useIncomingSessionTransfersQuery,
+  useSessionTransferRequestQuery,
   useReleaseSessionMutation,
   useRequestSessionTransferMutation,
   useTakeOverSessionMutation,
@@ -71,9 +71,13 @@ const ChatSessionPage = () => {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [deleteChatSession, deleteSessionState] =
     useDeleteChatSessionMutation();
-  const { data: incomingTransferResponse } = useIncomingSessionTransfersQuery(
-    { chatbotSlug, status: "pending" },
-    { skip: !chatbotSlug },
+  const {
+    currentData: sessionTransferRequest,
+    isLoading: isTransferStatusLoading,
+    isFetching: isTransferStatusFetching,
+  } = useSessionTransferRequestQuery(
+    { chatbotSlug, sessionId },
+    { skip: !chatbotSlug || !sessionId },
   );
   const [acceptSessionTransfer, acceptTransferState] =
     useAcceptSessionTransferMutation();
@@ -100,12 +104,12 @@ const ChatSessionPage = () => {
     takeoverState.isLoading ||
     releaseState.isLoading ||
     transferState.isLoading;
-  const incomingTransfers = Array.isArray(incomingTransferResponse?.data)
-    ? incomingTransferResponse.data
-    : [];
-  const pendingTransfer = incomingTransfers.find(
-    (transfer) => transfer.chat_session_id === sessionId,
-  );
+  const sessionTransferStatus = sessionTransferRequest?.data;
+  const pendingTransfer =
+    sessionTransferStatus?.has_pending_transfer &&
+    sessionTransferStatus.transfer?.status === "pending"
+      ? sessionTransferStatus.transfer
+      : null;
   const isTransferActionLoading =
     acceptTransferState.isLoading || declineTransferState.isLoading;
 
@@ -263,6 +267,9 @@ const ChatSessionPage = () => {
           onTakeover={handleOwnershipChange}
           onTransfer={handleTransfer}
           pendingTransfer={pendingTransfer}
+          isTransferStatusLoading={
+            isTransferStatusLoading || isTransferStatusFetching
+          }
           isTransferActionLoading={isTransferActionLoading}
           onAcceptTransfer={(transfer) =>
             handleIncomingTransfer(transfer, "accept")
