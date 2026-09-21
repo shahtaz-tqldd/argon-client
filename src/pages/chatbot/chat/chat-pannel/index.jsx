@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Archive,
   ArrowRightLeft,
   AtSign,
   Check,
@@ -28,11 +27,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useChatSessionDetailQuery } from "@/features/chat/chatApiSlice";
+import {
+  useChatSessionDetailQuery,
+  useResolveSessionMutation,
+} from "@/features/chat/chatApiSlice";
 import { useCapturedLeadDetailQuery } from "@/features/lead_captures/leadCaptureApiSlice";
 import useActiveChatbotMembers from "@/hooks/useActiveChatbotMembers";
 import { subscribeDashboardSession } from "@/hooks/useDashboardSocket";
+import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { cn, getInitials } from "@/lib/utils";
+import { toast } from "sonner";
 import { buildConversation } from "../lib";
 import CustomerContext from "../customer-context";
 import SessionDropdown from "./dropdown-menu";
@@ -65,7 +69,6 @@ const ChatPanel = ({
   contextOpen,
   onCloseContext,
   onTakeover,
-  onResolve,
   onTransfer,
   onSend,
   onDelete,
@@ -86,6 +89,8 @@ const ChatPanel = ({
   const [draft, setDraft] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [forceTakeoverDialogOpen, setForceTakeoverDialogOpen] = useState(false);
+  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
+  const [resolutionNote, setResolutionNote] = useState("");
   const [takeoverReason, setTakeoverReason] = useState("");
   const sessionId = conversationSummary.id;
   const sessionQuery = useChatSessionDetailQuery(
@@ -94,6 +99,7 @@ const ChatPanel = ({
   );
 
   const sessionDetails = unwrapObject(sessionQuery.currentData);
+  const [resolveSession, resolveState] = useResolveSessionMutation();
   const chatbot = sessionDetails.chatbot || {};
   const chatbotName = chatbot.chatbot_name || "Argon Chatbot";
   const chatbotLogo = chatbot.logo;
@@ -140,6 +146,24 @@ const ChatPanel = ({
     if (!onDelete || isDeleting) return;
     const succeeded = await onDelete(conversation);
     if (succeeded !== false) setDeleteDialogOpen(false);
+  };
+
+  const handleResolve = async () => {
+    if (resolveState.isLoading) return;
+
+    try {
+      const response = await resolveSession({
+        chatbotSlug,
+        sessionId,
+        payload: { resolution_note: resolutionNote.trim() },
+      }).unwrap();
+
+      setResolveDialogOpen(false);
+      setResolutionNote("");
+      toast.success(response?.message || "Session resolved successfully.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to resolve this session."));
+    }
   };
 
   const handleForceTakeover = async () => {
@@ -551,28 +575,18 @@ const ChatPanel = ({
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      onClick={onResolve}
-                      disabled={!onResolve}
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label={
-                        conversation.status === "resolved"
-                          ? "Reopen conversation"
-                          : "Resolve conversation"
-                      }
-                      title={
-                        conversation.status === "resolved"
-                          ? "Reopen conversation"
-                          : "Resolve conversation"
-                      }
-                    >
-                      {conversation.status === "resolved" ? (
-                        <Archive />
-                      ) : (
+                    {conversation.requires_attention && (
+                      <Button
+                        onClick={() => setResolveDialogOpen(true)}
+                        disabled={resolveState.isLoading}
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label="Resolve session"
+                        title="Resolve session"
+                      >
                         <Check />
-                      )}
-                    </Button>
+                      </Button>
+                    )}
                     <Button
                       onClick={() => onTakeover?.(conversation)}
                       disabled={
@@ -619,6 +633,33 @@ const ChatPanel = ({
           )}
       </main>
 
+      <ConfirmDialog
+        open={resolveDialogOpen}
+        setOpen={(open) => {
+          setResolveDialogOpen(open);
+          if (!open && !resolveState.isLoading) setResolutionNote("");
+        }}
+        title="Resolve session?"
+        description="Add an optional note describing how this session was resolved."
+        confirmText="Resolve session"
+        onConfirm={handleResolve}
+        isLoading={resolveState.isLoading}
+      >
+        <div className="space-y-2">
+          <Textarea
+            value={resolutionNote}
+            onChange={(event) => setResolutionNote(event.target.value)}
+            maxLength={512}
+            rows={4}
+            placeholder="Resolution note (optional)"
+            aria-label="Resolution note"
+            disabled={resolveState.isLoading}
+          />
+          <p className="text-right text-xs text-muted-foreground">
+            {resolutionNote.length}/512
+          </p>
+        </div>
+      </ConfirmDialog>
       <ConfirmDialog
         open={forceTakeoverDialogOpen}
         setOpen={(open) => {
