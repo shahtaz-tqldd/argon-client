@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import {
   useAcceptSessionTransferMutation,
+  useCancelSessionTransferMutation,
   useDeleteChatSessionMutation,
   useDeclineSessionTransferMutation,
   useSessionTransferRequestQuery,
@@ -83,6 +84,8 @@ const ChatSessionPage = () => {
     useAcceptSessionTransferMutation();
   const [declineSessionTransfer, declineTransferState] =
     useDeclineSessionTransferMutation();
+  const [cancelSessionTransfer, cancelTransferState] =
+    useCancelSessionTransferMutation();
 
   const teamMembers = useMemo(
     () =>
@@ -111,7 +114,9 @@ const ChatSessionPage = () => {
       ? sessionTransferStatus.transfer
       : null;
   const isTransferActionLoading =
-    acceptTransferState.isLoading || declineTransferState.isLoading;
+    acceptTransferState.isLoading ||
+    declineTransferState.isLoading ||
+    cancelTransferState.isLoading;
 
   const handleOwnershipChange = async (conversation) => {
     const assignedAgentId = conversation.assigned_to?.id;
@@ -183,6 +188,41 @@ const ChatSessionPage = () => {
       toast.error(
         getApiErrorMessage(error, `Unable to ${action} this transfer.`),
       );
+    }
+  };
+
+  const handleCancelTransfer = async (transfer) => {
+    try {
+      const response = await cancelSessionTransfer({
+        chatbotSlug,
+        transferId: transfer.id,
+      }).unwrap();
+      toast.success(response?.message || "Conversation transfer cancelled.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Unable to cancel this transfer."));
+    }
+  };
+
+  const handleForcedTakeover = async (conversation, takeoverReason) => {
+    try {
+      const response = await takeOverSession({
+        chatbotSlug,
+        sessionId: conversation.id,
+        payload: {
+          is_forced: true,
+          reason: takeoverReason,
+        },
+      }).unwrap();
+      toast.success(response?.message || "Conversation taken over.");
+      return true;
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Unable to force takeover this conversation.",
+        ),
+      );
+      return false;
     }
   };
 
@@ -277,6 +317,8 @@ const ChatSessionPage = () => {
           onDeclineTransfer={(transfer) =>
             handleIncomingTransfer(transfer, "decline")
           }
+          onCancelTransfer={handleCancelTransfer}
+          onForceTakeover={handleForcedTakeover}
           onSend={handleSendMessage}
           isSending={isSendingMessage}
           onDelete={handleDeleteChat}

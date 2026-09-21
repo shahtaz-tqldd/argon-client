@@ -105,17 +105,19 @@ export const chatApiSlice = apiSlice.injectEndpoints({
 
     // TAKEOVERS
     takeOverSession: builder.mutation({
-      query: ({ chatbotSlug, sessionId }) => ({
+      query: ({ chatbotSlug, sessionId, payload }) => ({
         url: "/chat/takeovers/take-over/",
         method: "POST",
         params: {
           chatbot_slug: chatbotSlug,
           session_id: sessionId,
         },
+        body: payload,
       }),
       invalidatesTags: (_result, _error, { chatbotSlug, sessionId }) => [
         { type: "chat-session-details", id: sessionId },
         { type: "chat-sessions", id: chatbotSlug },
+        { type: "chat-session-transfers", id: chatbotSlug },
       ],
     }),
 
@@ -227,22 +229,6 @@ export const chatApiSlice = apiSlice.injectEndpoints({
     resolveSession: builder.mutation({
       query: ({ chatbotSlug, sessionId, payload }) => ({
         url: "/chat/takeovers/resolve/",
-        method: "POST",
-        params: {
-          chatbot_slug: chatbotSlug,
-          session_id: sessionId,
-        },
-        body: payload,
-      }),
-      invalidatesTags: (_result, _error, { chatbotSlug, sessionId }) => [
-        { type: "chat-session-details", id: sessionId },
-        { type: "chat-sessions", id: chatbotSlug },
-      ],
-    }),
-
-    reopenSession: builder.mutation({
-      query: ({ chatbotSlug, sessionId, payload }) => ({
-        url: "/chat/takeovers/reopen/",
         method: "POST",
         params: {
           chatbot_slug: chatbotSlug,

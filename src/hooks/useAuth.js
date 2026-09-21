@@ -7,14 +7,20 @@ const useAuth = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const { data, isSuccess, isLoading, refetch } = useSelfDetailsQuery(
-    undefined,
-    {
-      skip: !isAuthenticated,
-    },
-  );
+  const {
+    data,
+    error,
+    isError,
+    isSuccess,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useSelfDetailsQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
   const authChecked = !isAuthenticated || (isSuccess && data?.data);
+  const authError = isAuthenticated && isError ? error : null;
 
   useEffect(() => {
     if (isAuthenticated && isSuccess && data?.data) {
@@ -23,8 +29,11 @@ const useAuth = () => {
   }, [isSuccess, data, dispatch, isAuthenticated]);
 
   return {
-    isLoading: isLoading || (isAuthenticated && !authChecked),
+    isLoading:
+      isLoading || (isAuthenticated && !authChecked && !authError),
+    isFetching,
     authChecked,
+    authError,
     refetchProfile: refetch,
     user,
   };

@@ -12,14 +12,20 @@ export function toComparableOptionValue(value) {
     .replace(/[\s-]+/g, "_");
 }
 
-export const getInitials = (name) =>
-  String(name || "Workspace")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "W";
+export const getInitials = (name, single = false) => {
+  if (single) {
+    return name[0].toUpperCase();
+  }
+  return (
+    String(name || "Workspace")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "W"
+  );
+};
 
 export const formatStatus = (status) =>
   String(status || "draft")

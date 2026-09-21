@@ -7,21 +7,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollContainer, SectionTitle } from "@/components/ui/section";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useChatSessionListQuery } from "@/features/chat/chatApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getCountryMeta } from "@/lib/countries";
 import { cn, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
+  ArrowRightLeft,
   Check,
+  CheckCircle,
   ChevronDown,
   Globe,
   Globe2,
   LoaderCircle,
   MoreHorizontal,
   Search,
-  Sparkles,
-  UserRound,
+  Sparkle,
 } from "lucide-react";
 
 const channelMeta = {
@@ -117,52 +124,87 @@ function getLocation(session) {
   };
 }
 
-function getAssigneeName(session) {
-  if (!session.assigned_to) return null;
-  if (typeof session.assigned_to === "string") return session.assigned_to;
-  return session.assigned_to.name || session.assigned_to.full_name || null;
-}
-
 function SupportStatus({ conversation }) {
-  const assignee = getAssigneeName(conversation);
+  const assigned_to = conversation?.assigned_to?.name;
+  const transferred_to = conversation?.transfer_requested_to?.name;
+  const statuses = [];
 
   if (conversation.status === "resolved") {
-    return (
-      <span className="inline-flex min-w-0 items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-        <Check className="size-3 shrink-0" />
-        Resolved
-      </span>
-    );
+    statuses.push({
+      id: "resolved",
+      label: "Resolved",
+      tooltip: "This conversation has been resolved.",
+      icon: <Check className="size-2.5 shrink-0" />,
+      className: "text-emerald-600 dark:text-emerald-400",
+    });
+  } else {
+    if (conversation.requires_attention) {
+      statuses.push({
+        id: "attention",
+        label: "Needs attention",
+        tooltip:
+          conversation.attention_reason ||
+          "This conversation requires attention.",
+        icon: <AlertCircle className="size-2.5 shrink-0" />,
+        className: "text-amber-600",
+      });
+    }
+
+    if (transferred_to) {
+      statuses.push({
+        id: "transfer",
+        label: transferred_to,
+        tooltip: `This conversation has been transferred to ${transferred_to}.`,
+        icon: <ArrowRightLeft className="size-2.5 shrink-0" />,
+        className: "text-orange-500",
+      });
+    }
+
+    if (assigned_to) {
+      statuses.push({
+        id: "assigned",
+        label: assigned_to,
+        tooltip: `This conversation is assigned to ${assigned_to}.`,
+        icon: <CheckCircle className="size-2.5 shrink-0" />,
+        className: "text-emerald-600",
+      });
+    }
+
+    if (conversation.ai_enabled) {
+      statuses.push({
+        id: "ai",
+        label: "AI Enabled",
+        tooltip: "AI replies are enabled for this conversation.",
+        icon: <Sparkle className="size-2.5 shrink-0" />,
+        className: "text-primary",
+      });
+    }
   }
 
-  if (conversation.requires_attention) {
-    return (
-      <div className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
-        <AlertCircle className="size-2.5 shrink-0" />
-        <span>Needs attention</span>
+  if (!statuses.length) return null;
+
+  return (
+    <TooltipProvider>
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        {statuses.map(({ id, label, tooltip, icon, className }) => (
+          <Tooltip key={id}>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  "inline-flex min-w-0 items-center gap-1 text-[11px] font-semibold",
+                  className,
+                )}
+              >
+                {icon}
+                <span className="truncate">{label}</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top">{tooltip}</TooltipContent>
+          </Tooltip>
+        ))}
       </div>
-    );
-  }
-
-  if (assignee) {
-    return (
-      <div className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
-        <UserRound className="size-2.5 shrink-0" />
-        <span className="truncate">{assignee}</span>
-      </div>
-    );
-  }
-
-  if (conversation.ai_enabled) {
-    return (
-      <div className="inline-flex items-center gap-1 text-xs text-primary font-medium">
-        <Sparkles className="size-2.5 shrink-0" />
-        <span>AI Enabled</span>
-      </div>
-    );
-  }
-
-  return null;
+    </TooltipProvider>
+  );
 }
 
 function ChannelIcon({ channel, className }) {
@@ -438,15 +480,8 @@ const ConversationList = ({
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 flex min-w-0 items-center gap-2">
+                  <div className="mt-2 min-w-0">
                     <SupportStatus conversation={conversation} />
-                    {conversation.ai_enabled &&
-                      conversation.requires_attention && (
-                        <div className="inline-flex items-center gap-1 text-xs text-primary font-medium">
-                          <Sparkles className="size-2.5 shrink-0" />
-                          <span>AI Enabled</span>
-                        </div>
-                      )}
                   </div>
                 </div>
               </button>

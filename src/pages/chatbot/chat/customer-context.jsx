@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/section";
 import { getCountryMeta } from "@/lib/countries";
 
-const CustomerContext = ({ conversation, lead, open, onClose }) => {
+const CustomerContext = ({ conversation, open, onClose }) => {
   const sessionStartPageTitle =
     conversation?.metadata?.page_title || conversation?.metadata?.page_url;
   const sessionStartPageLink = conversation?.metadata?.page_url;
@@ -70,12 +70,12 @@ const CustomerContext = ({ conversation, lead, open, onClose }) => {
           <ContextRow
             icon={Mail}
             label="Email"
-            value={lead?.email || conversation.email}
+            value={conversation?.user_metadata?.email}
           />
           <ContextRow
             icon={Phone}
             label="Phone"
-            value={lead?.phone || conversation.phone}
+            value={conversation?.user_metadata?.phone}
           />
           <ContextRow
             icon={MapPin}
@@ -94,7 +94,7 @@ const CustomerContext = ({ conversation, lead, open, onClose }) => {
           <h3 className="mb-1 text-xs font-bold">Session activity</h3>
           <ContextRow
             icon={Globe}
-            label="Current page"
+            label="Chat Started Page"
             value={sessionStartPageTitle}
             link={sessionStartPageLink}
           />

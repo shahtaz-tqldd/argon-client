@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector, useStore } from "react-redux";
 
 import { apiSlice } from "@/features/api/apiSlice";
+import { applySessionManagementUpdate } from "@/features/chat/chatRealtime";
 import {
   chatbotMemberPresenceChanged,
   chatbotPresenceCleared,
@@ -12,18 +13,6 @@ import {
   playNotificationSound,
 } from "@/lib/notification-feedback";
 
-const SESSION_TRANSITION_EVENTS = new Set([
-  "session.created",
-  "session.taken_over",
-  "session.released",
-  "session.resolved",
-  "session.closed",
-  "session.reopened",
-  "session.transfer_requested",
-  "session.transferred",
-  "session.transfer_declined",
-  "session.transfer_cancelled",
-]);
 const AI_EVENT_PREFIX = "ai.response.";
 const MESSAGE_ACK_TIMEOUT_MS = 15_000;
 
@@ -300,10 +289,14 @@ function routeDashboardEvent(event, dispatch, store) {
     return;
   }
 
-  if (
-    SESSION_TRANSITION_EVENTS.has(event?.type) ||
-    event?.type?.startsWith(AI_EVENT_PREFIX)
-  ) {
+  if (applySessionManagementUpdate(event, dispatch, store)) return;
+
+  if (event?.type === "session.created") {
+    dispatch(apiSlice.util.invalidateTags(["chat-sessions"]));
+    return;
+  }
+
+  if (event?.type?.startsWith(AI_EVENT_PREFIX)) {
     dispatch(
       apiSlice.util.invalidateTags([
         "chat-sessions",

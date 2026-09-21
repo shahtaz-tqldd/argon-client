@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import ConfirmDialog from "@/components/dialog/confirm-dialog";
 import {
   DropdownMenu,
@@ -52,7 +53,7 @@ const TransferMemberAvatar = ({ member }) => (
         className="size-full object-cover"
       />
     ) : (
-      getInitials(member.name)
+      getInitials(member.name, true)
     )}
   </span>
 );
@@ -77,11 +78,15 @@ const ChatPanel = ({
   isTransferActionLoading = false,
   onAcceptTransfer,
   onDeclineTransfer,
+  onCancelTransfer,
+  onForceTakeover,
   isSending = false,
   isDeleting = false,
 }) => {
   const [draft, setDraft] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [forceTakeoverDialogOpen, setForceTakeoverDialogOpen] = useState(false);
+  const [takeoverReason, setTakeoverReason] = useState("");
   const sessionId = conversationSummary.id;
   const sessionQuery = useChatSessionDetailQuery(
     { chatbotSlug, sessionId },
@@ -135,6 +140,17 @@ const ChatPanel = ({
     if (!onDelete || isDeleting) return;
     const succeeded = await onDelete(conversation);
     if (succeeded !== false) setDeleteDialogOpen(false);
+  };
+
+  const handleForceTakeover = async () => {
+    const reason = takeoverReason.trim();
+    if (!reason || !onForceTakeover || isOwnershipUpdating) return;
+
+    const succeeded = await onForceTakeover(conversation, reason);
+    if (succeeded !== false) {
+      setForceTakeoverDialogOpen(false);
+      setTakeoverReason("");
+    }
   };
 
   // ACTIVE MEMBERS
@@ -193,6 +209,9 @@ const ChatPanel = ({
   const isPendingTransferRecipient =
     Boolean(pendingTransferMember?.id) &&
     String(pendingTransferMember.id) === String(currentAgentId);
+  const isPendingTransferRequester =
+    Boolean(pendingTransfer?.from_agent?.id) &&
+    String(pendingTransfer.from_agent.id) === String(currentAgentId);
   const isTransferMembersLoading =
     activeMemberLoading ||
     (!activeMemberError && !isPresenceReady) ||
@@ -251,17 +270,13 @@ const ChatPanel = ({
             ) : pendingTransferMember ? (
               <div
                 title={`Transfer requested to ${pendingTransferMember.name}`}
-                className="min-w-0 max-w-52 rounded-full border p-2"
+                className="min-w-0 max-w-52 rounded-full"
               >
-                <div className="flx gap-2">
+                <div className="flx gap-2 min-w-0 max-w-44 border rounded-full p-2 pr-2.5 relative">
+                  <span className="bg-yellow-400 absolute size-2.5 rounded-full -top-[5px] right-2.5"></span>
                   <TransferMemberAvatar member={pendingTransferMember} />
-                  <span className="min-w-0">
-                    <span className="block text-[9px] text-muted-foreground">
-                      Transfer requested to
-                    </span>
-                    <span className="block truncate text-xs font-semibold">
-                      {pendingTransferMember.name}
-                    </span>
+                  <span className="block truncate text-xs font-semibold">
+                    {pendingTransferMember.name}
                   </span>
                 </div>
               </div>
@@ -286,7 +301,9 @@ const ChatPanel = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-fit max-w-80">
-                  <DropdownMenuLabel>Transfer conversation</DropdownMenuLabel>
+                  <DropdownMenuLabel>
+                    {isOwnedByCurrentAgent ? "Transfer" : "Assign"} conversation
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {isTransferMembersLoading && (
                     <DropdownMenuLabel className="flex items-center gap-2 font-normal text-muted-foreground">
@@ -354,14 +371,12 @@ const ChatPanel = ({
             ) : assignedMember ? (
               <div
                 title={`Currently taken over by ${assignedMember.name}`}
-                className="min-w-0 max-w-44 border rounded-full p-2"
+                className="flx gap-2 min-w-0 max-w-44 border rounded-full p-2 pr-2.5"
               >
-                <div className="flx gap-2">
-                  <TransferMemberAvatar member={assignedMember} />
-                  <span className="block truncate text-xs font-semibold">
-                    {assignedMember.name}
-                  </span>
-                </div>
+                <TransferMemberAvatar member={assignedMember} />
+                <span className="block truncate text-xs font-semibold">
+                  {assignedMember.name}
+                </span>
               </div>
             ) : null}
 
@@ -443,6 +458,29 @@ const ChatPanel = ({
                   Accept
                 </Button>
               </>
+            )}
+            {isPendingTransferRequester && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isTransferActionLoading}
+                onClick={() => onCancelTransfer?.(pendingTransfer)}
+              >
+                {isTransferActionLoading && (
+                  <LoaderCircle className="animate-spin" />
+                )}
+                Cancel
+              </Button>
+            )}
+            {!isPendingTransferRecipient && !isPendingTransferRequester && (
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!onForceTakeover || isOwnershipUpdating}
+                onClick={() => setForceTakeoverDialogOpen(true)}
+              >
+                Force takeover
+              </Button>
             )}
           </div>
         )}
@@ -581,6 +619,35 @@ const ChatPanel = ({
           )}
       </main>
 
+      <ConfirmDialog
+        open={forceTakeoverDialogOpen}
+        setOpen={(open) => {
+          setForceTakeoverDialogOpen(open);
+          if (!open && !isOwnershipUpdating) setTakeoverReason("");
+        }}
+        title="Force takeover?"
+        description="Explain why you need to take over this conversation. The current transfer request will be overridden."
+        confirmText="Force takeover"
+        confirmVariant="destructive"
+        onConfirm={handleForceTakeover}
+        isLoading={isOwnershipUpdating}
+        confirmDisabled={!takeoverReason.trim()}
+      >
+        <div className="space-y-2">
+          <Textarea
+            value={takeoverReason}
+            onChange={(event) => setTakeoverReason(event.target.value)}
+            maxLength={256}
+            rows={4}
+            placeholder="Reason for taking over this conversation"
+            aria-label="Takeover reason"
+            disabled={isOwnershipUpdating}
+          />
+          <p className="text-right text-xs text-muted-foreground">
+            {takeoverReason.length}/256
+          </p>
+        </div>
+      </ConfirmDialog>
       <ConfirmDialog
         open={deleteDialogOpen}
         setOpen={setDeleteDialogOpen}
