@@ -23,7 +23,7 @@ const ConnectedChannels = ({ urls, chatbotSlug }) => (
         </p>
       </div>
       <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-        {urls.filter(({ item }) => item?.is_active).length} live
+        {urls?.filter(({ item }) => item?.is_active).length} live
       </span>
     </div>
 

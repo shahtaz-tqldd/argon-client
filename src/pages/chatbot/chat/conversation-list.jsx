@@ -29,6 +29,7 @@ import {
   MoreHorizontal,
   Search,
   Sparkle,
+  UserRound,
 } from "lucide-react";
 
 const channelMeta = {
@@ -129,63 +130,61 @@ function SupportStatus({ conversation }) {
   const transferred_to = conversation?.transfer_requested_to?.name;
   const statuses = [];
 
+  if (conversation.ai_enabled) {
+    statuses.push({
+      id: "ai",
+      label: "AI Enabled",
+      tooltip: "AI replies are enabled for this conversation.",
+      icon: <Sparkle className="size-2.5 shrink-0" />,
+      className: "text-primary",
+    });
+  }
+  if (conversation.requires_attention) {
+    statuses.push({
+      id: "attention",
+      label: "Requires Human",
+      tooltip:
+        conversation.attention_reason ||
+        "This conversation requires attention.",
+      icon: <AlertCircle className="size-2.5 shrink-0" />,
+      className: "text-red-600",
+    });
+  }
+
+  if (transferred_to) {
+    statuses.push({
+      id: "transfer",
+      label: transferred_to,
+      tooltip: `This conversation has been transferred to ${transferred_to}.`,
+      icon: <ArrowRightLeft className="size-2.5 shrink-0" />,
+      className: "text-purple-600",
+    });
+  }
+
+  if (assigned_to) {
+    statuses.push({
+      id: "assigned",
+      label: assigned_to,
+      tooltip: `This conversation is assigned to ${assigned_to}.`,
+      icon: <UserRound className="size-2.5 shrink-0" />,
+      className: "text-green-600",
+    });
+  }
   if (conversation.status === "resolved") {
     statuses.push({
       id: "resolved",
       label: "Resolved",
       tooltip: "This conversation has been resolved.",
-      icon: <Check className="size-2.5 shrink-0" />,
+      icon: <CheckCircle className="size-2.5 shrink-0" />,
       className: "text-emerald-600 dark:text-emerald-400",
     });
-  } else {
-    if (conversation.requires_attention) {
-      statuses.push({
-        id: "attention",
-        label: "Needs attention",
-        tooltip:
-          conversation.attention_reason ||
-          "This conversation requires attention.",
-        icon: <AlertCircle className="size-2.5 shrink-0" />,
-        className: "text-amber-600",
-      });
-    }
-
-    if (transferred_to) {
-      statuses.push({
-        id: "transfer",
-        label: transferred_to,
-        tooltip: `This conversation has been transferred to ${transferred_to}.`,
-        icon: <ArrowRightLeft className="size-2.5 shrink-0" />,
-        className: "text-orange-500",
-      });
-    }
-
-    if (assigned_to) {
-      statuses.push({
-        id: "assigned",
-        label: assigned_to,
-        tooltip: `This conversation is assigned to ${assigned_to}.`,
-        icon: <CheckCircle className="size-2.5 shrink-0" />,
-        className: "text-emerald-600",
-      });
-    }
-
-    if (conversation.ai_enabled) {
-      statuses.push({
-        id: "ai",
-        label: "AI Enabled",
-        tooltip: "AI replies are enabled for this conversation.",
-        icon: <Sparkle className="size-2.5 shrink-0" />,
-        className: "text-primary",
-      });
-    }
   }
 
   if (!statuses.length) return null;
 
   return (
     <TooltipProvider>
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
         {statuses.map(({ id, label, tooltip, icon, className }) => (
           <Tooltip key={id}>
             <TooltipTrigger asChild>

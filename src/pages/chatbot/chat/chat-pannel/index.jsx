@@ -155,7 +155,10 @@ const ChatPanel = ({
       const response = await resolveSession({
         chatbotSlug,
         sessionId,
-        payload: { resolution_note: resolutionNote.trim() },
+        payload: {
+          note: resolutionNote.trim(),
+          resolution_type: "resolved",
+        },
       }).unwrap();
 
       setResolveDialogOpen(false);
