@@ -155,7 +155,7 @@ function SupportStatus({ conversation }) {
     statuses.push({
       id: "transfer",
       label: transferred_to,
-      tooltip: `This conversation has been transferred to ${transferred_to}.`,
+      tooltip: `Transfer requested to ${transferred_to}.`,
       icon: <ArrowRightLeft className="size-2.5 shrink-0" />,
       className: "text-purple-600",
     });
@@ -165,7 +165,7 @@ function SupportStatus({ conversation }) {
     statuses.push({
       id: "assigned",
       label: assigned_to,
-      tooltip: `This conversation is assigned to ${assigned_to}.`,
+      tooltip: `${assigned_to} has taken over`,
       icon: <UserRound className="size-2.5 shrink-0" />,
       className: "text-green-600",
     });

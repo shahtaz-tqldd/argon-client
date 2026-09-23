@@ -8,6 +8,7 @@ import {
   useCancelSessionTransferMutation,
   useDeleteChatSessionMutation,
   useDeclineSessionTransferMutation,
+  useForceReturnToAIMutation,
   useSessionTransferRequestQuery,
   useReleaseSessionMutation,
   useRequestSessionTransferMutation,
@@ -67,6 +68,8 @@ const ChatSessionPage = () => {
     );
   const [takeOverSession, takeoverState] = useTakeOverSessionMutation();
   const [releaseSession, releaseState] = useReleaseSessionMutation();
+  const [forceReturnToAI, forceReturnToAIState] =
+    useForceReturnToAIMutation();
   const [requestSessionTransfer, transferState] =
     useRequestSessionTransferMutation();
   const [isSendingMessage, setIsSendingMessage] = useState(false);
@@ -106,6 +109,7 @@ const ChatSessionPage = () => {
   const isOwnershipUpdating =
     takeoverState.isLoading ||
     releaseState.isLoading ||
+    forceReturnToAIState.isLoading ||
     transferState.isLoading;
   const sessionTransferStatus = sessionTransferRequest?.data;
   const pendingTransfer =
@@ -226,6 +230,26 @@ const ChatSessionPage = () => {
     }
   };
 
+  const handleForceReturnToAI = async (conversation, note) => {
+    try {
+      const response = await forceReturnToAI({
+        chatbotSlug,
+        sessionId: conversation.id,
+        payload: { note },
+      }).unwrap();
+      toast.success(response?.message || "Conversation returned to AI.");
+      return true;
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Unable to force return this conversation to AI.",
+        ),
+      );
+      return false;
+    }
+  };
+
   const handleSendMessage = async (content) => {
     if (!sessionId) return false;
 
@@ -319,6 +343,7 @@ const ChatSessionPage = () => {
           }
           onCancelTransfer={handleCancelTransfer}
           onForceTakeover={handleForcedTakeover}
+          onForceReturnToAI={handleForceReturnToAI}
           onSend={handleSendMessage}
           isSending={isSendingMessage}
           onDelete={handleDeleteChat}

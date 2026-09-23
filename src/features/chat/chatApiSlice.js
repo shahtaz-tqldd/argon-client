@@ -121,6 +121,23 @@ export const chatApiSlice = apiSlice.injectEndpoints({
       ],
     }),
 
+    forceReturnToAI: builder.mutation({
+      query: ({ chatbotSlug, sessionId, payload }) => ({
+        url: "/chat/takeovers/force-return-to-ai/",
+        method: "POST",
+        params: {
+          chatbot_slug: chatbotSlug,
+          session_id: sessionId,
+        },
+        body: payload,
+      }),
+      invalidatesTags: (_result, _error, { chatbotSlug, sessionId }) => [
+        { type: "chat-session-details", id: sessionId },
+        { type: "chat-sessions", id: chatbotSlug },
+        { type: "chat-session-transfers", id: chatbotSlug },
+      ],
+    }),
+
     releaseSession: builder.mutation({
       query: ({ chatbotSlug, sessionId }) => ({
         url: "/chat/takeovers/release/",
@@ -279,6 +296,7 @@ export const {
   // takeovers
   useTakeOverSessionMutation,
   useReleaseSessionMutation,
+  useForceReturnToAIMutation,
   useResolveSessionMutation,
 
   // transfer

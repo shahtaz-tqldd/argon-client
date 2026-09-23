@@ -10,7 +10,7 @@ const avatarTones = [
 
 function displayName(session) {
   return (
-    session?.user_data?.name?.trim() ||
+    session?.user_metadata?.name?.trim() ||
     session?.lead?.name?.trim() ||
     session?.visitor_name?.trim() ||
     "Unknown visitor"
@@ -71,15 +71,15 @@ export function buildConversation(summary, details) {
       session.is_recently_active || session.is_online || session.online,
     ),
     lastSeen: formatDate(session.last_activity_at || session.updated_at),
-    email: session.user_data?.email || "Not collected",
-    phone: session.user_data?.phone || "Not collected",
+    email: session.user_metadata?.email || "Not collected",
+    phone: session.user_metadata?.phone || "Not collected",
     location:
-      session.user_data?.detected_address ||
-      session.user_data?.location ||
+      session.user_metadata?.detected_address ||
+      session.user_metadata?.location ||
       [
         session.detected_city,
-        session.user_data?.detected_country ||
-          session.user_data?.detected_country_code ||
+        session.user_metadata?.detected_country ||
+          session.user_metadata?.detected_country_code ||
           session.detected_country ||
           session.detected_country_code,
       ]
@@ -87,9 +87,6 @@ export function buildConversation(summary, details) {
         .join(", ") ||
       "Not available",
     firstSeen: formatDate(session.created_at),
-    currentPage:
-      session.metadata?.page_url ||
-      session.user_data?.page_url ||
-      "Not available",
+    currentPage: session.metadata?.page_url || "Not available",
   };
 }

@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Ban, MoreHorizontal, Trash2, Download } from "lucide-react";
+import { Ban, Download, MoreHorizontal, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const SessionDropdown = ({ setDeleteDialogOpen, isDeleting, onDelete }) => {
+const SessionDropdown = ({
+  setDeleteDialogOpen,
+  setForceReturnDialogOpen,
+  showForceReturnToAI = false,
+  canForceReturnToAI = false,
+  isOwnershipUpdating = false,
+  isDeleting,
+  onDelete,
+}) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -24,6 +32,15 @@ const SessionDropdown = ({ setDeleteDialogOpen, isDeleting, onDelete }) => {
           <Download />
           Download transcript
         </DropdownMenuItem>
+        {showForceReturnToAI && (
+          <DropdownMenuItem
+            disabled={!canForceReturnToAI || isOwnershipUpdating}
+            onSelect={() => setForceReturnDialogOpen(true)}
+          >
+            <Sparkles />
+            Force return to AI
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive">
           <Ban />

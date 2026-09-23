@@ -83,15 +83,18 @@ const ChatPanel = ({
   onDeclineTransfer,
   onCancelTransfer,
   onForceTakeover,
+  onForceReturnToAI,
   isSending = false,
   isDeleting = false,
 }) => {
   const [draft, setDraft] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [forceTakeoverDialogOpen, setForceTakeoverDialogOpen] = useState(false);
+  const [forceReturnDialogOpen, setForceReturnDialogOpen] = useState(false);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [resolutionNote, setResolutionNote] = useState("");
   const [takeoverReason, setTakeoverReason] = useState("");
+  const [forceReturnNote, setForceReturnNote] = useState("");
   const sessionId = conversationSummary.id;
   const sessionQuery = useChatSessionDetailQuery(
     { chatbotSlug, sessionId },
@@ -128,6 +131,10 @@ const ChatPanel = ({
   const canTransferConversation = !assignedAgentId || isOwnedByCurrentAgent;
   const canTakeOver = !assignedAgentId && conversation.status !== "resolved";
   const canRelease = isOwnedByCurrentAgent;
+  const isOwnedByOtherAgent =
+    Boolean(assignedAgentId) &&
+    Boolean(currentAgentId) &&
+    String(assignedAgentId) !== String(currentAgentId);
 
   useEffect(() => subscribeDashboardSession(sessionId), [sessionId]);
 
@@ -177,6 +184,17 @@ const ChatPanel = ({
     if (succeeded !== false) {
       setForceTakeoverDialogOpen(false);
       setTakeoverReason("");
+    }
+  };
+
+  const handleForceReturnToAI = async () => {
+    const note = forceReturnNote.trim();
+    if (!note || !onForceReturnToAI || isOwnershipUpdating) return;
+
+    const succeeded = await onForceReturnToAI(conversation, note);
+    if (succeeded !== false) {
+      setForceReturnDialogOpen(false);
+      setForceReturnNote("");
     }
   };
 
@@ -267,7 +285,7 @@ const ChatPanel = ({
                 <h2 className="truncate text-sm font-bold">
                   {conversation.name}
                 </h2>
-                {conversation.status === "attention" && (
+                {conversation.status === "requires_attention" && (
                   <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
                     Needs attention
                   </span>
@@ -441,6 +459,10 @@ const ChatPanel = ({
 
             <SessionDropdown
               setDeleteDialogOpen={setDeleteDialogOpen}
+              setForceReturnDialogOpen={setForceReturnDialogOpen}
+              showForceReturnToAI={isOwnedByOtherAgent}
+              canForceReturnToAI={Boolean(onForceReturnToAI)}
+              isOwnershipUpdating={isOwnershipUpdating}
               onDelete={onDelete}
               isDeleting={isDeleting}
             />
@@ -660,6 +682,35 @@ const ChatPanel = ({
           />
           <p className="text-right text-xs text-muted-foreground">
             {resolutionNote.length}/512
+          </p>
+        </div>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={forceReturnDialogOpen}
+        setOpen={(open) => {
+          setForceReturnDialogOpen(open);
+          if (!open && !isOwnershipUpdating) setForceReturnNote("");
+        }}
+        title="Force return to AI?"
+        description="Add a note explaining why this conversation should be returned to AI."
+        confirmText="Force return to AI"
+        confirmVariant="destructive"
+        onConfirm={handleForceReturnToAI}
+        isLoading={isOwnershipUpdating}
+        confirmDisabled={!forceReturnNote.trim()}
+      >
+        <div className="space-y-2">
+          <Textarea
+            value={forceReturnNote}
+            onChange={(event) => setForceReturnNote(event.target.value)}
+            maxLength={512}
+            rows={4}
+            placeholder="Note for returning this conversation to AI"
+            aria-label="Force return note"
+            disabled={isOwnershipUpdating}
+          />
+          <p className="text-right text-xs text-muted-foreground">
+            {forceReturnNote.length}/512
           </p>
         </div>
       </ConfirmDialog>
