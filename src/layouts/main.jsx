@@ -18,7 +18,6 @@ const DashboardLayout = () => {
   const scrollContainerRef = useRef(null);
   const hiddenSidebarRoutes = ["/", "/onboarding", "/profile"];
   const isHidden = hiddenSidebarRoutes.includes(pathname);
-  const isInbox = pathname.includes("/chat-session");
   const notifications = toArray(notificationResponse?.data);
   const unreadCount =
     Number(notificationResponse?.meta?.unread_count) ||
@@ -47,7 +46,7 @@ const DashboardLayout = () => {
           ref={scrollContainerRef}
           className="custom-scrollbar relative h-full min-w-0 overflow-x-hidden rounded-2xl bg-background p-8"
         >
-          {!isInbox && <NavHeader />}
+          <NavHeader />
           <Outlet />
         </div>
       </main>

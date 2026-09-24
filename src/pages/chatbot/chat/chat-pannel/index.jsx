@@ -458,6 +458,8 @@ const ChatPanel = ({
             </Button>
 
             <SessionDropdown
+              chatbotSlug={chatbotSlug}
+              sessionId={sessionId}
               setDeleteDialogOpen={setDeleteDialogOpen}
               setForceReturnDialogOpen={setForceReturnDialogOpen}
               showForceReturnToAI={isOwnedByOtherAgent}

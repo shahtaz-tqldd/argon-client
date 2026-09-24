@@ -12,7 +12,6 @@ import {
   Pencil,
   RefreshCw,
   Trash2,
-  TriangleAlert,
   UserRoundPlus,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -23,12 +22,12 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Card, { SectionCard } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { SectionTitle } from "@/components/ui/section";
+
 import { LANGUAGES } from "@/constants/language";
 import { useDeleteChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { getCloudinaryPreviewUrl } from "@/lib/image";
-import { cn, formatStatus, getInitials } from "@/lib/utils";
+import { cn, formatStatus } from "@/lib/utils";
 
 import AiBehaviorItem from "./AiBehaviorItem";
 import { ToggleControl } from "../components/shared";
@@ -365,18 +364,24 @@ const CoreDetailsTab = ({
             }
           >
             <div className="flex flex-col gap-5 sm:flex-row">
-              <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-2xl font-bold text-primary ring-1 ring-primary/10">
-                {chatbot.logo ? (
+              {chatbot.logo ? (
+                <span className="size-14 center overflow-hidden rounded-full">
                   <img
                     src={getCloudinaryPreviewUrl(chatbot.logo, 240)}
                     alt={`${chatbot.chatbot_name} logo`}
-                    className="size-full object-cover"
+                    className="size-full object-contain"
                   />
-                ) : (
-                  getInitials(chatbot.chatbot_name)
-                )}
-              </span>
-              <div className="w-full">
+                </span>
+              ) : (
+                <span className="size-14 center overflow-hidden rounded-full bg-primary">
+                  <img
+                    src="/logo-dark.png"
+                    alt={`${chatbot.chatbot_name} logo`}
+                    className="size-full object-cover p-2"
+                  />
+                </span>
+              )}
+              <div className="w-full flex-1">
                 <div className="flex justify-between">
                   <div>
                     <div className="flx gap-3">

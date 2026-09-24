@@ -11,7 +11,7 @@ export const chatApiSlice = apiSlice.injectEndpoints({
         status,
         is_recently_active,
         requires_attention,
-        is_resolved,
+        my_session,
         channel,
         assignedTo,
         search,
@@ -28,7 +28,7 @@ export const chatApiSlice = apiSlice.injectEndpoints({
           ...(search && { search }),
           ...(is_recently_active && { is_recently_active }),
           ...(requires_attention && { requires_attention }),
-          ...(is_resolved && { is_resolved }),
+          ...(my_session && { my_session }),
         },
       }),
       providesTags: (_result, _error, { chatbotSlug }) => [
@@ -84,6 +84,37 @@ export const chatApiSlice = apiSlice.injectEndpoints({
               { type: "chat-session-details", id: sessionId },
               { type: "chat-sessions", id: chatbotSlug },
             ],
+    }),
+
+    blockVisitor: builder.mutation({
+      query: ({ chatbotSlug, sessionId }) => ({
+        url: "/chat/sessions/block-visitor/",
+        method: "POST",
+        params: {
+          chatbot_slug: chatbotSlug,
+          session_id: sessionId,
+        },
+      }),
+      invalidatesTags: (_result, error, { chatbotSlug, sessionId }) =>
+        error
+          ? []
+          : [
+              { type: "chat-session-details", id: sessionId },
+              { type: "chat-sessions", id: chatbotSlug },
+            ],
+    }),
+
+    downloadTranscript: builder.query({
+      query: ({ chatbotSlug, sessionId, format }) => ({
+        url: "/chat/sessions/transcript/",
+        method: "GET",
+        params: {
+          chatbot_slug: chatbotSlug,
+          session_id: sessionId,
+          format: format,
+        },
+        responseHandler: (response) => response.blob(),
+      }),
     }),
 
     // MESSAGES
@@ -288,6 +319,9 @@ export const {
   useChatSessionDetailQuery,
   useChatSessionMarkReadMutation,
   useDeleteChatSessionMutation,
+  useBlockVisitorMutation,
+  useDownloadTranscriptQuery,
+  useLazyDownloadTranscriptQuery,
 
   // messages
   useChatMessageListQuery,

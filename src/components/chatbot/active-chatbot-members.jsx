@@ -3,7 +3,7 @@ import { AlertCircle, LoaderCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import useActiveChatbotMembers from "@/hooks/useActiveChatbotMembers";
-import { getInitials } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 
 const MemberAvatar = ({ member }) => (
   <span className="relative block size-10 shrink-0">
@@ -21,7 +21,7 @@ const MemberAvatar = ({ member }) => (
     <span
       aria-label={member.isActive ? "Active" : "Inactive"}
       className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-[3px] border-card ${
-        member.isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
+        member.isActive ? "bg-emerald-500" : "bg-gray-400"
       }`}
     />
   </span>
@@ -73,7 +73,7 @@ const ActiveChatbotMembers = ({ chatbotId, chatbotSlug }) => {
           <div className="flex min-h-28 flex-col items-center justify-center px-5 py-4 text-center">
             <AlertCircle className="size-5 text-destructive/70" />
             <p className="mt-2 text-xs text-muted-foreground">
-              Couldn’t load chatbot members
+              Couldn't load chatbot members
             </p>
             <Button
               className="mt-2"
@@ -89,7 +89,10 @@ const ActiveChatbotMembers = ({ chatbotId, chatbotSlug }) => {
             {members.map((member) => (
               <li
                 key={member.id}
-                className="flex items-center gap-3 px-5 py-3.5"
+                className={cn(
+                  "flex items-center gap-3 px-5 py-3.5",
+                  !member.isActive ? "opacity-60" : "",
+                )}
               >
                 <MemberAvatar member={member} />
                 <div className="min-w-0 flex-1">

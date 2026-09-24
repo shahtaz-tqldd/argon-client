@@ -54,9 +54,7 @@ const markdownComponents = {
     <h1 className="mb-2 mt-3 text-base font-bold first:mt-0">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mb-2 mt-3 text-[15px] font-bold first:mt-0">
-      {children}
-    </h2>
+    <h2 className="mb-2 mt-3 text-[15px] font-bold first:mt-0">{children}</h2>
   ),
   h3: ({ children }) => (
     <h3 className="mb-1.5 mt-2.5 text-sm font-semibold first:mt-0">
@@ -69,9 +67,7 @@ const markdownComponents = {
       {children}
     </ol>
   ),
-  p: ({ children }) => (
-    <p className="my-2 first:mt-0 last:mb-0">{children}</p>
-  ),
+  p: ({ children }) => <p className="my-2 first:mt-0 last:mb-0">{children}</p>,
   pre: ({ children }) => (
     <pre className="my-2 overflow-x-auto rounded-lg bg-black/15 p-3 text-xs dark:bg-black/10">
       {children}
@@ -112,7 +108,10 @@ function normalizeAiMarkdown(content) {
 function AiMessageContent({ content }) {
   return (
     <div className="break-words">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={markdownComponents}
+      >
         {normalizeAiMarkdown(content)}
       </ReactMarkdown>
     </div>
@@ -278,11 +277,11 @@ function MessageAvatar({ src, name, alt }) {
 
 function ChatbotAvatar({ src, alt }) {
   return src ? (
-    <span className="mt-5 size-8 center shrink-0 overflow-hidden rounded-full bg-primary/10">
-      <img src={src} alt={alt} className="size-full object-contain p-1" />
+    <span className="mt-5 size-8 center overflow-hidden rounded-full">
+      <img src={src} alt={alt} className="size-full object-contain" />
     </span>
   ) : (
-    <span className="mt-5 size-8 center shrink-0 overflow-hidden rounded-full bg-primary">
+    <span className="mt-5 size-8 center overflow-hidden rounded-full bg-primary">
       <img
         src="/logo-dark.png"
         alt={alt}
@@ -667,11 +666,11 @@ const MessageDisplay = ({
         {conversation.owner === "AI" && conversation.status !== "resolved" && (
           <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
             {chatbotLogo ? (
-              <span className="flex size-7 items-center justify-center rounded-full bg-primary/10">
+              <span className="size-7 center rounded-full">
                 <img
                   src={chatbotLogo}
                   alt={`${chatbotName} logo`}
-                  className="p-1 size-full rounded-full object-cover"
+                  className="size-full object-contain"
                 />
               </span>
             ) : (

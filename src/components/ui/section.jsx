@@ -4,7 +4,7 @@ import { Link, Mail, ShieldCheck } from "lucide-react";
 
 const SectionTitle = ({
   title,
-  details,
+  details = null,
   icon: Icon = null,
   lg = false,
   tag = null,
@@ -35,14 +35,16 @@ const SectionTitle = ({
             </span>
           )}
         </h2>
-        <p
-          className={cn(
-            "mt-1 text-muted-foreground",
-            lg ? "text-md" : "text-sm",
-          )}
-        >
-          {details}
-        </p>
+        {details && (
+          <p
+            className={cn(
+              "mt-1 text-muted-foreground",
+              lg ? "text-md" : "text-sm",
+            )}
+          >
+            {details}
+          </p>
+        )}
       </div>
     </div>
   );

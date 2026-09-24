@@ -20,13 +20,11 @@ import { cn, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
   ArrowRightLeft,
-  Check,
   CheckCircle,
   ChevronDown,
   Globe,
   Globe2,
   LoaderCircle,
-  MoreHorizontal,
   Search,
   Sparkle,
   UserRound,
@@ -38,7 +36,7 @@ const channelMeta = {
     icon: <Globe size={12} />,
     className: "text-slate-500",
   },
-  facebook: {
+  messenger: {
     label: "Messenger",
     icon: <img src="/ms.webp" className="size-3" />,
     className: "text-blue-600 dark:text-blue-400",
@@ -48,7 +46,7 @@ const channelMeta = {
     icon: <img src="/insta.webp" className="size-3" />,
     className: "text-fuchsia-600 dark:text-fuchsia-400",
   },
-  whatsapp: {
+  whats_app: {
     label: "WhatsApp",
     icon: <img src="/wp.webp" className="size-3" />,
     className: "text-emerald-600 dark:text-emerald-400",
@@ -59,7 +57,7 @@ const filters = [
   { id: "all", label: "All" },
   { id: "active", label: "Active" },
   { id: "attention", label: "Needs attention" },
-  { id: "resolved", label: "Resolved" },
+  { id: "my_session", label: "My Session" },
 ];
 
 const avatarTones = [
@@ -242,7 +240,7 @@ const ConversationList = ({
         search: query.trim() || undefined,
         is_recently_active: filter === "active" ? true : undefined,
         requires_attention: filter === "attention" ? true : undefined,
-        is_resolved: filter === "resolved" ? true : undefined,
+        my_session: filter === "my_session" ? true : undefined,
       },
       { skip: !chatbotSlug },
     );
@@ -268,9 +266,6 @@ const ConversationList = ({
             details={chatbotName}
             tag={unreadCount > 0 && (unreadCount > 99 ? "99+" : unreadCount)}
           />
-          <Button size="icon-sm" variant="ghost" aria-label="Inbox options">
-            <MoreHorizontal />
-          </Button>
         </div>
 
         <label className="relative block">

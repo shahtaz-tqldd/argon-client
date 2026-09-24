@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Bell,
-  Bot,
+  Building2,
   ChevronRight,
   CircleDot,
   LogOut,
@@ -23,23 +23,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollContainer } from "@/components/ui/section";
 import { userLoggedOut } from "@/features/auth/authSlice";
-import { useUpdateChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import {
   useMarkAllNotificationsReadMutation,
   useMarkNotificationReadMutation,
   useNotificationListQuery,
 } from "@/features/notification/notificationApiSlice";
 import useAuth from "@/hooks/useAuth";
-import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { duration } from "@/lib/date-time";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { getCloudinaryPreviewUrl } from "@/lib/image";
 import { cn, getInitials, toArray } from "@/lib/utils";
+import MenuToggle from "../menu-toggle";
 
 const AVAILABILITY_STORAGE_KEY = "argon-user-availability";
-const CHATBOT_ENABLED_STORAGE_KEY = "argon-chatbot-enabled";
-const AI_REPLY_STORAGE_KEY = "argon-ai-reply-enabled";
 
 const getStoredBoolean = (key, fallback = true) => {
   try {
@@ -58,51 +56,22 @@ const persistBoolean = (key, value) => {
   }
 };
 
-const MenuToggle = ({
-  checked,
-  disabled = false,
-  icon,
-  label,
-  description,
-  onChange,
+const Avatar = ({
+  avatar,
+  fullName,
+  isAvailable,
+  borderClassName,
+  size = 10,
 }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={checked}
-    disabled={disabled}
-    onClick={() => onChange(!checked)}
-    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left outline-none transition-colors hover:bg-accent focus-visible:bg-accent disabled:pointer-events-none disabled:opacity-60"
+  <span
+    className={cn("relative block shrink-0 overflow-visible", `size-${size}`)}
   >
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-      {icon}
-    </span>
-    <span className="min-w-0 flex-1">
-      <span className="block text-sm font-medium text-foreground">{label}</span>
-      <span className="mt-0.5 block text-xs text-muted-foreground">
-        {description}
-      </span>
-    </span>
     <span
-      aria-hidden="true"
       className={cn(
-        "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-        checked ? "bg-primary" : "bg-muted-foreground/25",
+        "flex items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-semibold text-primary",
+        `size-${size}`,
       )}
     >
-      <span
-        className={cn(
-          "absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-all",
-          checked ? "left-[22px]" : "left-0.5",
-        )}
-      />
-    </span>
-  </button>
-);
-
-const Avatar = ({ avatar, fullName, isAvailable, borderClassName }) => (
-  <span className="relative block size-10 shrink-0 overflow-visible">
-    <span className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-semibold text-primary">
       {avatar ? (
         <img
           src={getCloudinaryPreviewUrl(avatar, 120)}
@@ -128,11 +97,8 @@ const NavHeader = ({ className }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { chatbotSlug, currentChatbot: activeChatbot } = useCurrentChatbot();
   const { resolvedTheme, setTheme } = useTheme();
 
-  const [updateChatbot, { isLoading: isUpdatingChatbot }] =
-    useUpdateChatbotMutation();
   const {
     data: notificationResponse,
     isLoading: notificationsLoading,
@@ -144,27 +110,12 @@ const NavHeader = ({ className }) => {
   const [isAvailable, setIsAvailable] = useState(() =>
     getStoredBoolean(AVAILABILITY_STORAGE_KEY),
   );
-  const [storedChatbotEnabled, setStoredChatbotEnabled] = useState(() =>
-    getStoredBoolean(CHATBOT_ENABLED_STORAGE_KEY),
-  );
-  const [chatbotEnabledOverrides, setChatbotEnabledOverrides] = useState({});
-  const [isAiReplyEnabled, setIsAiReplyEnabled] = useState(() =>
-    getStoredBoolean(AI_REPLY_STORAGE_KEY),
-  );
 
   const isDark = resolvedTheme === "dark";
   const fullName = user?.name || "Shahtaz Ahmed";
   const email = user?.email || "shahtaz@argon.ai";
   const avatar = user?.avatar_url || "";
 
-  const chatbotStateKey = chatbotSlug || "default";
-  const serverChatbotEnabled = activeChatbot
-    ? activeChatbot.status === "active"
-    : storedChatbotEnabled;
-  const isChatbotEnabled =
-    chatbotEnabledOverrides[chatbotStateKey] ?? serverChatbotEnabled;
-  const chatbotName = activeChatbot?.chatbot_name || "Atlas Support";
-  const chatbotLogo = activeChatbot?.logo || "";
   const notifications = toArray(notificationResponse?.data);
   const unreadCount =
     Number(notificationResponse?.meta?.unread_count) ||
@@ -173,34 +124,6 @@ const NavHeader = ({ className }) => {
   const handlePreferenceChange = (setter, storageKey) => (nextValue) => {
     setter(nextValue);
     persistBoolean(storageKey, nextValue);
-  };
-
-  const handleChatbotEnabledChange = async (nextValue) => {
-    setStoredChatbotEnabled(nextValue);
-    setChatbotEnabledOverrides((current) => ({
-      ...current,
-      [chatbotStateKey]: nextValue,
-    }));
-    persistBoolean(CHATBOT_ENABLED_STORAGE_KEY, nextValue);
-
-    if (!activeChatbot || !chatbotSlug) return;
-
-    try {
-      await updateChatbot({
-        chatbotSlug,
-        payload: { status: nextValue ? "active" : "disabled" },
-      }).unwrap();
-      toast.success(nextValue ? "Chatbot enabled" : "Chatbot disabled");
-    } catch (error) {
-      const previousValue = !nextValue;
-      setStoredChatbotEnabled(previousValue);
-      setChatbotEnabledOverrides((current) => ({
-        ...current,
-        [chatbotStateKey]: previousValue,
-      }));
-      persistBoolean(CHATBOT_ENABLED_STORAGE_KEY, previousValue);
-      toast.error(getApiErrorMessage(error, "Unable to update the chatbot."));
-    }
   };
 
   const handleNotificationRead = async (notification) => {
@@ -232,137 +155,17 @@ const NavHeader = ({ className }) => {
 
   return (
     <aside className={cn("fixed right-8 top-7 z-50", className)}>
-      <div className="p-1 flex items-center overflow-hidden rounded-full border border-primary/25 bg-primary/10 shadow-sm backdrop-blur-xl">
-        {chatbotSlug ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Manage ${chatbotName}`}
-                className="group flex min-w-0 items-center gap-2.5 rounded-full p-1 pr-2 text-left outline-none transition hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
-              >
-                <span className="flex size-9 shrink-0 center overflow-hidden rounded-full bg-primary/10 text-primary">
-                  {chatbotLogo ? (
-                    <img
-                      src={getCloudinaryPreviewUrl(chatbotLogo, 120)}
-                      alt={`${chatbotName} logo`}
-                      className="size-full object-cover"
-                    />
-                  ) : (
-                    <div className="text-sm font-bold">
-                      {getInitials(chatbotName)}
-                    </div>
-                  )}
-                </span>
-                <span className="min-w-0 pr-1">
-                  <span className="block max-w-36 truncate text-xs font-bold text-foreground">
-                    {chatbotName}
-                  </span>
-                  <span
-                    className={cn(
-                      "mt-0.5 flex items-center gap-1.5 text-[10px] font-medium",
-                      isChatbotEnabled
-                        ? "text-emerald-600"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "size-1.5 rounded-full",
-                        isChatbotEnabled
-                          ? "bg-emerald-500"
-                          : "bg-muted-foreground/60",
-                      )}
-                    />
-                    {isChatbotEnabled ? "Active" : "Inactive"}
-                  </span>
-                </span>
-              </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent
-              align="end"
-              sideOffset={10}
-              className="w-[310px] rounded-2xl border-border/80 p-2 shadow-xl"
-            >
-              <div className="flex items-center gap-3 px-3 py-3">
-                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
-                  {chatbotLogo ? (
-                    <img
-                      src={getCloudinaryPreviewUrl(chatbotLogo, 120)}
-                      alt=""
-                      className="size-full object-cover"
-                    />
-                  ) : (
-                    <div className="text-sm font-bold">
-                      {getInitials(chatbotName)}
-                    </div>
-                  )}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">
-                    {chatbotName}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Chatbot controls
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                    isChatbotEnabled
-                      ? "bg-emerald-500/10 text-emerald-600"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {isChatbotEnabled ? "Active" : "Inactive"}
-                </span>
-              </div>
-
-              <DropdownMenuSeparator />
-
-              <div className="space-y-0.5 py-1">
-                <MenuToggle
-                  checked={isChatbotEnabled}
-                  disabled={isUpdatingChatbot}
-                  icon={<Bot className="size-4" />}
-                  label="Enable chatbot"
-                  description={
-                    isChatbotEnabled
-                      ? "Available to receive messages"
-                      : "Hidden from your connected channels"
-                  }
-                  onChange={handleChatbotEnabledChange}
-                />
-                <MenuToggle
-                  checked={isAiReplyEnabled}
-                  icon={<Sparkles className="size-4" />}
-                  label="AI replies"
-                  description={
-                    isAiReplyEnabled
-                      ? "AI can respond automatically"
-                      : "Only teammates can send replies"
-                  }
-                  onChange={handlePreferenceChange(
-                    setIsAiReplyEnabled,
-                    AI_REPLY_STORAGE_KEY,
-                  )}
-                />
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
-
+      <div className="flex items-center gap-0.5 rounded-full border border-primary/20 bg-primary/10 p-1 backdrop-blur-xl">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
-              className="relative center size-12 rounded-full text-muted-foreground outline-none transition hover:bg-primary/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
+              className="relative center size-10 rounded-full text-muted-foreground outline-none transition hover:bg-primary/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
             >
               <Bell className="size-5" />
               {unreadCount > 0 && (
-                <span className="absolute right-1.5 top-1.5 flex min-w-4.5 items-center justify-center rounded-full border-2 border-background bg-red-500 px-1 text-[9px] font-bold leading-3.5 text-white">
+                <span className="absolute right-0 top-0 center size-5 rounded-full border-2 border-background bg-red-500 px-1 text-[10px] font-bold leading-3.5 text-white">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -382,7 +185,7 @@ const NavHeader = ({ className }) => {
                     ? "Checking for updates…"
                     : unreadCount
                       ? `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`
-                      : "You’re all caught up"}
+                      : "You're all caught up"}
                 </p>
               </div>
               {unreadCount > 0 && (
@@ -399,89 +202,94 @@ const NavHeader = ({ className }) => {
 
             <DropdownMenuSeparator />
 
-            <div className="py-1">
-              {notificationsLoading ? (
-                <div
-                  className="space-y-2 px-2 py-1"
-                  aria-label="Loading notifications"
-                >
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="h-16 animate-pulse rounded-xl bg-muted/70"
-                    />
-                  ))}
-                </div>
-              ) : notificationsError ? (
-                <div className="px-4 py-8 text-center">
-                  <Bell className="mx-auto size-5 text-muted-foreground" />
-                  <p className="mt-2 text-xs font-semibold">
-                    Notifications unavailable
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    Please try again in a moment.
-                  </p>
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="px-4 py-8 text-center">
-                  <Bell className="mx-auto size-5 text-muted-foreground" />
-                  <p className="mt-2 text-xs font-semibold">
-                    You’re all caught up
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    New notifications will appear here.
-                  </p>
-                </div>
-              ) : (
-                notifications.map((notification) => {
-                  const isAiNotification =
-                    notification.notification_type === "ai_notification";
-                  const isMessageNotification =
-                    notification.notification_type === "new_message";
-                  const NotificationIcon = isAiNotification
-                    ? Sparkles
-                    : isMessageNotification
-                      ? MessageSquare
-                      : Bell;
-                  const iconClassName = isAiNotification
-                    ? "bg-violet-500/10 text-violet-600"
-                    : isMessageNotification
-                      ? "bg-blue-500/10 text-blue-600"
-                      : "bg-emerald-500/10 text-emerald-600";
+            <ScrollContainer
+              className="max-h-[min(360px,calc(100vh-180px))]"
+              allowScrollChaining
+            >
+              <div className="py-1 pr-1">
+                {notificationsLoading ? (
+                  <div
+                    className="space-y-2 px-2 py-1"
+                    aria-label="Loading notifications"
+                  >
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-16 animate-pulse rounded-xl bg-muted/70"
+                      />
+                    ))}
+                  </div>
+                ) : notificationsError ? (
+                  <div className="px-4 py-8 text-center">
+                    <Bell className="mx-auto size-5 text-muted-foreground" />
+                    <p className="mt-2 text-xs font-semibold">
+                      Notifications unavailable
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Please try again in a moment.
+                    </p>
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <Bell className="mx-auto size-5 text-muted-foreground" />
+                    <p className="mt-2 text-xs font-semibold">
+                      You’re all caught up
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      New notifications will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  notifications.map((notification) => {
+                    const isAiNotification =
+                      notification.notification_type === "ai_notification";
+                    const isMessageNotification =
+                      notification.notification_type === "new_message";
+                    const NotificationIcon = isAiNotification
+                      ? Sparkles
+                      : isMessageNotification
+                        ? MessageSquare
+                        : Bell;
+                    const iconClassName = isAiNotification
+                      ? "bg-violet-500/10 text-violet-600"
+                      : isMessageNotification
+                        ? "bg-blue-500/10 text-blue-600"
+                        : "bg-emerald-500/10 text-emerald-600";
 
-                  return (
-                    <DropdownMenuItem
-                      key={notification.id}
-                      onSelect={() => handleNotificationRead(notification)}
-                      className="relative items-start gap-3 rounded-xl px-3 py-3"
-                    >
-                      <span
-                        className={cn(
-                          "flex size-9 shrink-0 items-center justify-center rounded-xl",
-                          iconClassName,
-                        )}
+                    return (
+                      <DropdownMenuItem
+                        key={notification.id}
+                        onSelect={() => handleNotificationRead(notification)}
+                        className="relative items-start gap-3 rounded-xl px-3 py-3"
                       >
-                        <NotificationIcon className="size-4" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-xs font-semibold text-foreground">
-                          {notification.title}
+                        <span
+                          className={cn(
+                            "flex size-9 shrink-0 items-center justify-center rounded-xl",
+                            iconClassName,
+                          )}
+                        >
+                          <NotificationIcon className="size-4" />
                         </span>
-                        <span className="mt-1 block text-[11px] leading-4 text-muted-foreground">
-                          {notification.message}
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-xs font-semibold text-foreground">
+                            {notification.title}
+                          </span>
+                          <span className="mt-1 block text-[11px] leading-4 text-muted-foreground">
+                            {notification.message}
+                          </span>
+                          <span className="mt-1.5 block text-[10px] text-muted-foreground/80">
+                            {duration(notification.created_at)}
+                          </span>
                         </span>
-                        <span className="mt-1.5 block text-[10px] text-muted-foreground/80">
-                          {duration(notification.created_at)}
-                        </span>
-                      </span>
-                      {!notification.is_read && (
-                        <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
-                      )}
-                    </DropdownMenuItem>
-                  );
-                })
-              )}
-            </div>
+                        {!notification.is_read && (
+                          <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollContainer>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -497,6 +305,7 @@ const NavHeader = ({ className }) => {
                 fullName={fullName}
                 isAvailable={isAvailable}
                 borderClassName="border-background"
+                size={8}
               />
             </button>
           </DropdownMenuTrigger>
@@ -557,6 +366,20 @@ const NavHeader = ({ className }) => {
               <Link to="/profile" className="cursor-pointer">
                 <UserRound />
                 View profile
+                <ChevronRight className="ml-auto" />
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5">
+              <Link to="/workspace" className="cursor-pointer">
+                <Building2 />
+                Workspaces
+                <ChevronRight className="ml-auto" />
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5">
+              <Link to="/" className="cursor-pointer">
+                <Sparkles />
+                Chatbots
                 <ChevronRight className="ml-auto" />
               </Link>
             </DropdownMenuItem>
