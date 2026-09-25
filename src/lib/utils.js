@@ -42,3 +42,11 @@ export const toSnakeCase = (value) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+
+export const getPaletteIndex = (value, palette) => {
+  const hash = String(value || "argon")
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+
+  return hash % palette.length;
+};

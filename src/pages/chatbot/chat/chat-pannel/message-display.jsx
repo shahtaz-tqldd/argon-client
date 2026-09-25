@@ -24,6 +24,7 @@ import {
 } from "@/features/chat/chatApiSlice";
 import { cn, getInitials } from "@/lib/utils";
 import { ScrollContainer } from "@/components/ui/section";
+import { ChatbotAvatar } from "@/components/ui/avatar";
 
 const MESSAGE_PAGE_SIZE = 50;
 const LOAD_MORE_THRESHOLD = 48;
@@ -275,22 +276,6 @@ function MessageAvatar({ src, name, alt }) {
   );
 }
 
-function ChatbotAvatar({ src, alt }) {
-  return src ? (
-    <span className="mt-5 size-8 center overflow-hidden rounded-full">
-      <img src={src} alt={alt} className="size-full object-contain" />
-    </span>
-  ) : (
-    <span className="mt-5 size-8 center overflow-hidden rounded-full bg-primary">
-      <img
-        src="/logo-dark.png"
-        alt={alt}
-        className="size-full object-cover p-1"
-      />
-    </span>
-  );
-}
-
 function MessageBubble({
   message,
   customer,
@@ -412,7 +397,7 @@ function MessageBubble({
       </div>
 
       {!isCustomer && isSequenceStart && isAi ? (
-        <ChatbotAvatar src={chatbotLogo} alt={`${chatbotName} logo`} />
+        <ChatbotAvatar src={chatbotLogo} className="mt-5" size="sm" />
       ) : !isCustomer && isSequenceStart && isAgent ? (
         <MessageAvatar
           src={senderAvatar}

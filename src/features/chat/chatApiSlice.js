@@ -13,6 +13,7 @@ export const chatApiSlice = apiSlice.injectEndpoints({
         requires_attention,
         my_session,
         channel,
+        assigned,
         assignedTo,
         search,
       }) => ({
@@ -24,6 +25,7 @@ export const chatApiSlice = apiSlice.injectEndpoints({
           page_size: pageSize,
           ...(status && { status }),
           ...(channel && { channel }),
+          ...(assigned && { assigned_to: assigned }),
           ...(assignedTo && { assigned_to: assignedTo }),
           ...(search && { search }),
           ...(is_recently_active && { is_recently_active }),

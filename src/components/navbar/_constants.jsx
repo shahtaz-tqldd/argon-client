@@ -49,7 +49,7 @@ export const getSidebarItems = (
       icon: <Settings2 size={18} />,
     },
     {
-      label: "Team",
+      label: "Team & Activity",
       link: `/chatbot/${chatbotSlug}/team`,
       icon: <Users2 size={18} />,
     },

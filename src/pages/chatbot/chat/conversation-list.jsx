@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useChatSessionListQuery } from "@/features/chat/chatApiSlice";
+import useActiveChatbotMembers from "@/hooks/useActiveChatbotMembers";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getCountryMeta } from "@/lib/countries";
 import { cn, getInitials } from "@/lib/utils";
@@ -25,10 +26,14 @@ import {
   Globe,
   Globe2,
   LoaderCircle,
+  RefreshCw,
   Search,
   Sparkle,
   UserRound,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 const channelMeta = {
   web_widget: {
@@ -231,13 +236,38 @@ const ConversationList = ({
   query,
   setQuery,
 }) => {
-  const { chatbotSlug, currentChatbot } = useCurrentChatbot();
+  const { chatbotId, chatbotSlug, currentChatbot } = useCurrentChatbot();
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [assigned, setAssigned] = useState("all");
+  const {
+    members,
+    isLoading: activeMemberLoading,
+    isFetching: activeMemberFetching,
+    isError: activeMemberError,
+    isPresenceReady,
+    refetch: refetchActiveMembers,
+  } = useActiveChatbotMembers({ chatbotId, chatbotSlug });
+
+  const assignableMembers = members.filter((member) => member.email);
+  const selectedMember = assignableMembers.find(
+    (member) => member.email === assigned,
+  );
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [query]);
+
   const { data, isLoading, isFetching, isError, refetch } =
     useChatSessionListQuery(
       {
         chatbotSlug,
         channel: channel !== "all" ? channel : undefined,
-        search: query.trim() || undefined,
+        assigned: assigned !== "all" ? assigned : undefined,
+        search: debouncedQuery.trim() || undefined,
         is_recently_active: filter === "active" ? true : undefined,
         requires_attention: filter === "attention" ? true : undefined,
         my_session: filter === "my_session" ? true : undefined,
@@ -302,34 +332,139 @@ const ConversationList = ({
           ))}
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="mt-2 flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            >
-              <span className="flex items-center gap-2">
-                <Globe2 className="size-3.5" />
-                {channel === "all"
-                  ? "All channels"
-                  : channelMeta[channel]?.label || channel}
-              </span>
-              <ChevronDown className="size-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuRadioGroup value={channel} onValueChange={setChannel}>
-              <DropdownMenuRadioItem value="all">
-                All channels
-              </DropdownMenuRadioItem>
-              {Object.entries(channelMeta).map(([value, meta]) => (
-                <DropdownMenuRadioItem key={value} value={value}>
-                  {meta.label}
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex min-w-0 items-center justify-between rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Globe2 className="size-3.5 shrink-0" />
+                  <span className="truncate">
+                    {channel === "all"
+                      ? "All channels"
+                      : channelMeta[channel]?.label || channel}
+                  </span>
+                </span>
+                <ChevronDown className="size-3.5 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuRadioGroup
+                value={channel}
+                onValueChange={setChannel}
+              >
+                <DropdownMenuRadioItem value="all">
+                  All channels
                 </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                {Object.entries(channelMeta).map(([value, meta]) => (
+                  <DropdownMenuRadioItem key={value} value={value}>
+                    {meta.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex min-w-0 items-center justify-between rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  {activeMemberFetching ? (
+                    <LoaderCircle className="size-3.5 shrink-0 animate-spin" />
+                  ) : (
+                    <UserRound className="size-3.5 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {selectedMember?.name || "All assignees"}
+                  </span>
+                </span>
+                <ChevronDown className="size-3.5 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              {activeMemberLoading ? (
+                <div
+                  className="space-y-2 p-2"
+                  aria-label="Loading team members"
+                >
+                  {[0, 1, 2].map((item) => (
+                    <div
+                      key={item}
+                      className="h-8 animate-pulse rounded-lg bg-muted"
+                    />
+                  ))}
+                </div>
+              ) : activeMemberError ? (
+                <div className="p-3 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Couldn’t load team members.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="mt-2"
+                    onClick={() => refetchActiveMembers()}
+                  >
+                    <RefreshCw /> Try again
+                  </Button>
+                </div>
+              ) : (
+                <DropdownMenuRadioGroup
+                  value={assigned}
+                  onValueChange={setAssigned}
+                >
+                  <DropdownMenuRadioItem value="all">
+                    All assignees
+                  </DropdownMenuRadioItem>
+                  {assignableMembers.map((member) => (
+                    <DropdownMenuRadioItem
+                      key={member.id || member.email}
+                      value={member.email}
+                      className="cursor-pointer"
+                    >
+                      <span className="relative flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">
+                        {member.avatar ? (
+                          <img
+                            src={member.avatar}
+                            alt=""
+                            className="size-full rounded-full object-cover"
+                          />
+                        ) : (
+                          getInitials(member.name)
+                        )}
+                        {isPresenceReady && (
+                          <span
+                            className={cn(
+                              "absolute -bottom-0.5 -right-0.5 size-2 rounded-full border border-popover",
+                              member.isActive
+                                ? "bg-emerald-500"
+                                : "bg-muted-foreground/40",
+                            )}
+                          />
+                        )}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-xs font-semibold">
+                          {member.name}
+                        </span>
+                      </span>
+                    </DropdownMenuRadioItem>
+                  ))}
+                  {!assignableMembers.length && (
+                    <p className="px-2 py-3 text-center text-xs text-muted-foreground">
+                      No active team members.
+                    </p>
+                  )}
+                </DropdownMenuRadioGroup>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto"> */}

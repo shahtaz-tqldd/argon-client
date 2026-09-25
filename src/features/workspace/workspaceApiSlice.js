@@ -2,6 +2,19 @@ import { apiSlice } from "../api/apiSlice";
 
 export const workspaceApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    workspaceList: builder.query({
+      query: ({ page = 1, pageSize = 20 }) => {
+        return {
+          url: `/workspaces/list/`,
+          method: "GET",
+          params: {
+            page,
+            page_size: pageSize,
+          },
+        };
+      },
+    }),
+
     getWorkspace: builder.query({
       query: () => {
         return {
@@ -51,6 +64,7 @@ export const workspaceApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
+  useWorkspaceListQuery,
   useGetWorkspaceQuery,
   useUpdateWorkspaceMutation,
 

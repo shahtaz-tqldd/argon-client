@@ -18,6 +18,9 @@ const WorkspaceInvitation = lazy(
 const WorkspacePage = lazy(() => import("@/pages/workspace"));
 const OnboardingPage = lazy(() => import("@/pages/onboarding"));
 
+// chatbots
+const ChatbotListPage = lazy(() => import("@/pages/chatbots"));
+
 // chatbot
 const ChatbotOverview = lazy(() => import("@/pages/chatbot/overview"));
 const ChatSessionPage = lazy(() => import("@/pages/chatbot/chat"));
@@ -54,11 +57,15 @@ export const routes = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: withSuspense(<WorkspacePage />),
+        element: withSuspense(<ChatbotListPage />),
       },
       {
         path: "/onboarding",
         element: withSuspense(<OnboardingPage />),
+      },
+      {
+        path: "/workspace/:workspaceSlug",
+        element: withSuspense(<WorkspacePage />),
       },
       {
         path: "/chatbot/:chatbotSlug",

@@ -98,6 +98,7 @@ const NavHeader = ({ className }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
+  const userWorkspaceSlug = user?.workspace_slug;
 
   const {
     data: notificationResponse,
@@ -112,8 +113,8 @@ const NavHeader = ({ className }) => {
   );
 
   const isDark = resolvedTheme === "dark";
-  const fullName = user?.name || "Shahtaz Ahmed";
-  const email = user?.email || "shahtaz@argon.ai";
+  const fullName = user?.name || "";
+  const email = user?.email || "";
   const avatar = user?.avatar_url || "";
 
   const notifications = toArray(notificationResponse?.data);
@@ -370,19 +371,24 @@ const NavHeader = ({ className }) => {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5">
-              <Link to="/workspace" className="cursor-pointer">
-                <Building2 />
-                Workspaces
-                <ChevronRight className="ml-auto" />
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5">
               <Link to="/" className="cursor-pointer">
                 <Sparkles />
-                Chatbots
+                My Chatbots
                 <ChevronRight className="ml-auto" />
               </Link>
             </DropdownMenuItem>
+            {userWorkspaceSlug && (
+              <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5">
+                <Link
+                  to={`/workspace/${userWorkspaceSlug}`}
+                  className="cursor-pointer"
+                >
+                  <Building2 />
+                  My Workspace
+                  <ChevronRight className="ml-auto" />
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               variant="destructive"
               className="rounded-xl px-3 py-2.5"

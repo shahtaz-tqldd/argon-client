@@ -3,10 +3,16 @@ import { apiSlice } from "../api/apiSlice";
 export const chatbotApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     chatbotList: builder.query({
-      query: () => {
+      query: ({ workspaceSlug, sharedWithMe, page = 1, pageSize = 20 }) => {
         return {
           url: `/chatbots/list/`,
           method: "GET",
+          params: {
+            page,
+            page_size: pageSize,
+            ...(workspaceSlug && { workspace: workspaceSlug }),
+            ...(sharedWithMe && { shared_with_me: sharedWithMe }),
+          },
         };
       },
       providesTags: ["chatbots"],

@@ -26,12 +26,12 @@ import { Input } from "@/components/ui/input";
 import { LANGUAGES } from "@/constants/language";
 import { useDeleteChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
-import { getCloudinaryPreviewUrl } from "@/lib/image";
 import { cn, formatStatus } from "@/lib/utils";
 
 import AiBehaviorItem from "./AiBehaviorItem";
 import { ToggleControl } from "../components/shared";
 import { Text } from "@/components/ui/typography";
+import { ChatbotAvatar } from "@/components/ui/avatar";
 
 const DetailTile = ({ icon, label, value, children }) => {
   const DetailIcon = icon;
@@ -364,23 +364,7 @@ const CoreDetailsTab = ({
             }
           >
             <div className="flex flex-col gap-5 sm:flex-row">
-              {chatbot.logo ? (
-                <span className="size-14 center overflow-hidden rounded-full">
-                  <img
-                    src={getCloudinaryPreviewUrl(chatbot.logo, 240)}
-                    alt={`${chatbot.chatbot_name} logo`}
-                    className="size-full object-contain"
-                  />
-                </span>
-              ) : (
-                <span className="size-14 center overflow-hidden rounded-full bg-primary">
-                  <img
-                    src="/logo-dark.png"
-                    alt={`${chatbot.chatbot_name} logo`}
-                    className="size-full object-cover p-2"
-                  />
-                </span>
-              )}
+              <ChatbotAvatar chatbot={chatbot} size="xl" />
               <div className="w-full flex-1">
                 <div className="flex justify-between">
                   <div>

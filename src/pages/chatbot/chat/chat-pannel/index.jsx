@@ -198,7 +198,7 @@ const ChatPanel = ({
     }
   };
 
-  // ACTIVE MEMBERS
+  // TEAM MEMBERS
   const {
     members,
     isLoading: activeMemberLoading,

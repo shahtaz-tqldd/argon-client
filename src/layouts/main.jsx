@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import SideMenu from "@/components/navbar";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, matchPath } from "react-router-dom";
 import NavHeader from "@/components/navbar/nav-header";
 import { useNotificationListQuery } from "@/features/notification/notificationApiSlice";
 import useDashboardSocket from "@/hooks/useDashboardSocket";
@@ -17,8 +17,12 @@ const DashboardLayout = () => {
   const { pathname } = useLocation();
   const scrollContainerRef = useRef(null);
   const hiddenSidebarRoutes = ["/", "/onboarding", "/profile"];
-  const isHidden = hiddenSidebarRoutes.includes(pathname);
+  const isHidden =
+    hiddenSidebarRoutes.includes(pathname) ||
+    !!matchPath("/workspace/:workspaceSlug", pathname);
+
   const notifications = toArray(notificationResponse?.data);
+
   const unreadCount =
     Number(notificationResponse?.meta?.unread_count) ||
     notifications.filter((notification) => !notification.is_read).length;

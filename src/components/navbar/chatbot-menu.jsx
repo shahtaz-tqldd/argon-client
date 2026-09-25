@@ -5,15 +5,15 @@ import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUpdateChatbotMutation } from "@/features/chatbot/chatbotApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
-import { getCloudinaryPreviewUrl } from "@/lib/image";
-import { cn, getInitials } from "@/lib/utils";
+
+import { cn } from "@/lib/utils";
 import MenuToggle from "./menu-toggle";
+import { ChatbotAvatar } from "../ui/avatar";
 
 const CHATBOT_ENABLED_STORAGE_KEY = "argon-chatbot-enabled";
 const AI_REPLY_STORAGE_KEY = "argon-ai-reply-enabled";
@@ -56,7 +56,6 @@ const ChatbotMenu = () => {
   const isChatbotEnabled =
     chatbotEnabledOverrides[chatbotStateKey] ?? serverChatbotEnabled;
   const chatbotName = activeChatbot?.chatbot_name || "Chatbot";
-  const chatbotLogo = activeChatbot?.logo || "";
 
   const handleChatbotEnabledChange = async (nextValue) => {
     setStoredChatbotEnabled(nextValue);
@@ -99,19 +98,7 @@ const ChatbotMenu = () => {
           aria-label={"Manage " + chatbotName}
           className="group flex w-full items-center gap-2.5 rounded-full border border-primary/20 bg-background/60 p-2.5 text-left outline-none transition-all hover:border-primary/30 hover:bg-background focus-visible:ring-2 focus-visible:ring-primary/30 data-[state=open]:border-primary/30 data-[state=open]:bg-background"
         >
-          <span className="center size-10 overflow-hidden rounded-full">
-            {chatbotLogo ? (
-              <img
-                src={getCloudinaryPreviewUrl(chatbotLogo, 120)}
-                alt={chatbotName + " logo"}
-                className="size-full object-cover"
-              />
-            ) : (
-              <span className="center size-10 overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">
-                {getInitials(chatbotName)}
-              </span>
-            )}
-          </span>
+          <ChatbotAvatar chatbot={activeChatbot} size="md" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold text-foreground">
               {chatbotName}

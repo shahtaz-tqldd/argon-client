@@ -12,6 +12,7 @@ import {
 
 import Card from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ChatbotAvatar } from "@/components/ui/avatar";
 
 const WidgetPreview = ({ settings, chatbot }) => {
   const dark = settings.theme === "dark";
@@ -121,21 +122,7 @@ const WidgetPreview = ({ settings, chatbot }) => {
             }}
           >
             <div className="flex items-center gap-3">
-              <span className="flex size-9 center">
-                {chatbot.logo ? (
-                  <img
-                    src={chatbot.logo}
-                    alt="Widget logo"
-                    className="size-full object-contain"
-                  />
-                ) : (
-                  <img
-                    src="/logo-dark.png"
-                    alt="Chatbot"
-                    className="object-contain"
-                  />
-                )}
-              </span>
+              <ChatbotAvatar chatbot={chatbot} size="md" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold">{title}</p>
                 <p className="truncate text-xs opacity-90">{description}</p>
@@ -264,19 +251,7 @@ const WidgetPreview = ({ settings, chatbot }) => {
           style={{ backgroundColor: settings.primaryColor }}
           tabIndex={-1}
         >
-          {chatbot.logo ? (
-            <img
-              src={chatbot.logo}
-              alt="Chatbot launcher"
-              className="size-8 object-contain"
-            />
-          ) : (
-            <img
-              src="/logo-dark.png"
-              alt="Chatbot launcher"
-              className="size-8 object-contain"
-            />
-          )}
+          <ChatbotAvatar chatbot={chatbot} size="md" />
           {settings.launcherText && <span>{settings.launcherText}</span>}
         </button>
       </div>

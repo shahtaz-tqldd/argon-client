@@ -1,4 +1,4 @@
-import { Building2, RefreshCw } from "lucide-react";
+import { Building2, Plus, RefreshCw } from "lucide-react";
 
 import AppLogo from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import useAuth from "@/hooks/useAuth";
 import { getInitials } from "@/lib/utils";
 import { useGetWorkspaceQuery } from "@/features/workspace/workspaceApiSlice";
 import useTitle from "@/hooks/useTitle";
+import { useState } from "react";
+import CreateChatbotDialog from "./components/create-chatbot";
 
 const WorkspacePage = () => {
   const { user } = useAuth();
@@ -26,11 +28,16 @@ const WorkspacePage = () => {
   const workspace = workspaceResponse?.data;
   useTitle(`Argon Chatbot — ${workspace?.name}`);
 
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const refreshAfterCreate = async () => {
+    await Promise.all([refetch()]);
+  };
+
   if (isLoading) return <WorkspacePageSkeleton />;
   if (isError || !workspace) return <WorkspaceError onRetry={refetch} />;
 
   return (
-    <section className="mx-auto max-w-6xl space-y-10">
+    <section className="mx-auto max-w-7xl space-y-10">
       <AppLogo />
 
       <header className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -39,9 +46,19 @@ const WorkspacePage = () => {
       </header>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
-        <WorkspaceChatbots workspace={workspace} onWorkspaceChange={refetch} />
+        <WorkspaceChatbots
+          workspace={workspace}
+          onCreate={() => setIsCreateDialogOpen(true)}
+        />
 
         <aside className="space-y-5">
+          <Button
+            className="w-full border-primary text-black hover:bg-primary hover:text-white"
+            variant="outline"
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            <Plus /> Create a new Chatbot
+          </Button>
           <WorkspaceTeam
             workspace={workspace}
             currentUser={user}
@@ -50,6 +67,14 @@ const WorkspacePage = () => {
           <WorkspaceProgress workspace={workspace} />
         </aside>
       </div>
+
+      <CreateChatbotDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        workspaceSlug={workspace.slug}
+        workspaceName={workspace.name}
+        onCreated={refreshAfterCreate}
+      />
     </section>
   );
 };

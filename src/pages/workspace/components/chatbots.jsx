@@ -1,76 +1,21 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowUpRight, Bot, Plus, RefreshCw, Sparkles } from "lucide-react";
+import { Bot, Plus, RefreshCw, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge, StatusBadge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section";
 import { useChatbotListQuery } from "@/features/chatbot/chatbotApiSlice";
 
-import CreateChatbotDialog from "./create-chatbot";
-import { cn, getInitials, toArray } from "@/lib/utils";
-import Card from "@/components/ui/card";
+import { toArray } from "@/lib/utils";
+import ChatbotCard from "./chatbot-card";
 
-const avatarColors = [
-  "bg-violet-500 text-white",
-  "bg-orange-500 text-white",
-  "bg-emerald-600 text-white",
-  "bg-amber-500 text-amber-950",
-  "bg-rose-500 text-white",
-  "bg-blue-600 text-white",
-];
-
-const getPaletteIndex = (value, palette) => {
-  const hash = String(value || "argon")
-    .split("")
-    .reduce((total, character) => total + character.charCodeAt(0), 0);
-
-  return hash % palette.length;
-};
-
-const getAvatar = (person) =>
-  person?.avatar_url || person?.avatar || person?.image || "";
-
-const PersonAvatar = ({ person, index = 0, className }) => {
-  const name = person?.name?.trim() || person?.email || "Team member";
-  const avatar = getAvatar(person);
-
-  return (
-    <span
-      className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-bold ring-2 ring-background",
-        avatarColors[index % avatarColors.length],
-        className,
-      )}
-      title={name}
-    >
-      {avatar ? (
-        <img
-          src={avatar}
-          alt={`${name} avatar`}
-          className="size-full object-cover"
-        />
-      ) : (
-        getInitials(name)
-      )}
-    </span>
-  );
-};
-
-const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+const WorkspaceChatbots = ({ workspace, onCreate }) => {
   const {
     data: chatbotResponse,
     isLoading,
     isError,
     refetch,
-  } = useChatbotListQuery();
+  } = useChatbotListQuery({ workspaceSlug: workspace?.slug });
 
   const chatbots = toArray(chatbotResponse?.data);
-
-  const refreshAfterCreate = async () => {
-    await Promise.all([refetch(), onWorkspaceChange?.()]);
-  };
 
   return (
     <>
@@ -81,9 +26,6 @@ const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
               title="Your Chatbots"
               details="Build, publish, and manage assistants for your customers."
             />
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus /> Create chatbot
-            </Button>
           </div>
         </div>
 
@@ -99,132 +41,16 @@ const WorkspaceChatbots = ({ workspace, onWorkspaceChange }) => {
                   key={chatbot.id || chatbot.slug}
                   chatbot={chatbot}
                   colorIndex={index}
+                  showCreated
                 />
               ))}
             </div>
           ) : (
-            <ChatbotsEmpty onCreate={() => setIsCreateDialogOpen(true)} />
+            <ChatbotsEmpty onCreate={onCreate} />
           )}
         </div>
       </div>
-
-      <CreateChatbotDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        workspaceSlug={workspace.slug}
-        workspaceName={workspace.name}
-        onCreated={refreshAfterCreate}
-      />
     </>
-  );
-};
-
-const ChatbotCard = ({ chatbot, colorIndex }) => {
-  const members = toArray(chatbot.members);
-  const visibleMembers = members.slice(0, 3);
-  const remainingMembers = Math.max(members.length - visibleMembers.length, 0);
-  const creator = chatbot.created_by;
-  const isAdmin = String(chatbot.current_user_role).toLowerCase() === "admin";
-  const chatbotPaletteIndex = colorIndex % avatarColors.length;
-
-  return (
-    <Link to={`/chatbot/${chatbot.slug}`} className="block h-full">
-      <Card className="p-0 relative group">
-        <div className="pointer-events-none absolute -right-10 -bottom-10 size-32 rounded-full bg-blue-100/50 blur-2xl dark:bg-blue-500/10" />
-        <div className="relative flex items-start justify-between gap-3 p-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className={cn("center size-12 shrink-0 overflow-hidden")}>
-              {chatbot.logo ? (
-                <img
-                  src={chatbot.logo}
-                  alt={`${chatbot.chatbot_name} logo`}
-                  className="size-full object-contain"
-                />
-              ) : (
-                <div className="bg-primary p-1.5 rounded-full">
-                  <img
-                    src={"/logo-dark.png"}
-                    alt={`${chatbot.chatbot_name} logo`}
-                    className="size-full"
-                  />
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <h3 className="truncate font-semibold text-foreground">
-                {chatbot.chatbot_name}
-              </h3>
-              {isAdmin ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Created by you
-                </p>
-              ) : (
-                <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                  <PersonAvatar
-                    person={creator}
-                    index={getPaletteIndex(
-                      creator?.name || creator?.email,
-                      avatarColors,
-                    )}
-                    className="size-5 ring-1"
-                  />
-                  <span className="truncate">
-                    Created by {creator?.name || creator?.email || "Unknown"}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-          <StatusBadge>{chatbot.status || "draft"}</StatusBadge>
-        </div>
-
-        <p className="px-4 line-clamp-2 min-h-12 text-sm leading-6 text-muted-foreground">
-          {chatbot.description ||
-            "Configure this chatbot's knowledge, behavior, and customer channels."}
-        </p>
-        <div className="px-4 mt-4 flex flex-wrap gap-1.5">
-          <Badge>{chatbot?.subscription_plan_name}</Badge>
-          {chatbot.ai_enabled ? (
-            <Badge>ai_enabled</Badge>
-          ) : (
-            <Badge>ai_disabled</Badge>
-          )}
-        </div>
-        <div className="relative z-10 p-4 mt-2.5 flex items-center justify-between border-t border-border/70 pt-3">
-          <div className="flex items-center">
-            {visibleMembers.length ? (
-              <div
-                className="flex -space-x-2"
-                aria-label={`${members.length} team members`}
-              >
-                {visibleMembers.map((member, index) => (
-                  <PersonAvatar
-                    key={member.id || member.email || `${member.name}-${index}`}
-                    person={member.user || member}
-                    index={
-                      (chatbotPaletteIndex + index + 1) % avatarColors.length
-                    }
-                    className="size-6"
-                  />
-                ))}
-                {remainingMembers > 0 && (
-                  <span className="flex size-8 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground ring-2 ring-background">
-                    +{remainingMembers}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                No team members
-              </span>
-            )}
-          </div>
-          <span className="flex items-center gap-1 text-xs font-semibold text-primary opacity-80 transition group-hover:opacity-100">
-            Open Chatbot <ArrowUpRight className="size-3.5" />
-          </span>
-        </div>
-      </Card>
-    </Link>
   );
 };
 

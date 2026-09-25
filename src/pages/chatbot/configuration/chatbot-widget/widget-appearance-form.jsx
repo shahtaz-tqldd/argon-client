@@ -143,7 +143,7 @@ const WidgetLogoField = ({ identity, setIdentity, disabled }) => {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-dashed p-4">
       <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-4">
-        <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-primary">
+        <span className="center size-14 overflow-hidden">
           {identity.logo ? (
             <img
               src={identity.logo}
