@@ -119,6 +119,70 @@ export const chatApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    // TEST SESSIONS
+    testSessionList: builder.query({
+      query: ({ chatbotSlug, page = 1, pageSize = 20, search }) => ({
+        url: "/chat/test-sessions/list/",
+        method: "GET",
+        params: {
+          chatbot_slug: chatbotSlug,
+          page,
+          page_size: pageSize,
+          ...(search && { search }),
+        },
+      }),
+      providesTags: (_result, _error, { chatbotSlug }) => [
+        { type: "test-sessions", id: chatbotSlug },
+      ],
+    }),
+
+    testSessionCreate: builder.mutation({
+      query: ({ chatbotSlug }) => ({
+        url: "/chat/test-sessions/create/",
+        method: "POST",
+        params: {
+          chatbot_slug: chatbotSlug,
+        },
+      }),
+      invalidatesTags: (_result, error, { chatbotSlug }) =>
+        error ? [] : [{ type: "test-sessions", id: chatbotSlug }],
+    }),
+
+    testMessageList: builder.query({
+      query: ({ chatbotSlug, page = 1, pageSize = 20, sessionId }) => ({
+        url: "/chat/test-messages/list/",
+        method: "GET",
+        params: {
+          chatbot_slug: chatbotSlug,
+          session_id: sessionId,
+          page,
+          page_size: pageSize,
+        },
+      }),
+      providesTags: (_result, _error, { sessionId }) => [
+        { type: "test-messages", id: sessionId },
+      ],
+    }),
+
+    testMessageCreate: builder.mutation({
+      query: ({ chatbotSlug, sessionId, payload }) => ({
+        url: "/chat/test-messages/send/",
+        method: "POST",
+        params: {
+          chatbot_slug: chatbotSlug,
+          session_id: sessionId,
+        },
+        body: payload,
+      }),
+      invalidatesTags: (_result, error, { chatbotSlug, sessionId }) =>
+        error
+          ? []
+          : [
+              { type: "test-messages", id: sessionId },
+              { type: "test-sessions", id: chatbotSlug },
+            ],
+    }),
+
     // MESSAGES
     chatMessageList: builder.query({
       query: ({ chatbotSlug, sessionId, page = 1, pageSize = 50 }) => ({
@@ -324,6 +388,12 @@ export const {
   useBlockVisitorMutation,
   useDownloadTranscriptQuery,
   useLazyDownloadTranscriptQuery,
+
+  // test sessions
+  useTestSessionListQuery,
+  useTestSessionCreateMutation,
+  useTestMessageListQuery,
+  useTestMessageCreateMutation,
 
   // messages
   useChatMessageListQuery,

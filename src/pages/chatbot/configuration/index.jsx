@@ -1,11 +1,14 @@
 import { useState } from "react";
 import {
   Database,
+  Layers,
   Link2,
   Palette,
   RefreshCw,
+  Settings,
   Settings2,
   SlidersHorizontal,
+  Sparkle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +26,7 @@ import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import ChannelsTab from "./channels";
 import ChatbotWidgetTab from "./chatbot-widget";
 import ConfigEditorDialog from "./components/ConfigEditorDialog";
+import TestChatbotDrawer from "./components/TestChatbotDrawer";
 import CoreDetailsTab from "./core-details";
 import KnowledgeSourceTab from "./knowledge-source";
 import { useChatbotTitle } from "@/hooks/useTitle";
@@ -97,6 +101,7 @@ const ConfigurationPage = () => {
     useUpdateChatbotMutation();
   const [config, setConfig] = useState(initialConfig);
   const [editingSection, setEditingSection] = useState(null);
+  const [testChatOpen, setTestChatOpen] = useState(false);
   const aiSettings = {
     aiEnabled: Boolean(currentChatbot?.ai_enabled),
     instructions: currentChatbot?.instructions || "",
@@ -201,7 +206,7 @@ const ConfigurationPage = () => {
         />
 
         <div className="flex items-center gap-2">
-          <span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+          {/* <span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
             <span
               className={`size-2 rounded-full ${
                 isUpdatingChatbot
@@ -210,9 +215,9 @@ const ConfigurationPage = () => {
               }`}
             />
             {isUpdatingChatbot ? "Saving changes…" : "All changes saved"}
-          </span>
-          <Button variant="outline">
-            <RefreshCw />
+          </span> */}
+          <Button variant="outline" onClick={() => setTestChatOpen(true)}>
+            <Sparkle />
             Test chatbot
           </Button>
         </div>
@@ -257,6 +262,13 @@ const ConfigurationPage = () => {
           onSave={saveSection}
         />
       )}
+
+      <TestChatbotDrawer
+        open={testChatOpen}
+        onOpenChange={setTestChatOpen}
+        chatbotSlug={chatbotSlug}
+        chatbot={currentChatbot}
+      />
     </Container>
   );
 };

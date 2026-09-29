@@ -311,7 +311,7 @@ const ConversationList = ({
           )}
         </label>
 
-        <div className="custom-scrollbar -mx-1 mt-3 flex gap-1 overflow-x-auto px-1 pb-1">
+        <div className="no-scrollbar -mx-1 mt-3 flex gap-1 overflow-x-auto px-1 pb-1">
           {filters.map((item) => (
             <button
               key={item.id}
@@ -402,7 +402,7 @@ const ConversationList = ({
               ) : activeMemberError ? (
                 <div className="p-3 text-center">
                   <p className="text-xs text-muted-foreground">
-                    Couldn’t load team members.
+                    Couldn't load team members.
                   </p>
                   <Button
                     size="sm"
