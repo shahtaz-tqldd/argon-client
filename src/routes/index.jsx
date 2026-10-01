@@ -31,7 +31,7 @@ const LeadCollectionPage = lazy(
   () => import("@/pages/chatbot/lead-collection"),
 );
 const ConfigurationPage = lazy(() => import("@/pages/chatbot/configuration"));
-const TeamMemberPage = lazy(() => import("@/pages/chatbot/team-member"));
+const TeamMemberPage = lazy(() => import("@/pages/chatbot/team-activity"));
 const PlanAndBillingPage = lazy(
   () => import("@/pages/chatbot/plan-and-billing"),
 );

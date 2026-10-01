@@ -7,10 +7,8 @@ import ReusableTable from "@/components/table";
 import { Button } from "@/components/ui/button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { UserProfile } from "@/components/ui/section";
-import {
-  useChatbotMemberListQuery,
-  useRemoveChatbotMemberMutation,
-} from "@/features/chatbot/chatbotApiSlice";
+import { useRemoveChatbotMemberMutation } from "@/features/chatbot/chatbotApiSlice";
+import useActiveChatbotMembers from "@/hooks/useActiveChatbotMembers";
 import { duration, formatDate, formatDateTime } from "@/lib/date-time";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
@@ -38,7 +36,7 @@ const normalizeMember = (member) => {
     email,
     avatar: member.user?.avatar || "",
     role: member?.role,
-    status: isPending ? "Pending" : "Active",
+    status: isPending ? "Pending" : member.isActive ? "Active" : "Inactive",
     lastActive: member.last_active
       ? duration(member.last_active)
       : member.invited_at
@@ -136,18 +134,30 @@ const TeamMemberList = ({
   const { chatbotSlug } = useParams();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const { data, isLoading, isFetching, isError, error } =
-    useChatbotMemberListQuery({ chatbotSlug, page, pageSize });
+  const {
+    data,
+    members,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useActiveChatbotMembers({
+    chatbotSlug,
+    includeInvitations: true,
+    page,
+    pageSize,
+  });
   const [removeChatbotMember, { isLoading: isRemoving }] =
     useRemoveChatbotMemberMutation();
 
   const people = useMemo(
-    () => (Array.isArray(data?.data) ? data.data.map(normalizeMember) : []),
-    [data],
+    () => members.map(normalizeMember),
+    [members],
   );
 
-  const activeCount = people.filter((person) => person.is_active).length;
-  const pendingCount = people.length - activeCount;
+  const memberCount = people.filter((person) => person.is_active).length;
+  const pendingCount = people.length - memberCount;
+  const activeCount = people.filter((person) => person.isActive).length;
 
   const rows = people.map((person) => ({
     id: person.id,
@@ -200,11 +210,11 @@ const TeamMemberList = ({
   return (
     <ReusableTable
       title="Members & invitations"
-      description={`${activeCount} active member${activeCount === 1 ? "" : "s"} · ${pendingCount} pending invitation${pendingCount === 1 ? "" : "s"}`}
+      description={`${activeCount} active now · ${pendingCount} pending invitation${pendingCount === 1 ? "" : "s"}`}
       headerActions={
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
           <TeamMemberProgress
-            active={activeCount}
+            active={memberCount}
             pending={pendingCount}
             isLoading={isLoading || isFetching}
           />

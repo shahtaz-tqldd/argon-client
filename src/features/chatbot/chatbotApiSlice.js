@@ -145,6 +145,21 @@ export const chatbotApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["chatbot-team"],
     }),
+
+    // chatbot activity
+    chatbotActivityList: builder.query({
+      query: ({ chatbotSlug, page = 1, pageSize = 20 }) => {
+        return {
+          url: `/chatbots/activity/list/`,
+          method: "GET",
+          params: {
+            chatbot: chatbotSlug,
+            page,
+            page_size: pageSize,
+          },
+        };
+      },
+    }),
   }),
 });
 
@@ -164,4 +179,7 @@ export const {
   useInviteChatbotMemberMutation,
   useAcceptChatbotInviteMutation,
   useRemoveChatbotMemberMutation,
+
+  // chatbot activity
+  useChatbotActivityListQuery,
 } = chatbotApiSlice;

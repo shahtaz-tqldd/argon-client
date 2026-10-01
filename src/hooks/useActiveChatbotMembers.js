@@ -22,9 +22,12 @@ const normalizeMember = (member) => ({
 export default function useActiveChatbotMembers({
   chatbotId,
   chatbotSlug,
+  includeInvitations = false,
+  page = 1,
+  pageSize = 100,
 } = {}) {
   const query = useChatbotMemberListQuery(
-    { chatbotSlug, page: 1, pageSize: 100 },
+    { chatbotSlug, page, pageSize },
     { skip: !chatbotSlug },
   );
   const presenceByChatbotId = useSelector(
@@ -34,9 +37,13 @@ export default function useActiveChatbotMembers({
   const members = useMemo(
     () =>
       memberCollection(query.data)
-        .filter((member) => member.is_active && member.user)
+        .filter(
+          (member) =>
+            (member.is_active && member.user) ||
+            (includeInvitations && !member.is_active),
+        )
         .map(normalizeMember),
-    [query.data],
+    [includeInvitations, query.data],
   );
   const presence = useMemo(() => {
     const exactPresence = chatbotId
@@ -60,10 +67,14 @@ export default function useActiveChatbotMembers({
   }, [chatbotId, presenceByChatbotId, query.data]);
   const membersWithActiveStatus = useMemo(
     () =>
-      members.map((member) => ({
-        ...member,
-        isActive: Boolean(presence.onlineMemberIds[String(member.id)]),
-      })),
+      members
+        .map((member) => ({
+          ...member,
+          isActive:
+            Boolean(member.is_active) &&
+            Boolean(presence.onlineMemberIds[String(member.id)]),
+        }))
+        .sort((first, second) => Number(second.isActive) - Number(first.isActive)),
     [members, presence.onlineMemberIds],
   );
   const activeMembers = useMemo(
