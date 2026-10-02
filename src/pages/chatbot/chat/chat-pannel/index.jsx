@@ -120,6 +120,7 @@ const ChatPanel = ({
     { skip: !chatbotSlug || !sessionId || !leadId },
   );
   const lead = unwrapObject(leadQuery.currentData);
+  const leadSummary = leadId ? { id: leadId, ...lead } : null;
   const isLoading =
     sessionQuery.isLoading ||
     (sessionQuery.isFetching && !sessionQuery.currentData);
@@ -763,8 +764,10 @@ const ChatPanel = ({
         />
       )}
       <CustomerContext
+        key={conversation.id}
+        chatbotSlug={chatbotSlug}
         conversation={conversation}
-        lead={lead}
+        lead={leadSummary}
         open={contextOpen}
         onClose={onCloseContext}
       />

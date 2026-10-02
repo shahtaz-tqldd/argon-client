@@ -2,7 +2,7 @@ import WeeklySchedule from "./schedule";
 import BookingRules from "./rules";
 import InfoCollect from "./info-collect";
 import GoogleCalendar from "./google-calendar";
-import { useAppointmentBookingConfigQuery } from "@/features/appointment-booking/appointmentBookingApiSlice";
+import { useAppointmentBookingConfigQuery } from "@/features/appointment/appointmentApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 import Card from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

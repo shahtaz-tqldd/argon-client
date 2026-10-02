@@ -21,35 +21,90 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { initialAppointments } from "../demo-data";
+import moment from "moment";
 import DetailsDialog from "./details";
 import AppointmentStats from "./stats";
-import { useAppointmentListQuery } from "@/features/appointment-booking/appointmentBookingApiSlice";
+import {
+  useAppointmentListQuery,
+  useUpdateAppointmentMutation,
+} from "@/features/appointment/appointmentApiSlice";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
+
+const capitalize = (value) =>
+  value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Pending";
+
+const mapAppointment = (item) => {
+  const fields = item?.collected_fields ?? {};
+  const metadata = item?.metadata ?? {};
+  const start = moment(item?.starts_at);
+  const end = moment(item?.ends_at);
+  const durationMinutes =
+    end.isValid() && start.isValid()
+      ? Math.max(0, end.diff(start, "minutes"))
+      : 0;
+
+  return {
+    id: item?.id,
+    name: fields.name || "Unknown guest",
+    email: fields.email || "Not collected",
+    phone: fields.phone || "Not collected",
+    company: fields.company || metadata.company || "Not collected",
+    title: metadata.title || "Chatbot booking",
+    date: start.isValid() ? start.format("MMM D, YYYY") : "—",
+    time: start.isValid() ? start.format("h:mm A") : "—",
+    timezone: start.isValid() ? `UTC${start.format("Z")}` : "",
+    duration: `${durationMinutes} min`,
+    host: metadata.host || "Chatbot agent",
+    source: metadata.source || "Website",
+    status: capitalize(item?.status),
+    location: metadata.location || "Google Meet",
+    notes: item?.notes || "No booking context captured.",
+    booked: moment(item?.created_at).isValid()
+      ? moment(item?.created_at).format("MMM D · h:mm A")
+      : "—",
+  };
+};
 
 const AppointmentListTab = () => {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
+  const [selectedId, setSelectedId] = useState(null);
 
   const { chatbotSlug } = useCurrentChatbot();
-  const { data } = useAppointmentListQuery({ chatbotSlug });
-  console.log(data);
+  const { data, isLoading, isFetching } = useAppointmentListQuery(
+    { chatbotSlug, page, pageSize },
+    { skip: !chatbotSlug },
+  );
+  const [updateAppointment] = useUpdateAppointmentMutation();
 
-  const [appointments, setAppointments] = useState(initialAppointments);
+  const appointments = useMemo(
+    () => (Array.isArray(data?.data) ? data.data : []).map(mapAppointment),
+    [data],
+  );
 
-  const [selected, setSelected] = useState(null);
-  const updateStatus = (id, status) => {
-    setAppointments((current) =>
-      current.map((item) => (item.id === id ? { ...item, status } : item)),
-    );
-    setSelected((current) =>
-      current?.id === id ? { ...current, status } : current,
-    );
-    toast.success(`Appointment marked ${status.toLowerCase()}`);
+  const totalCount = data?.meta?.count ?? appointments.length;
+
+  const selected = useMemo(
+    () => appointments.find((item) => item.id === selectedId) ?? null,
+    [appointments, selectedId],
+  );
+
+  const updateStatus = async (id, nextStatus) => {
+    try {
+      await updateAppointment({
+        chatbotSlug,
+        appointmentId: id,
+        payload: { status: nextStatus.toLowerCase() },
+      }).unwrap();
+      toast.success(`Appointment marked ${nextStatus.toLowerCase()}`);
+    } catch {
+      toast.error("Failed to update appointment");
+    }
   };
 
+  const hasActiveFilter = query.trim() !== "" || status !== "all";
   const visible = useMemo(
     () =>
       appointments.filter(
@@ -61,64 +116,56 @@ const AppointmentListTab = () => {
       ),
     [appointments, query, status],
   );
-  const rows = visible
-    .slice((page - 1) * pageSize, page * pageSize)
-    .map((item) => ({
-      id: item.id,
-      raw: item,
-      guest: <UserIdentity name={item.name} email={item.email} />,
-      schedule: (
-        <div className="min-w-36">
-          <p className="text-xs font-semibold text-foreground">{item.date}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {item.time} · {item.timezone}
-          </p>
+  const rows = visible.map((item) => ({
+    id: item.id,
+    raw: item,
+    guest: <UserIdentity name={item.name} email={item.email} />,
+    schedule: (
+      <div className="min-w-36">
+        <p className="text-xs font-semibold text-foreground">{item.date}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {item.time} · {item.timezone}
+        </p>
+      </div>
+    ),
+    appointmentType: (
+      <div>
+        <p className="text-xs font-semibold text-foreground">{item.title}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {item.duration}
+        </p>
+      </div>
+    ),
+    host: (
+      <div>
+        <p className="text-xs font-medium text-foreground">{item.host}</p>
+        <div className="mt-1 flex items-center gap-1.5">
+          <ChannelIcon source={item.source} />
+          <span className="text-[11px] text-muted-foreground">
+            {item.source}
+          </span>
         </div>
-      ),
-      appointmentType: (
-        <div>
-          <p className="text-xs font-semibold text-foreground">{item.title}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {item.duration}
-          </p>
-        </div>
-      ),
-      host: (
-        <div>
-          <p className="text-xs font-medium text-foreground">{item.host}</p>
-          <div className="mt-1 flex items-center gap-1.5">
-            <ChannelIcon source={item.source} />
-            <span className="text-[11px] text-muted-foreground">
-              {item.source}
-            </span>
-          </div>
-        </div>
-      ),
-      appointmentStatus: <StatusBadge>{item.status}</StatusBadge>,
-      booked: (
-        <div>
-          <p className="text-xs font-medium text-foreground">{item.booked}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {item.location}
-          </p>
-        </div>
-      ),
-      action: "",
-    }));
-  const update = (id, nextStatus) => {
-    setAppointments((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, status: nextStatus } : item,
-      ),
-    );
-    toast.success(`Appointment marked ${nextStatus.toLowerCase()}`);
-  };
+      </div>
+    ),
+    appointmentStatus: <StatusBadge>{item.status}</StatusBadge>,
+    booked: (
+      <div>
+        <p className="text-xs font-medium text-foreground">{item.booked}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {item.location}
+        </p>
+      </div>
+    ),
+    action: "",
+  }));
   return (
     <div className="space-y-5">
       <AppointmentStats />
       <ReusableTable
         title="Booked appointments"
-        description={`${visible.length} matching appointments · Times shown in visitor timezone`}
+        description={`${
+          hasActiveFilter ? visible.length : totalCount
+        } matching appointments · Times shown in visitor timezone`}
         headerActions={
           <div className="flex flex-wrap items-center gap-2">
             <label className="relative hidden md:block">
@@ -166,16 +213,19 @@ const AppointmentListTab = () => {
           { header: "Booked", accessorKey: "booked" },
           { header: "", accessorKey: "action" },
         ]}
-        isLoading={false}
-        totalItems={visible.length}
-        page={page}
+        isLoading={isLoading || isFetching}
+        totalItems={hasActiveFilter ? visible.length : totalCount}
+        page={hasActiveFilter ? 1 : page}
         setPage={setPage}
         pageSize={pageSize}
-        setPageSize={setPageSize}
+        setPageSize={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
         table_options={[
           {
             label: "View details",
-            action: (_, row) => setSelected(row.raw),
+            action: (_, row) => setSelectedId(row.raw.id),
           },
           {
             label: "Reschedule",
@@ -186,12 +236,12 @@ const AppointmentListTab = () => {
             label: "Mark completed",
             hidden: (row) =>
               ["Completed", "Cancelled"].includes(row.raw.status),
-            action: (_, row) => update(row.id, "Completed"),
+            action: (_, row) => updateStatus(row.id, "Completed"),
           },
           {
             label: "Cancel appointment",
             hidden: (row) => row.raw.status === "Cancelled",
-            action: (_, row) => update(row.id, "Cancelled"),
+            action: (_, row) => updateStatus(row.id, "Cancelled"),
           },
         ]}
         onDeleteConfirm={async () => {}}
@@ -202,7 +252,7 @@ const AppointmentListTab = () => {
 
       <DetailsDialog
         appointment={selected}
-        onClose={() => setSelected(null)}
+        onClose={() => setSelectedId(null)}
         onStatusChange={updateStatus}
       />
     </div>

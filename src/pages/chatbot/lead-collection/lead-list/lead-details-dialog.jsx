@@ -132,7 +132,7 @@ function DetailsSkeleton() {
 
 function LeadDetailsDialog({ chatbotSlug, summary, initialView = "details", onClose }) {
   const leadId = summary?.id;
-  const [draftStatus, setDraftStatus] = useState(summary?.status || "new");
+  const [draftStatus, setDraftStatus] = useState(null);
   const {
     data,
     isLoading,
@@ -151,6 +151,8 @@ function LeadDetailsDialog({ chatbotSlug, summary, initialView = "details", onCl
     () => ({ ...(summary || {}), ...(detailedLead || {}) }),
     [summary, detailedLead],
   );
+  const currentStatus =
+    draftStatus || detailedLead?.status || summary?.status || "new";
 
   if (!summary) return null;
 
@@ -160,12 +162,12 @@ function LeadDetailsDialog({ chatbotSlug, summary, initialView = "details", onCl
   const location = [lead.detected_city, lead.detected_country_code]
     .filter(Boolean)
     .join(", ");
-  const knownStatuses = LEAD_STATUSES.includes(draftStatus)
+  const knownStatuses = LEAD_STATUSES.includes(currentStatus)
     ? LEAD_STATUSES
-    : [draftStatus, ...LEAD_STATUSES];
+    : [currentStatus, ...LEAD_STATUSES];
 
   const changeStatus = async (nextStatus) => {
-    const previousStatus = draftStatus;
+    const previousStatus = currentStatus;
     if (nextStatus === previousStatus) return;
     setDraftStatus(nextStatus);
 
@@ -196,7 +198,7 @@ function LeadDetailsDialog({ chatbotSlug, summary, initialView = "details", onCl
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <DialogTitle className="truncate">{displayValue(lead.name)}</DialogTitle>
-                  <StatusBadge status={draftStatus} />
+                  <StatusBadge status={currentStatus} />
                 </div>
                 <DialogDescription className="mt-1">
                   Captured {formatDateTime(lead.created_at)}
@@ -206,7 +208,7 @@ function LeadDetailsDialog({ chatbotSlug, summary, initialView = "details", onCl
 
             <div className="flex shrink-0 items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground">Status</span>
-              <Select value={draftStatus} onValueChange={changeStatus} disabled={isUpdating}>
+              <Select value={currentStatus} onValueChange={changeStatus} disabled={isUpdating}>
                 <SelectTrigger className="h-9 w-36 rounded-xl bg-background">
                   <SelectValue />
                 </SelectTrigger>

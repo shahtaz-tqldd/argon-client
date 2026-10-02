@@ -9,7 +9,7 @@ import { FloatingInput } from "@/components/ui/input";
 import { FloatingSelect, SelectItem } from "@/components/ui/select";
 import { FloatingTextarea } from "@/components/ui/textarea";
 import { FeatureToggle } from "@/components/ui/toggle";
-import { useUpdateAppointmentBookingConfigMutation } from "@/features/appointment-booking/appointmentBookingApiSlice";
+import { useUpdateAppointmentBookingConfigMutation } from "@/features/appointment/appointmentApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
 const formatTimezone = (timezone) =>

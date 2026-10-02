@@ -1,4 +1,3 @@
-import React from "react";
 import {
   CalendarCheck2,
   CalendarX2,
@@ -6,51 +5,58 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import { MetricCard } from "@/components/shared/metric-card";
+import { useAppointmentStatsQuery } from "@/features/appointment/appointmentApiSlice";
+import useCurrentChatbot from "@/hooks/useCurrentChatbot";
 
-const AppointmentStats = () => {
+const AppointmentStats = ({ chatbotSlug: slugProp }) => {
+  const { chatbotSlug: currentSlug } = useCurrentChatbot();
+  const chatbotSlug = slugProp || currentSlug;
+
+  const { data, isLoading } = useAppointmentStatsQuery(
+    { chatbotSlug },
+    { skip: !chatbotSlug },
+  );
+
+  const stats = data?.data ?? {};
+  const total = Number(stats.total) || 0;
+  const booked = Number(stats.booked) || 0;
+  const confirmed = Number(stats.confirmed) || 0;
+  const cancelled = Number(stats.cancelled) || 0;
+  const cancellationRate = total ? Math.round((cancelled / total) * 100) : 0;
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <MetricCard
         icon={CalendarCheck2}
-        label="Upcoming"
-        value="18"
-        detail="Across the next 7 days"
+        label="Total appointments"
+        value={isLoading ? "—" : total}
+        detail="All bookings for this chatbot"
         tone="bg-primary/10 text-primary"
-        badge={
-          <span className="text-xs font-semibold text-emerald-600">
-            +4 this week
-          </span>
-        }
+        badge={<span className="size-2 rounded-full bg-primary" />}
       />
       <MetricCard
         icon={Clock3}
-        label="Today"
-        value="4"
-        detail="Next at 2:30 PM"
+        label="Booked"
+        value={isLoading ? "—" : booked}
+        detail="Awaiting confirmation"
         tone="bg-amber-500/10 text-amber-600"
         badge={<span className="size-2 rounded-full bg-amber-500" />}
       />
       <MetricCard
         icon={UserRoundCheck}
-        label="Completed"
-        value="42"
-        detail="93% attendance rate"
+        label="Confirmed"
+        value={isLoading ? "—" : confirmed}
+        detail="Confirmed and ready to attend"
         tone="bg-emerald-500/10 text-emerald-600"
-        badge={
-          <span className="text-xs font-semibold text-emerald-600">+12%</span>
-        }
+        badge={<span className="size-2 rounded-full bg-emerald-500" />}
       />
       <MetricCard
         icon={CalendarX2}
         label="Cancelled"
-        value="3"
-        detail="6.2% cancellation rate"
+        value={isLoading ? "—" : cancelled}
+        detail={`${cancellationRate}% cancellation rate`}
         tone="bg-red-500/10 text-red-600"
-        badge={
-          <span className="text-xs font-semibold text-muted-foreground">
-            This month
-          </span>
-        }
+        badge={<span className="size-2 rounded-full bg-red-500" />}
       />
     </div>
   );

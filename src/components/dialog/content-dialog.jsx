@@ -37,6 +37,7 @@ const ContentDialog = ({
   icon = null,
   header = null,
   footer,
+  scrollable = true,
 }) => {
   const isMobile = useMediaQuery();
 
@@ -63,9 +64,13 @@ const ContentDialog = ({
               header={header}
             />
           </div>
-          <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            {children}
-          </div>
+          {scrollable ? (
+            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {children}
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+          )}
           {footer && (
             <div className="flex justify-end border-t bg-muted/20 px-6 py-4">
               {footer}
@@ -97,9 +102,13 @@ const ContentDialog = ({
         <DialogDescription className="sr-only">
           {description || title}
         </DialogDescription>
-        <div className="hidden-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          {children}
-        </div>
+        {scrollable ? (
+          <div className="hidden-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {children}
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        )}
 
         {footer && (
           <DialogFooter className="border-t bg-muted/20 px-6 py-4">

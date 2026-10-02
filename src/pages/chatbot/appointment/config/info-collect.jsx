@@ -2,7 +2,7 @@ import { UserRoundCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import CollectableFieldsConfig from "@/components/shared/collectable-fields-config";
-import { useUpdateAppointmentBookingConfigMutation } from "@/features/appointment-booking/appointmentBookingApiSlice";
+import { useUpdateAppointmentBookingConfigMutation } from "@/features/appointment/appointmentApiSlice";
 import { getApiErrorMessage } from "@/lib/get-api-error-message";
 
 const InfoCollect = ({ chatbotSlug, config }) => {
