@@ -8,10 +8,18 @@ import {
 } from "react";
 import {
   AlertCircle,
+  CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
   LoaderCircle,
+  Mail,
   MessageCircleMore,
   Paperclip,
+  Phone,
   Sparkles,
+  UserRound,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -25,6 +33,7 @@ import {
 import { cn, getInitials } from "@/lib/utils";
 import { ScrollContainer } from "@/components/ui/section";
 import { ChatbotAvatar } from "@/components/ui/avatar";
+import { StatusBadge } from "@/components/ui/badge";
 
 const MESSAGE_PAGE_SIZE = 50;
 const LOAD_MORE_THRESHOLD = 48;
@@ -211,6 +220,210 @@ function messageTime(value) {
   }).format(date);
 }
 
+function appointmentDate(value) {
+  if (!value) return "Date unavailable";
+
+  const dateOnlyMatch = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const date = dateOnlyMatch
+    ? new Date(
+        Number(dateOnlyMatch[1]),
+        Number(dateOnlyMatch[2]) - 1,
+        Number(dateOnlyMatch[3]),
+      )
+    : new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function appointmentTime(value) {
+  const localTimeMatch = String(value || "").match(/T(\d{2}):(\d{2})/);
+  if (localTimeMatch) {
+    const hour = Number(localTimeMatch[1]);
+    const minute = localTimeMatch[2];
+    const period = hour >= 12 ? "PM" : "AM";
+    return `${hour % 12 || 12}:${minute} ${period}`;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function appointmentTimezone(value) {
+  if (!value) return "";
+  const offset = String(value).match(/([+-])(\d{2}):(\d{2})$/);
+  if (!offset) return "";
+  const hours = String(Number(offset[2]));
+  const minutes = offset[3] === "00" ? "" : `:${offset[3]}`;
+  return `UTC${offset[1]}${hours}${minutes}`;
+}
+
+function fieldLabel(value) {
+  return String(value)
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function CollectedFieldIcon({ field }) {
+  const normalizedField = field.toLowerCase();
+  const Icon = normalizedField.includes("mail")
+    ? Mail
+    : normalizedField.includes("phone") || normalizedField.includes("mobile")
+      ? Phone
+      : UserRound;
+  return <Icon className="size-3.5" />;
+}
+
+function AvailabilityCard({ appointment }) {
+  const slots = Array.isArray(appointment?.available_slots)
+    ? appointment.available_slots
+    : [];
+
+  return (
+    <div className="mt-2 w-full overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="flex items-start gap-2.5 border-b border-border/70 px-3 py-2.5">
+        <span className="center size-8 shrink-0 rounded-lg bg-primary/10 text-primary">
+          <CalendarDays className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Suggested availability
+          </p>
+          <p className="mt-0.5 text-[13px] font-semibold leading-5 text-foreground">
+            {appointmentDate(appointment?.date)}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+            {appointment?.timezone && <span>{appointment.timezone}</span>}
+            {slots.length > 0 && (
+              <span>
+                {slots.length} available {slots.length === 1 ? "slot" : "slots"}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      {slots.length > 0 ? (
+        <div className="flex gap-1.5 overflow-x-auto p-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {slots.map((slot, index) => (
+            <span
+              key={`${slot.start_time}-${slot.end_time}-${index}`}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-muted/70 px-2.5 py-1.5 text-[11px] font-medium text-foreground ring-1 ring-inset ring-border/60"
+            >
+              <Clock3 className="size-3 shrink-0 text-primary" />
+              <span className="whitespace-nowrap">
+                {slot.start_time}–{slot.end_time}
+              </span>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="px-3 py-2.5 text-[11px] text-muted-foreground">
+          No time slots were included.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AppointmentSubmissionCard({ metadata }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const fields = Object.entries(metadata?.collected_fields || {}).filter(
+    ([, value]) => value !== null && value !== undefined && value !== "",
+  );
+  const startTime = appointmentTime(metadata?.starts_at);
+  const endTime = appointmentTime(metadata?.ends_at);
+  const timezone = appointmentTimezone(metadata?.starts_at);
+  const status = metadata?.status || "submitted";
+
+  return (
+    <div className="min-w-100 w-full overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="flex items-start gap-2.5 border-b border-border/70 px-3 py-2.5">
+        <span className="center size-8 shrink-0 rounded-lg bg-primary/10 text-primary">
+          <CheckCircle2 className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Appointment Booked
+          </p>
+          <p className="mt-0.5 text-[13px] font-semibold leading-5 text-foreground">
+            {[
+              startTime && endTime ? `${startTime}–${endTime}` : startTime,
+              timezone,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+            {appointmentDate(metadata?.starts_at)}
+          </div>
+        </div>
+        <StatusBadge>{status}</StatusBadge>
+      </div>
+
+      {fields.length > 0 && (
+        <div className="px-3 py-2.5">
+          <button
+            type="button"
+            aria-expanded={isExpanded}
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            className="flex w-full items-center justify-between gap-2 rounded-md py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <span className="flex items-center gap-1.5">
+              Submitted information
+              <span className="rounded-full bg-muted px-1.5 py-px text-[9px] font-semibold normal-case tracking-normal">
+                {fields.length}
+              </span>
+            </span>
+            <ChevronRight
+              className={cn(
+                "size-3.5 shrink-0 transition-transform duration-200",
+                isExpanded && "rotate-90",
+              )}
+            />
+          </button>
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+              isExpanded
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0",
+            )}
+          >
+            <div className="overflow-hidden">
+              <dl className="grid gap-x-4 gap-y-2 pt-2.5 sm:grid-cols-2">
+                {fields.map(([field, value]) => (
+                  <div key={field} className="flex min-w-0 items-start gap-2">
+                    <span className="mt-0.5 text-muted-foreground">
+                      <CollectedFieldIcon field={field} />
+                    </span>
+                    <div className="min-w-0">
+                      <dt className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {fieldLabel(field)}
+                      </dt>
+                      <dd className="break-words text-[11px] font-medium text-foreground">
+                        {String(value)}
+                      </dd>
+                    </div>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function messageSequenceKey(message) {
   const senderType = message.sender_type || message.type;
   if (senderType === "system" || senderType === "event") return "";
@@ -311,6 +524,9 @@ function MessageBubble({
   const isCustomer = senderType === "visitor";
   const isAi = senderType === "ai";
   const isAgent = senderType === "agent";
+  const availability = isAi || isAgent ? message.metadata?.appointments : null;
+  const isAppointmentSubmission =
+    isCustomer && message.metadata?.event_type === "appointment.submitted";
   const senderName = message.sender?.name || "Support Assistant";
   const senderAvatar = message.sender?.avatar_url;
 
@@ -335,7 +551,9 @@ function MessageBubble({
         <span className="size-8 shrink-0" aria-hidden="true" />
       ) : null}
 
-      <div className={cn("max-w-[72%]", !isCustomer && "items-end")}>
+      <div
+        className={cn("flex flex-col max-w-[72%]", !isCustomer && "items-end")}
+      >
         {isSequenceStart && (
           <div
             className={cn(
@@ -348,41 +566,53 @@ function MessageBubble({
             {isCustomer && <span>{customer.name}</span>}
           </div>
         )}
-        <div
-          className={cn(
-            "rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
-            isCustomer
-              ? "bg-primary/10"
-              : isAi
-                ? "bg-primary text-white"
-                : "bg-slate-700 dark:bg-slate-100 text-white",
-            isSequenceStart && (isCustomer ? "rounded-tl-sm" : "rounded-tr-sm"),
-          )}
-        >
-          {isAi ? (
-            <AiMessageContent content={content} />
-          ) : (
-            <p className="whitespace-pre-wrap break-words">{content}</p>
-          )}
-          {message.attachments?.length > 0 && (
-            <div className="mt-2 space-y-1 border-t border-current/15 pt-2">
-              {message.attachments.map((attachment, index) => (
-                <a
-                  key={attachment.id || attachment.url || index}
-                  className="flex items-center gap-1.5 text-xs underline underline-offset-2"
-                  href={attachment.url || attachment.file_url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Paperclip className="size-3" />
-                  {attachment.name ||
-                    attachment.filename ||
-                    `Attachment ${index + 1}`}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
+        {isAppointmentSubmission ? (
+          <AppointmentSubmissionCard metadata={message.metadata} />
+        ) : (
+          <>
+            {(content || message.attachments?.length > 0) && (
+              <div
+                className={cn(
+                  "max-w-full rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
+                  isCustomer
+                    ? "bg-primary/10"
+                    : isAi
+                      ? "bg-primary text-white"
+                      : "bg-slate-700 text-white dark:bg-slate-100",
+                  isSequenceStart &&
+                    (isCustomer ? "rounded-tl-sm" : "rounded-tr-sm"),
+                )}
+              >
+                {isAi
+                  ? content && <AiMessageContent content={content} />
+                  : content && (
+                      <p className="whitespace-pre-wrap break-words">
+                        {content}
+                      </p>
+                    )}
+                {message.attachments?.length > 0 && (
+                  <div className="mt-2 space-y-1 border-t border-current/15 pt-2">
+                    {message.attachments.map((attachment, index) => (
+                      <a
+                        key={attachment.id || attachment.url || index}
+                        className="flex items-center gap-1.5 text-xs underline underline-offset-2"
+                        href={attachment.url || attachment.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <Paperclip className="size-3" />
+                        {attachment.name ||
+                          attachment.filename ||
+                          `Attachment ${index + 1}`}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {availability && <AvailabilityCard appointment={availability} />}
+          </>
+        )}
         {isSequenceEnd && (
           <p
             className={cn(
