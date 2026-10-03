@@ -15,11 +15,14 @@ import {
 
 const AI_EVENT_PREFIX = "ai.response.";
 const MESSAGE_ACK_TIMEOUT_MS = 15_000;
+const RECENT_EVENT_TTL_MS = 60_000;
+const MAX_RECENT_EVENTS = 500;
 
 let activeSocket;
 let dashboardReady = false;
 let pendingMessage;
 const sessionSubscriptions = new Map();
+const recentMessageEvents = new Map();
 
 function dashboardSocketUrl(accessToken) {
   const configuredBase =
@@ -152,6 +155,53 @@ function compareMessages(first, second) {
   return String(first.id).localeCompare(String(second.id));
 }
 
+function messageEventIdentity(sessionId, message) {
+  const senderType = message.sender_type || message.type;
+  if (senderType === "system" || senderType === "event") {
+    const timestamp = new Date(
+      message.created_at || message.updated_at || message.time || 0,
+    ).getTime();
+    const minute = Number.isFinite(timestamp)
+      ? Math.floor(timestamp / 60_000)
+      : 0;
+    return JSON.stringify([
+      sessionId,
+      "system",
+      minute,
+      message.metadata?.event_type || message.event_type || "",
+      message.content || message.text || "",
+      message.detail || "",
+    ]);
+  }
+
+  const serverId = message.id ?? message.message_id ?? message.uuid;
+  return serverId == null ? null : `${sessionId}:id:${String(serverId)}`;
+}
+
+function isRepeatedMessageEvent(sessionId, message) {
+  const identity = messageEventIdentity(sessionId, message);
+  if (!identity) return false;
+
+  const now = Date.now();
+  const previousTimestamp = recentMessageEvents.get(identity);
+  recentMessageEvents.set(identity, now);
+
+  if (recentMessageEvents.size > MAX_RECENT_EVENTS) {
+    recentMessageEvents.forEach((timestamp, key) => {
+      if (now - timestamp > RECENT_EVENT_TTL_MS) {
+        recentMessageEvents.delete(key);
+      }
+    });
+    while (recentMessageEvents.size > MAX_RECENT_EVENTS) {
+      recentMessageEvents.delete(recentMessageEvents.keys().next().value);
+    }
+  }
+
+  return (
+    previousTimestamp != null && now - previousTimestamp < RECENT_EVENT_TTL_MS
+  );
+}
+
 function upsertMessage(dispatch, store, sessionId, message) {
   queryEntries(
     store,
@@ -167,7 +217,7 @@ function upsertMessage(dispatch, store, sessionId, message) {
           if (!messages) return;
 
           const existingIndex = messages.findIndex(
-            (candidate) => candidate.id === message.id,
+            (candidate) => String(candidate.id) === String(message.id),
           );
           if (existingIndex === -1) messages.push(message);
           else messages[existingIndex] = message;
@@ -277,6 +327,8 @@ function routeDashboardEvent(event, dispatch, store) {
   }
 
   if (event?.type === "message.created" && event.session_id && event.data?.id) {
+    if (event.data.metadata?.visibility === "public") return;
+    if (isRepeatedMessageEvent(event.session_id, event.data)) return;
     upsertMessage(dispatch, store, event.session_id, event.data);
     updateConversationPreviews(dispatch, store, event.session_id, event.data);
     dispatch(apiSlice.util.invalidateTags(["chat-sessions"]));

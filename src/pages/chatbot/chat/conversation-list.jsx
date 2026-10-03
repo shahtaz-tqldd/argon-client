@@ -281,11 +281,8 @@ const ConversationList = ({
     (total, session) => total + (session.unread_message_count || 0),
     0,
   );
-  const attentionCount = sessions.filter(
-    (session) => session.requires_attention,
-  ).length;
-  const chatbotName =
-    currentChatbot?.chatbot_name || currentChatbot?.name || "Chat support";
+  const attentionCount = data?.meta?.requires_attention_count || 0;
+  const chatbotName = currentChatbot?.chatbot_name || "Chat support";
 
   return (
     <aside className="flex w-[330px] shrink-0 flex-col border-r bg-card xl:w-[350px]">

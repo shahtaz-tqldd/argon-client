@@ -10,7 +10,6 @@ import {
   AlertCircle,
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
   Clock3,
   LoaderCircle,
@@ -129,9 +128,18 @@ function AiMessageContent({ content }) {
 }
 
 function unwrapMessages(payload) {
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.data?.data)) return payload.data.data;
-  return [];
+  const messages = Array.isArray(payload?.data)
+    ? payload.data
+    : Array.isArray(payload?.data?.data)
+      ? payload.data.data
+      : [];
+
+  // Takeovers create an internal dashboard event and a public widget event.
+  // The dashboard REST endpoint excludes the public copy; keep realtime cache
+  // entries consistent with that response so the event is not rendered twice.
+  return messages.filter(
+    (message) => message.metadata?.visibility !== "public",
+  );
 }
 
 function paginationMeta(payload) {
@@ -154,19 +162,46 @@ function hasPageAfter(payload, page, pageMessages) {
   return pageMessages.length === MESSAGE_PAGE_SIZE;
 }
 
-function messageIdentity(message, index) {
-  return (
-    message.id ||
-    `${message.created_at || message.updated_at || message.time || "message"}:${
-      message.sender_type || message.type || "unknown"
-    }:${message.content || message.text || index}`
-  );
+function messageIdentity(message) {
+  const senderType = message.sender_type || message.type;
+  if (senderType === "system" || senderType === "event") {
+    const timestamp = new Date(
+      message.created_at || message.updated_at || message.time || 0,
+    ).getTime();
+    const minute = Number.isFinite(timestamp)
+      ? Math.floor(timestamp / 60_000)
+      : 0;
+
+    // Ownership actions can arrive as separate internal/public records (and,
+    // on reconnect, as distinct records with different IDs). Treat identical
+    // system events created in the same minute as one timeline entry.
+    return JSON.stringify([
+      "system",
+      minute,
+      message.metadata?.event_type || message.event_type || "",
+      message.content || message.text || "",
+      message.detail || "",
+    ]);
+  }
+
+  const serverId = message.id ?? message.message_id ?? message.uuid;
+  if (serverId != null) return `id:${String(serverId)}`;
+
+  // The fallback must not depend on the message's array position. A message
+  // can occupy a different index in page 1, an older page, and the merged
+  // collection; using that index makes the same message look new forever.
+  return JSON.stringify([
+    message.created_at || message.updated_at || message.time || "",
+    message.sender_type || message.type || "unknown",
+    message.content || message.text || "",
+    message.metadata || null,
+  ]);
 }
 
 function mergeMessages(...collections) {
   const messagesById = new Map();
-  collections.flat().forEach((message, index) => {
-    messagesById.set(messageIdentity(message, index), message);
+  collections.flat().forEach((message) => {
+    messagesById.set(messageIdentity(message), message);
   });
   return [...messagesById.values()].sort((first, second) => {
     const firstTime = new Date(first.created_at || first.updated_at).getTime();
@@ -654,6 +689,7 @@ const MessageDisplay = ({
   const scrollContainerRef = useRef(null);
   const initialScrollDoneRef = useRef(false);
   const shouldStickToBottomRef = useRef(true);
+  const isProgrammaticScrollRef = useRef(false);
   const pendingScrollAdjustmentRef = useRef(null);
   const isFetchingOlderRef = useRef(false);
   const initializedPaginationRef = useRef(false);
@@ -679,7 +715,10 @@ const MessageDisplay = ({
     [currentMessages, olderMessages],
   );
   const messageGroups = useMemo(() => groupMessages(messages), [messages]);
-  const latestVisitorMessageId = [...messages]
+  // Track unread state from the live first page only. Merging paginated
+  // history must never re-trigger mark-read (and the session detail/list
+  // refetches it invalidates), or loading pages loops the dependent APIs.
+  const latestVisitorMessageId = [...currentMessages]
     .reverse()
     .find((message) =>
       ["visitor", "customer"].includes(message.sender_type || message.type),
@@ -732,8 +771,16 @@ const MessageDisplay = ({
         pageSize: MESSAGE_PAGE_SIZE,
       }).unwrap();
       const pageMessages = unwrapMessages(response);
+      const knownMessageIds = new Set(
+        messages.map((message) => messageIdentity(message)),
+      );
+      const containsNewMessages = pageMessages.some(
+        (message) => !knownMessageIds.has(messageIdentity(message)),
+      );
       setOlderMessages((existing) => mergeMessages(pageMessages, existing));
-      setHasMore(hasPageAfter(response, nextPage, pageMessages));
+      setHasMore(
+        containsNewMessages && hasPageAfter(response, nextPage, pageMessages),
+      );
       setNextPage((page) => page + 1);
     } catch {
       pendingScrollAdjustmentRef.current = null;
@@ -742,46 +789,51 @@ const MessageDisplay = ({
       isFetchingOlderRef.current = false;
       setIsLoadingOlder(false);
     }
-  }, [chatbotSlug, fetchMessagePage, hasMore, nextPage, sessionId]);
+  }, [chatbotSlug, fetchMessagePage, hasMore, messages, nextPage, sessionId]);
 
   useLayoutEffect(() => {
     const container = scrollContainerRef.current;
     if (!container || isLoading) return;
 
+    const scrollTo = (top) => {
+      const maxScrollTop = container.scrollHeight - container.clientHeight;
+      const nextTop = Math.max(0, Math.min(top, maxScrollTop));
+      if (nextTop === container.scrollTop) return;
+      // Flag the scroll event this assignment will fire so handleScroll
+      // does not treat our own repositioning as user scrolling to the top
+      // and chain page fetches without user interaction.
+      isProgrammaticScrollRef.current = true;
+      container.scrollTop = nextTop;
+    };
+
     const pending = pendingScrollAdjustmentRef.current;
     if (pending) {
-      container.scrollTop =
-        container.scrollHeight - pending.height + pending.top;
+      scrollTo(container.scrollHeight - pending.height + pending.top);
       pendingScrollAdjustmentRef.current = null;
       return;
     }
 
     if (!initialScrollDoneRef.current || shouldStickToBottomRef.current) {
-      container.scrollTop = container.scrollHeight;
+      scrollTo(container.scrollHeight);
       initialScrollDoneRef.current = true;
     }
   }, [isLoading, messages]);
 
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (
-      !container ||
-      isLoading ||
-      isLoadingOlder ||
-      !hasMore ||
-      container.scrollHeight > container.clientHeight
-    ) {
-      return;
-    }
-    void loadOlderMessages();
-  }, [hasMore, isLoading, isLoadingOlder, loadOlderMessages, messages.length]);
-
   const handleScroll = (event) => {
     const container = event.currentTarget;
+    const wasProgrammaticScroll = isProgrammaticScrollRef.current;
+    isProgrammaticScrollRef.current = false;
     shouldStickToBottomRef.current =
       container.scrollHeight - container.scrollTop - container.clientHeight <=
       STICK_TO_BOTTOM_THRESHOLD;
-    if (container.scrollTop <= LOAD_MORE_THRESHOLD) {
+    const hasScrollableHistory =
+      container.scrollHeight > container.clientHeight + 1;
+    if (
+      !wasProgrammaticScroll &&
+      hasScrollableHistory &&
+      initialScrollDoneRef.current &&
+      container.scrollTop <= LOAD_MORE_THRESHOLD
+    ) {
       void loadOlderMessages();
     }
   };
@@ -831,16 +883,20 @@ const MessageDisplay = ({
           </div>
         ) : (
           <>
-            {(isLoadingOlder || olderMessagesError) && (
+            {(hasMore || isLoadingOlder || olderMessagesError) && (
               <div className="flex justify-center pb-1 text-[11px] text-muted-foreground">
                 {isLoadingOlder ? (
                   <span className="flex items-center gap-2">
                     <LoaderCircle className="size-3.5 animate-spin" />
                     Loading older messages…
                   </span>
-                ) : (
+                ) : olderMessagesError ? (
                   <Button size="xs" variant="ghost" onClick={loadOlderMessages}>
                     Couldn’t load older messages. Try again
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="ghost" onClick={loadOlderMessages}>
+                    Load older messages
                   </Button>
                 )}
               </div>
@@ -859,7 +915,7 @@ const MessageDisplay = ({
                   const nextMessage = group.messages[messageIndex + 1];
                   return (
                     <MessageBubble
-                      key={messageIdentity(message, messageIndex)}
+                      key={messageIdentity(message)}
                       message={message}
                       customer={conversation}
                       chatbotName={chatbotName}
@@ -878,31 +934,33 @@ const MessageDisplay = ({
           </>
         )}
 
-        {conversation.owner === "AI" && conversation.status !== "resolved" && (
-          <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
-            {chatbotLogo ? (
-              <span className="size-7 center rounded-full">
-                <img
-                  src={chatbotLogo}
-                  alt={`${chatbotName} logo`}
-                  className="size-full object-contain"
-                />
-              </span>
-            ) : (
-              <span className="center size-7 rounded-full bg-primary">
-                <img
-                  src={"/logo-dark.png"}
-                  alt={`${chatbotName} logo`}
-                  className="p-1 object-cover"
-                />
-              </span>
-            )}
+        {!conversation.assigned_to?.id &&
+          conversation.ai_enabled !== false &&
+          conversation.status !== "resolved" && (
+            <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
+              {chatbotLogo ? (
+                <span className="size-7 center rounded-full">
+                  <img
+                    src={chatbotLogo}
+                    alt={`${chatbotName} logo`}
+                    className="size-full object-contain"
+                  />
+                </span>
+              ) : (
+                <span className="center size-7 rounded-full bg-primary">
+                  <img
+                    src={"/logo-dark.png"}
+                    alt={`${chatbotName} logo`}
+                    className="p-1 object-cover"
+                  />
+                </span>
+              )}
 
-            <span className="rounded-full border bg-card px-3 py-1.5">
-              {chatbotName} is ready to respond
-            </span>
-          </div>
-        )}
+              <span className="rounded-full border bg-card px-3 py-1.5">
+                {chatbotName} is ready to respond
+              </span>
+            </div>
+          )}
       </div>
     </ScrollContainer>
   );

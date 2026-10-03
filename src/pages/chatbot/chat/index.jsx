@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { MessageCircleMore } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -72,6 +72,7 @@ const ChatSessionPage = () => {
     useForceReturnToAIMutation();
   const [requestSessionTransfer, transferState] =
     useRequestSessionTransferMutation();
+  const ownershipRequestRef = useRef(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [deleteChatSession, deleteSessionState] =
     useDeleteChatSessionMutation();
@@ -123,6 +124,8 @@ const ChatSessionPage = () => {
     cancelTransferState.isLoading;
 
   const handleOwnershipChange = async (conversation) => {
+    if (ownershipRequestRef.current) return false;
+    ownershipRequestRef.current = true;
     const assignedAgentId = conversation.assigned_to?.id;
 
     try {
@@ -142,10 +145,14 @@ const ChatSessionPage = () => {
             ? "Conversation returned to AI."
             : "Conversation assigned to you."),
       );
+      return true;
     } catch (error) {
       toast.error(
         getApiErrorMessage(error, "Unable to update conversation ownership."),
       );
+      return false;
+    } finally {
+      ownershipRequestRef.current = false;
     }
   };
 
