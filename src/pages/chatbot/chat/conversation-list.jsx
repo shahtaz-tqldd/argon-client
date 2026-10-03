@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AVATAR_TONES } from "@/constants/colors";
 import { useChatSessionListQuery } from "@/features/chat/chatApiSlice";
 import useActiveChatbotMembers from "@/hooks/useActiveChatbotMembers";
 import useCurrentChatbot from "@/hooks/useCurrentChatbot";
@@ -65,14 +66,6 @@ const filters = [
   { id: "my_session", label: "My Session" },
 ];
 
-const avatarTones = [
-  "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300",
-  "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
-  "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300",
-  "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300",
-  "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
-];
-
 const relativeTime = new Intl.RelativeTimeFormat(undefined, {
   numeric: "auto",
 });
@@ -86,7 +79,7 @@ function getAvatarTone(id = "") {
     (total, character) => total + character.charCodeAt(0),
     0,
   );
-  return avatarTones[hash % avatarTones.length];
+  return AVATAR_TONES[hash % AVATAR_TONES.length];
 }
 
 function formatActivity(value) {
@@ -275,17 +268,10 @@ const ConversationList = ({
       { skip: !chatbotSlug },
     );
 
-  const sessions = data?.data ?? [];
-  const conversations = sessions;
-  const unreadCount = sessions.reduce(
-    (total, session) => total + (session.unread_message_count || 0),
-    0,
-  );
-  const attentionCount = sessions.filter(
-    (session) => session.requires_attention,
-  ).length;
-  const chatbotName =
-    currentChatbot?.chatbot_name || currentChatbot?.name || "Chat support";
+  const conversations = data?.data ?? [];
+  const unreadSessionCount = data?.meta?.unread_session_count || 0;
+  const attentionCount = data?.meta?.required_attention_count || 0;
+  const chatbotName = currentChatbot?.chatbot_name || "Chat support";
 
   return (
     <aside className="flex w-[330px] shrink-0 flex-col border-r bg-card xl:w-[350px]">
@@ -294,7 +280,10 @@ const ConversationList = ({
           <SectionTitle
             title="Inbox"
             details={chatbotName}
-            tag={unreadCount > 0 && (unreadCount > 99 ? "99+" : unreadCount)}
+            tag={
+              unreadSessionCount > 0 &&
+              (unreadSessionCount > 99 ? "99+" : unreadSessionCount)
+            }
           />
         </div>
 

@@ -250,12 +250,28 @@ const ChatSessionPage = () => {
     }
   };
 
-  const handleSendMessage = async (content) => {
+  const handleSendMessage = async (content, attachments = []) => {
     if (!sessionId) return false;
+
+    const attachmentMetadata = attachments.map((file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    }));
+    const attachmentLines = attachmentMetadata.map(
+      (attachment) => `📎 ${attachment.name}`,
+    );
+    const messageContent = [content.trim(), ...attachmentLines]
+      .filter(Boolean)
+      .join("\n");
 
     setIsSendingMessage(true);
     try {
-      await sendDashboardMessage(sessionId, content);
+      await sendDashboardMessage(sessionId, messageContent, {
+        ...(attachmentMetadata.length > 0 && {
+          attachments: attachmentMetadata,
+        }),
+      });
       return true;
     } catch (error) {
       toast.error(error?.message || "Unable to send this message.");

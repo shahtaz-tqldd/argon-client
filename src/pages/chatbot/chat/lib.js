@@ -1,12 +1,5 @@
+import { AVATAR_TONES } from "@/constants/colors";
 import { getInitials } from "@/lib/utils";
-
-const avatarTones = [
-  "bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300",
-  "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
-  "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300",
-  "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300",
-  "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
-];
 
 function displayName(session) {
   return (
@@ -22,7 +15,7 @@ function avatarTone(id = "") {
     (total, character) => total + character.charCodeAt(0),
     0,
   );
-  return avatarTones[hash % avatarTones.length];
+  return AVATAR_TONES[hash % AVATAR_TONES.length];
 }
 
 function channelLabel(channel = "web_widget") {

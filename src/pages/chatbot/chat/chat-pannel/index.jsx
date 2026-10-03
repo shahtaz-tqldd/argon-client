@@ -1,17 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRightLeft,
-  AtSign,
-  Check,
   ChevronDown,
   Info,
   LoaderCircle,
-  MessageCircleMore,
-  Paperclip,
-  Send,
-  Smile,
-  Sparkles,
-  UserRound,
   UserRoundPlus,
   UsersRound,
 } from "lucide-react";
@@ -27,20 +19,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  useChatSessionDetailQuery,
-  useResolveSessionMutation,
-} from "@/features/chat/chatApiSlice";
+import { useChatSessionDetailQuery } from "@/features/chat/chatApiSlice";
 import { useCapturedLeadDetailQuery } from "@/features/lead_captures/leadCaptureApiSlice";
 import useActiveChatbotMembers from "@/hooks/useActiveChatbotMembers";
 import { subscribeDashboardSession } from "@/hooks/useDashboardSocket";
-import { getApiErrorMessage } from "@/lib/get-api-error-message";
 import { cn, getInitials } from "@/lib/utils";
-import { toast } from "sonner";
 import { buildConversation } from "../lib";
 import CustomerContext from "../customer-context";
 import SessionDropdown from "./dropdown-menu";
 import MessageDisplay from "./message-display";
+import MessageComposer from "./message-composer";
 
 function unwrapObject(payload) {
   let value = payload;
@@ -87,12 +75,9 @@ const ChatPanel = ({
   isSending = false,
   isDeleting = false,
 }) => {
-  const [draft, setDraft] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [forceTakeoverDialogOpen, setForceTakeoverDialogOpen] = useState(false);
   const [forceReturnDialogOpen, setForceReturnDialogOpen] = useState(false);
-  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
-  const [resolutionNote, setResolutionNote] = useState("");
   const [takeoverReason, setTakeoverReason] = useState("");
   const [forceReturnNote, setForceReturnNote] = useState("");
   const sessionId = conversationSummary.id;
@@ -102,7 +87,6 @@ const ChatPanel = ({
   );
 
   const sessionDetails = unwrapObject(sessionQuery.currentData);
-  const [resolveSession, resolveState] = useResolveSessionMutation();
   const chatbot = sessionDetails.chatbot || {};
   const chatbotName = chatbot.chatbot_name || "Argon Chatbot";
   const chatbotLogo = chatbot.logo;
@@ -139,13 +123,6 @@ const ChatPanel = ({
 
   useEffect(() => subscribeDashboardSession(sessionId), [sessionId]);
 
-  const submitMessage = async () => {
-    const text = draft.trim();
-    if (!text || !onSend || isSending) return;
-    const succeeded = await onSend(text);
-    if (succeeded !== false) setDraft("");
-  };
-
   const retryConversation = () => {
     sessionQuery.refetch();
   };
@@ -154,27 +131,6 @@ const ChatPanel = ({
     if (!onDelete || isDeleting) return;
     const succeeded = await onDelete(conversation);
     if (succeeded !== false) setDeleteDialogOpen(false);
-  };
-
-  const handleResolve = async () => {
-    if (resolveState.isLoading) return;
-
-    try {
-      const response = await resolveSession({
-        chatbotSlug,
-        sessionId,
-        payload: {
-          note: resolutionNote.trim(),
-          resolution_type: "resolved",
-        },
-      }).unwrap();
-
-      setResolveDialogOpen(false);
-      setResolutionNote("");
-      toast.success(response?.message || "Session resolved successfully.");
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to resolve this session."));
-    }
   };
 
   const handleForceTakeover = async () => {
@@ -549,145 +505,22 @@ const ChatPanel = ({
           onRetryConversation={retryConversation}
         />
 
-        {onSend &&
-          isOwnedByCurrentAgent &&
-          conversation.status !== "resolved" && (
-            <footer className="shrink-0 border-t bg-card p-4">
-              <div className="mx-auto max-w-3xl rounded-xl border bg-background shadow-sm transition focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10">
-                <div className="flex items-center gap-1 border-b px-2 pt-1.5">
-                  <button className="border-b-2 border-primary px-3 py-2 text-xs font-semibold text-primary">
-                    <span className="flex items-center gap-1.5">
-                      <MessageCircleMore className="size-3.5" />
-                      Reply
-                    </span>
-                  </button>
-                  {/* <span className="ml-auto px-2 text-[10px] text-muted-foreground">
-                    via {conversation.channel}
-                  </span> */}
-                </div>
-                <textarea
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      void submitMessage();
-                    }
-                  }}
-                  disabled={isSending}
-                  className="min-h-20 w-full resize-none bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground"
-                  placeholder={`Reply to ${conversation.name.split(" ")[0]}…`}
-                />
-                <div className="flex items-center justify-between px-2 pb-2">
-                  <div className="flex items-center">
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label="Attach file"
-                    >
-                      <Paperclip />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label="Insert emoji"
-                    >
-                      <Smile />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label="Mention teammate"
-                    >
-                      <AtSign />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {conversation.requires_attention && (
-                      <Button
-                        onClick={() => setResolveDialogOpen(true)}
-                        disabled={resolveState.isLoading}
-                        variant="outline"
-                        size="icon-sm"
-                        aria-label="Resolve session"
-                        title="Resolve session"
-                      >
-                        <Check />
-                      </Button>
-                    )}
-                    <Button
-                      onClick={() => onTakeover?.(conversation)}
-                      disabled={
-                        !onTakeover ||
-                        isOwnershipUpdating ||
-                        (!canTakeOver && !canRelease)
-                      }
-                      variant={canTakeOver ? "default" : "outline"}
-                      size="sm"
-                    >
-                      {isOwnershipUpdating ? (
-                        <>
-                          <LoaderCircle className="animate-spin" />
-                          Updating
-                        </>
-                      ) : canRelease ? (
-                        <>
-                          <Sparkles />
-                          Return to AI
-                        </>
-                      ) : (
-                        <>
-                          <UserRound />
-                          Assigned
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={submitMessage}
-                      disabled={!draft.trim() || isSending}
-                      size="sm"
-                    >
-                      {isSending ? (
-                        <LoaderCircle className="animate-spin" />
-                      ) : (
-                        <Send />
-                      )}
-                      {isSending ? "Sending" : "Send"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </footer>
-          )}
+        {isOwnedByCurrentAgent && (
+            <MessageComposer
+              key={`message-composer-${sessionId}`}
+            chatbotSlug={chatbotSlug}
+            sessionId={sessionId}
+            conversation={conversation}
+            onSend={onSend}
+            isSending={isSending}
+            onTakeover={() => onTakeover?.(conversation)}
+            canTakeOver={canTakeOver}
+            canRelease={canRelease}
+            isOwnershipUpdating={isOwnershipUpdating}
+          />
+        )}
       </main>
 
-      <ConfirmDialog
-        open={resolveDialogOpen}
-        setOpen={(open) => {
-          setResolveDialogOpen(open);
-          if (!open && !resolveState.isLoading) setResolutionNote("");
-        }}
-        title="Resolve session?"
-        description="Add an optional note describing how this session was resolved."
-        confirmText="Resolve session"
-        onConfirm={handleResolve}
-        isLoading={resolveState.isLoading}
-      >
-        <div className="space-y-2">
-          <Textarea
-            value={resolutionNote}
-            onChange={(event) => setResolutionNote(event.target.value)}
-            maxLength={512}
-            rows={4}
-            placeholder="Resolution note (optional)"
-            aria-label="Resolution note"
-            disabled={resolveState.isLoading}
-          />
-          <p className="text-right text-xs text-muted-foreground">
-            {resolutionNote.length}/512
-          </p>
-        </div>
-      </ConfirmDialog>
       <ConfirmDialog
         open={forceReturnDialogOpen}
         setOpen={(open) => {
